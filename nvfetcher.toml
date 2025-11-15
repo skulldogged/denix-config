@@ -1,0 +1,28 @@
+[git-abbr]
+src.git = "https://github.com/pupbrained/fish-git-abbr"
+src.branch = "patch-1"
+fetch.github = "pupbrained/fish-git-abbr"
+
+[jj-abbr]
+src.git = "https://github.com/pupbrained/plugin-jj"
+fetch.github = "pupbrained/plugin-jj"
+
+[replay-fish]
+src.git = "https://github.com/jorgebucaran/replay.fish"
+fetch.github = "jorgebucaran/replay.fish"
+
+[license]
+src.git = "https://github.com/oh-my-fish/plugin-license"
+fetch.github = "oh-my-fish/plugin-license"
+
+[wttr]
+src.git = "https://github.com/oh-my-fish/plugin-wttr"
+fetch.github = "oh-my-fish/plugin-wttr"
+
+[gityaw]
+src.git = "https://github.com/oh-my-fish/plugin-gityaw"
+fetch.github = "oh-my-fish/plugin-gityaw"
+
+[bang-bang]
+src.git = "https://github.com/oh-my-fish/plugin-bang-bang"
+fetch.github = "oh-my-fish/plugin-bang-bang"

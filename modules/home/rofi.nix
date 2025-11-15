@@ -1,0 +1,35 @@
+{delib, ...}:
+delib.module {
+  name = "home.rofi";
+
+  options.home.rofi = with delib; {
+    enable = boolOption false;
+  };
+
+  home.ifEnabled = {
+    programs.rofi = {
+      enable = true;
+
+      extraConfig = {
+        modi = "run,drun,window";
+        icon-theme = "Oranchelo";
+        show-icons = true;
+        terminal = "wezterm";
+        drun-display-format = "{icon} {name}";
+        location = 0;
+        disable-history = false;
+        hide-scrollbar = true;
+        display-drun = "   Apps ";
+        display-run = "   Run ";
+        display-window = " 󰍲  Window";
+        display-Network = " 󰤨  Network";
+        sidebar-mode = true;
+      };
+
+      theme = {
+        "*".font = "Maple Mono NF 14";
+        window.border-radius = 10;
+      };
+    };
+  };
+}
