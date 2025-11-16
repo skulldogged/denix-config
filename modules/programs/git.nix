@@ -12,10 +12,7 @@ delib.module {
     signingKey = allowNull (strOption null);
   };
 
-  home.ifEnabled = {
-    myconfig,
-    ...
-  }: {
+  home.ifEnabled = {myconfig, ...}: {
     programs = {
       delta.enable = true;
 

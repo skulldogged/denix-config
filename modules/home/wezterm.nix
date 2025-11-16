@@ -10,7 +10,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = { ...}: {
+  home.ifEnabled = {...}: {
     programs.wezterm = {
       enable = true;
       extraConfig =
