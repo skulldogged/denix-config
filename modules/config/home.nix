@@ -1,5 +1,6 @@
 {
   delib,
+  lib,
   pkgs,
   ...
 }:
@@ -16,6 +17,14 @@ delib.module {
         if pkgs.stdenv.isDarwin
         then "/Users/${username}"
         else "/home/${username}";
+    };
+
+    xdg = {
+      enable = true;
+      userDirs = {
+        enable = true;
+        music = lib.mkIf myconfig.host.isDesktop "/mnt/music";
+      };
     };
   };
 }

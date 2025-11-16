@@ -29,7 +29,7 @@ delib.module {
 
       nh = {
         enable = true;
-        flake = "/home/marshall/denix-config";
+        flake = "/home/marshall/nix-config";
       };
 
       nix-ld = pkgs.lib.mkIf myconfig.host.isDesktop {

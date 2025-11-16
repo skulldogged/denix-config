@@ -193,6 +193,8 @@ delib.host {
     };
 
     services = {
+      gvfs.enable = true;
+
       btrfs.autoScrub = {
         enable = true;
         fileSystems = ["/dev/mapper/enc"];

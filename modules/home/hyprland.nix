@@ -94,6 +94,10 @@ delib.module {
             name = "logitech-usb-receiver";
             sensitivity = -0.75;
           }
+          {
+            name = "logitech-g502-x-plus";
+            sensitivity = -0.75;
+          }
         ];
 
         windowrule = [
