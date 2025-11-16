@@ -1,4 +1,5 @@
 {
+  config,
   delib,
   inputs,
   ...
@@ -24,6 +25,7 @@ delib.host {
     facter.reportPath = ./facter.json;
 
     age = {
+      secrets.cifs.file = ../../secrets/cifs.age;
       secrets.passwd.file = ../../secrets/passwd.age;
       identityPaths = ["/persist/root/.ssh/id_ed25519"];
     };
@@ -127,6 +129,14 @@ delib.host {
           "gid=1000"
           "umask=007"
           "nofail"
+        ];
+      };
+
+      "/mnt/music" = {
+        device = "//192.168.1.82/music";
+        fsType = "cifs";
+        options = [
+          "noauto,x-systemd.automount,x-systemd.idle-timeout=5m,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,uid=1000,gid=100,credentials=${config.age.secrets.cifs.path}"
         ];
       };
     };

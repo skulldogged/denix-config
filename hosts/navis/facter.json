@@ -1052,7 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
-        "tlb_size": 32766,
+        "tlb_size": 32647,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -1493,7 +1493,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.17.7-cachyos xhci-hcd",
+          "name": "Linux 6.17.8-cachyos xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1507,7 +1507,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.17.7-cachyos xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.17.8-cachyos xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -1665,7 +1665,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.17.7-cachyos xhci-hcd",
+          "name": "Linux 6.17.8-cachyos xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1679,7 +1679,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.17.7-cachyos xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.17.8-cachyos xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -1742,7 +1742,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.17.7-cachyos xhci-hcd",
+          "name": "Linux 6.17.8-cachyos xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1756,7 +1756,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.17.7-cachyos xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.17.8-cachyos xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -1829,7 +1829,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.17.7-cachyos xhci-hcd",
+          "name": "Linux 6.17.8-cachyos xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1843,7 +1843,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.17.7-cachyos xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.17.8-cachyos xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -2703,9 +2703,9 @@
           "hex": "307a",
           "value": 12410
         },
-        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.000C/input/input28",
+        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN1203:00/0018:04F3:307A.000C/input/input29",
         "unix_device_names": [
-          "/dev/input/event25",
+          "/dev/input/event26",
           "/dev/input/ + handler"
         ]
       }
@@ -3049,7 +3049,7 @@
         ]
       },
       {
-        "index": 79,
+        "index": 80,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -4262,7 +4262,7 @@
           },
           "interface_protocol": 0,
           "interface_number": 4,
-          "interface_alternate_setting": 0
+          "interface_alternate_setting": 2
         },
         "hotplug": "usb",
         "driver": "snd-usb-audio",
@@ -4642,10 +4642,10 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.2/3-3.2.4/3-3.2.4:1.0",
         "sysfs_bus_id": "3-3.2.4:1.0",
         "unix_device_names": [
-          "/dev/input/by-id/usb-Microsoft_Controller_3039565836353439313237313235-joystick",
-          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0-joystick",
-          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.0-joystick",
-          "/dev/input/js2"
+          "/dev/input/by-id/usb-Microsoft_Controller_3039565836353439313237313235-event-joystick",
+          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0-event-joystick",
+          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.0-event-joystick",
+          "/dev/input/event17"
         ],
         "resources": [
           {
@@ -4830,9 +4830,6 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.5",
         "sysfs_bus_id": "3-3.4:1.5",
         "unix_device_names": [
-          "/dev/input/by-id/usb-SteelSeries_SteelSeries_Arctis_7-event-if05",
-          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.4:1.5-event",
-          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.4:1.5-event",
           "/dev/input/event15"
         ],
         "resources": [
@@ -5826,7 +5823,7 @@
           304942678086,
           309237645383,
           438086664264,
-          4471060955238
+          4488240824422
         ]
       }
     ],
