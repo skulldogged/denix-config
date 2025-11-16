@@ -84,9 +84,23 @@ delib.host {
     system.nix.enable = true;
     system.programs.enable = true;
     system.security.enable = true;
+    system.services.enable = true;
     system.stateversion.version = "23.11";
     system.users.enable = true;
     system.users.extraGroups = ["kvm" "podman"];
+
+    home = {
+      fish.enable = true;
+      nix-index.enable = true;
+      packages.enable = true;
+      shell.enable = true;
+    };
+
+    programs.git = {
+      enable = true;
+      credentialHelper = "libsecret";
+      signingKey = "91B1F40056A01DDF";
+    };
 
     # Server services
     services.server.enable = true;
