@@ -2,6 +2,7 @@
   delib,
   pkgs,
   inputs,
+  lib,
   ...
 }:
 delib.module {
@@ -11,14 +12,37 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = let
+  home.ifEnabled = {myconfig, ...}: let
+    system = pkgs.stdenv.hostPlatform.system;
     windsurfInfo =
-      (pkgs.lib.importJSON ../packages/windsurf/info.json)."${pkgs.stdenv.hostPlatform.system}"
-        or (throw "windsurf: unsupported system ${pkgs.stdenv.hostPlatform.system}");
-  in {
-    home.packages =
+      (pkgs.lib.importJSON ../packages/windsurf/info.json)."${system}"
+        or (throw "windsurf: unsupported system ${system}");
+
+    windsurfPackage = pkgs.windsurf.overrideAttrs (oldAttrs: {
+      inherit (windsurfInfo) version;
+      src = pkgs.fetchurl {
+        inherit (windsurfInfo) url sha256;
+      };
+      passthru =
+        oldAttrs.passthru
+        // {
+          inherit (windsurfInfo) vscodeVersion;
+        };
+    });
+
+    basePackages =
       (with pkgs; [
         alejandra
+        bun
+        grc
+        mullvad-vpn
+        wl-clipboard
+        xclip
+      ])
+      ++ [inputs.nixvim.packages.${system}.default];
+
+    desktopPackages =
+      (with pkgs; [
         bitwarden-cli
         bitwarden-desktop
         claude-code
@@ -26,7 +50,6 @@ delib.module {
         duf
         equibop
         glow
-        grc
         jellyfin-tui
         killall
         libnotify
@@ -34,7 +57,6 @@ delib.module {
         loupe
         meteor-git
         moonlight-qt
-        mullvad-vpn
         nicotine-plus
         nodejs
         obsidian
@@ -45,24 +67,12 @@ delib.module {
         tlrc
         translate-shell
         uv
-
-        inputs.nixvim.packages.${system}.default
       ])
-      ++ [
-        (pkgs.windsurf.overrideAttrs (oldAttrs: {
-          inherit (windsurfInfo) version;
-          src = pkgs.fetchurl {
-            inherit (windsurfInfo) url sha256;
-          };
-          passthru =
-            oldAttrs.passthru
-            // {
-              inherit (windsurfInfo) vscodeVersion;
-            };
-        }))
-      ];
+      ++ [windsurfPackage];
+  in {
+    home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 
-    services.tldr-update = {
+    services.tldr-update = lib.mkIf myconfig.host.isDesktop {
       enable = true;
       package = pkgs.tlrc;
     };
