@@ -13,6 +13,7 @@ delib.host {
     imports = [
       inputs.agenix.nixosModules.default
       inputs.nixos-facter-modules.nixosModules.facter
+      inputs.helium-services.nixosModules.default
     ];
 
     # Allow unfree packages
@@ -26,8 +27,10 @@ delib.host {
       identityPaths = ["/root/.ssh/id_ed25519"];
 
       secrets = {
+        bsky_pds.file = ../../secrets/bsky_pds.age;
         cloudflare_token.file = ../../secrets/cloudflare_token.age;
         forgejo_token.file = ../../secrets/forgejo_token.age;
+        helium_hmac.file = ../../secrets/helium_hmac.age;
         mailer_passwd.file = ../../secrets/mailer_passwd.age;
         slskd_env.file = ../../secrets/slskd_env.age;
         zipline_secret.file = ../../secrets/zipline_secret.age;
@@ -59,11 +62,14 @@ delib.host {
     time.timeZone = "America/New_York";
 
     # Server-specific packages
-    environment.systemPackages = with pkgs; [
-      miniupnpc
-      nodejs_20
-      codeium
-    ];
+    environment.systemPackages =
+      [inputs.agenix.packages.${pkgs.system}.default]
+      ++ (with pkgs; [
+        codeium
+        graalvmPackages.graalvm-oracle_17
+        miniupnpc
+        nodejs_20
+      ]);
 
     # Server-specific boot settings
     boot = {
@@ -96,10 +102,14 @@ delib.host {
       shell.enable = true;
     };
 
-    programs.git = {
-      enable = true;
-      credentialHelper = "libsecret";
-      signingKey = "91B1F40056A01DDF";
+    programs = {
+      draconisplusplus.enable = true;
+
+      git = {
+        enable = true;
+        credentialHelper = "libsecret";
+        signingKey = "91B1F40056A01DDF";
+      };
     };
 
     # Server services

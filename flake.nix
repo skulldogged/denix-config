@@ -25,11 +25,12 @@
     agenix.url = "github:ryantm/agenix";
     catppuccin.url = "github:catppuccin/nix";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-    draconisplusplus.url = "github:pupbrained/draconisplusplus";
+    draconisplusplus.url = "github:skulldogged/draconisplusplus";
+    helium-services.url = "github:skulldogged/helium-services";
     impermanence.url = "github:nix-community/impermanence";
     nix-colors.url = "github:Misterio77/nix-colors";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
-    nixvim.url = "github:pupbrained/nixvim-new";
+    nixvim.url = "github:skulldogged/nixvim-new";
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
     hyprland = {

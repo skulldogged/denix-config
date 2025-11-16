@@ -25,6 +25,19 @@ delib.module {
       tailscale.enable = true;
       xe-guest-utilities.enable = true;
 
+      bluesky-pds = {
+        enable = true;
+        pdsadmin.enable = true;
+        environmentFiles = [config.age.secrets.bsky_pds.path];
+
+        settings = {
+          PDS_BLOBSTORE_DISK_LOCATION = "/mnt/pds/blocks";
+          PDS_DATA_DIRECTORY = "/mnt/pds";
+          PDS_HOSTNAME = "sky.skulldogged.dev";
+          PDS_PORT = 6969;
+        };
+      };
+
       # DNS resolution disabled in favor of custom nameservers
       resolved.enable = false;
 
@@ -35,27 +48,6 @@ delib.module {
           "c9bd4d77-2b10-4880-8c79-9c970f08cbd8" = {
             credentialsFile = config.age.secrets.cloudflare_token.path;
             default = "http_status:404";
-          };
-        };
-      };
-
-      # Forgejo Actions Runner
-      gitea-actions-runner = {
-        package = pkgs.forgejo-runner;
-        instances.default = {
-          enable = true;
-          name = "main";
-          url = "https://git.pupbrained.dev";
-          tokenFile = config.age.secrets.forgejo_token.path;
-          labels = [
-            "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
-            "native-linux:host"
-          ];
-          settings = {
-            cache = {
-              enabled = true;
-              dir = "/var/cache/forgejo-runner";
-            };
           };
         };
       };
@@ -141,6 +133,33 @@ delib.module {
         };
       };
 
+      # Forgejo Actions Runner
+      gitea-actions-runner = {
+        package = pkgs.forgejo-runner;
+        instances.default = {
+          enable = true;
+          name = "main";
+          url = "https://git.pupbrained.dev";
+          tokenFile = config.age.secrets.forgejo_token.path;
+          labels = [
+            "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
+            "native-linux:host"
+          ];
+          settings = {
+            cache = {
+              enabled = true;
+              dir = "/var/cache/forgejo-runner";
+            };
+          };
+        };
+      };
+
+      helium-services = {
+        enable = true;
+        hostname = "skulldogged.dev";
+        hmacSecretFile = config.age.secrets.helium_hmac.path;
+      };
+
       # qBittorrent
       qbittorrent = {
         enable = true;
@@ -185,11 +204,13 @@ delib.module {
       # Soulseek daemon
       slskd = {
         enable = true;
-        domain = "server.slsknet.org";
+        domain = null;
         environmentFile = config.age.secrets.slskd_env.path;
+
         settings = {
           directories.downloads = "/mnt/music";
           shares.directories = ["/mnt/music"];
+
           web.authentication.api_keys.local = {
             key = "sAA1Uj25ghNJ4jTh23+IbmktGzX5mZGdZSG3IlOMtg0=";
             role = "Administrator";
@@ -218,6 +239,7 @@ delib.module {
     # Custom systemd services
     systemd = {
       services = {
+        bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
         slskd.serviceConfig.ReadOnlyPaths = pkgs.lib.mkForce [""];
 
         slskd-api-rescan = {
