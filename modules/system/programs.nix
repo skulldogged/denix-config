@@ -53,7 +53,13 @@ delib.module {
         extraCompatPackages = [pkgs.proton-ge-custom];
       };
 
-      gnupg.agent.enable = true;
+      gnupg.agent = {
+        enable = true;
+        pinentryPackage =
+          if myconfig.host.isDesktop
+          then pkgs.pinentry-gnome3
+          else pkgs.pinentry-curses;
+      };
       ssh.startAgent = myconfig.host.isServer;
     };
   };
