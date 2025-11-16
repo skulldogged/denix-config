@@ -2,6 +2,7 @@
   delib,
   pkgs,
   config,
+  lib,
   ...
 }:
 delib.module {
@@ -11,27 +12,31 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = {
-    hardware = {
-      bluetooth.enable = true;
-      i2c.enable = true;
-      nvidia-container-toolkit.enable = true;
+  nixos.ifEnabled = {myconfig, ...}: {
+    hardware =
+      {
+        bluetooth.enable = true;
 
-      graphics = {
-        enable = true;
-        enable32Bit = true;
-        extraPackages = with pkgs; [
+        graphics = {
+          enable = true;
+          enable32Bit = true;
+        };
+      }
+      // lib.optionalAttrs myconfig.host.isDesktop {
+        i2c.enable = true;
+        nvidia-container-toolkit.enable = true;
+
+        graphics.extraPackages = with pkgs; [
           libva-vdpau-driver
           nvidia-vaapi-driver
         ];
-      };
 
-      nvidia = {
-        package = config.boot.kernelPackages.nvidiaPackages.beta;
-        modesetting.enable = true;
-        powerManagement.enable = false;
-        open = true;
+        nvidia = {
+          package = config.boot.kernelPackages.nvidiaPackages.beta;
+          modesetting.enable = true;
+          powerManagement.enable = false;
+          open = true;
+        };
       };
-    };
   };
 }

@@ -11,17 +11,17 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = {
+  nixos.ifEnabled = {myconfig, ...}: {
     programs = {
       fish.enable = true;
-      gamemode.enable = true;
+      gamemode.enable = myconfig.host.isDesktop;
 
       appimage = {
         enable = true;
         binfmt = true;
       };
 
-      hyprland = {
+      hyprland = pkgs.lib.mkIf myconfig.host.isDesktop {
         enable = true;
         package = inputs.hyprland.packages.${pkgs.system}.hyprland;
         portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
@@ -32,7 +32,7 @@ delib.module {
         flake = "/home/marshall/denix-config";
       };
 
-      nix-ld = {
+      nix-ld = pkgs.lib.mkIf myconfig.host.isDesktop {
         enable = true;
         libraries = with pkgs; [
           icu
@@ -43,15 +43,18 @@ delib.module {
         ];
       };
 
-      obs-studio = {
+      obs-studio = pkgs.lib.mkIf myconfig.host.isDesktop {
         enable = true;
         enableVirtualCamera = true;
       };
 
-      steam = {
+      steam = pkgs.lib.mkIf myconfig.host.isDesktop {
         enable = true;
         extraCompatPackages = [pkgs.proton-ge-custom];
       };
+
+      gnupg.agent.enable = true;
+      ssh.startAgent = myconfig.host.isServer;
     };
   };
 

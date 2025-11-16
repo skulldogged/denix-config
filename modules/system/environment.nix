@@ -12,36 +12,41 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = _: {
+  nixos.ifEnabled = {myconfig, ...}: {
     environment = {
       localBinInPath = true;
 
-      sessionVariables = {
-        AQ_DRM_DEVICES = "/dev/dri/card1";
-        BROWSER = "helium";
-        DIRENV_WARN_TIMEOUT = "100s";
-        EDITOR = "nvim";
-        NIXOS_OZONE_WL = "1";
-        TERMINAL = "wezterm";
-      };
+      sessionVariables =
+        {
+          DIRENV_WARN_TIMEOUT = "100s";
+          EDITOR = "nvim";
+        }
+        // lib.optionalAttrs myconfig.host.isDesktop {
+          BROWSER = "helium";
+          NIXOS_OZONE_WL = "1";
+          TERMINAL = "wezterm";
+        };
 
-      systemPackages = with pkgs; [
-        inputs.agenix.packages.${system}.default
-        jamesdsp
-        libsecret
-        man-pages
-        man-pages-posix
-        nautilus
-        nixd
-        papirus-icon-theme
-        pciutils
-        python313
-        sound-theme-freedesktop
-        tpm2-tss
-        uutils-coreutils-noprefix
-        wineWowPackages.waylandFull
-        xclip
-      ];
+      systemPackages = with pkgs;
+        [
+          inputs.agenix.packages.${system}.default
+          libsecret
+          man-pages
+          man-pages-posix
+          nixd
+          pciutils
+        ]
+        ++ lib.optionals myconfig.host.isDesktop [
+          jamesdsp
+          nautilus
+          papirus-icon-theme
+          python313
+          sound-theme-freedesktop
+          tpm2-tss
+          uutils-coreutils-noprefix
+          wineWowPackages.waylandFull
+          xclip
+        ];
     };
 
     systemd.user.extraConfig = ''
@@ -54,7 +59,7 @@ delib.module {
     '';
 
     time = {
-      hardwareClockInLocalTime = true;
+      hardwareClockInLocalTime = myconfig.host.isDesktop;
       timeZone = "America/New_York";
     };
 

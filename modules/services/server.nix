@@ -278,5 +278,8 @@ delib.module {
       resolvconf.enable = false;
       nameservers = ["9.9.9.10" "9.9.9.9"];
     };
+
+    # Security - PAM gnome keyring for GDM (doesn't conflict with ssh.startAgent)
+    security.pam.services.gdm.enableGnomeKeyring = true;
   };
 }

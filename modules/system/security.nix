@@ -1,5 +1,6 @@
 {
   delib,
+  lib,
   ...
 }:
 delib.module {
@@ -9,7 +10,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = {
+  nixos.ifEnabled = {myconfig, ...}: {
     security = {
       rtkit.enable = true;
 
@@ -38,7 +39,7 @@ delib.module {
         execWheelOnly = true;
       };
 
-      tpm2 = {
+      tpm2 = lib.mkIf myconfig.host.isDesktop {
         enable = true;
         pkcs11.enable = true;
         tctiEnvironment.enable = true;

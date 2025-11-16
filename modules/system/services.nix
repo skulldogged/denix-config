@@ -1,7 +1,6 @@
 {
   delib,
-  pkgs,
-  inputs,
+  lib,
   ...
 }:
 delib.module {
@@ -13,39 +12,20 @@ delib.module {
 
   nixos.ifEnabled = {myconfig, ...}: {
     services = {
-      flatpak.enable = true;
-      geoclue2.enable = true;
-      getty.autologinUser = myconfig.constants.username;
-      gnome.gnome-keyring.enable = true;
+      flatpak.enable = lib.mkDefault myconfig.host.isDesktop;
+      geoclue2.enable = myconfig.host.isDesktop;
+      getty.autologinUser = lib.mkIf myconfig.host.isDesktop myconfig.constants.username;
+      gnome.gnome-keyring.enable = myconfig.host.isDesktop;
       mullvad-vpn.enable = true;
       openssh.enable = true;
       udisks2.enable = true;
 
-      btrfs.autoScrub = {
-        enable = true;
-        fileSystems = ["/dev/mapper/enc"];
-      };
-
-      greetd = {
-        enable = true;
-        settings = rec {
-          initial_session = {
-            command = "${inputs.hyprland.packages.${pkgs.system}.hyprland}/bin/Hyprland";
-            user = myconfig.constants.username;
-          };
-          default_session = initial_session;
-        };
-      };
-
-      libinput = {
+      libinput = lib.mkIf myconfig.host.isDesktop {
         enable = true;
         touchpad.naturalScrolling = true;
       };
 
-      xserver = {
-        enable = true;
-        videoDrivers = ["nvidia"];
-      };
+      xserver.enable = lib.mkDefault myconfig.host.isDesktop;
 
       pipewire = {
         enable = true;
@@ -59,7 +39,7 @@ delib.module {
     };
 
     systemd = {
-      tpm2.enable = true;
+      tpm2.enable = myconfig.host.isDesktop;
       network.wait-online.enable = false;
     };
   };

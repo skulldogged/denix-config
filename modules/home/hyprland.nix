@@ -98,7 +98,7 @@ delib.module {
 
         windowrule = [
           "float, class:equibop"
-          "float, class:com.ayugram.desktop"
+          "float, class:org.telegram.desktop"
         ];
 
         layerrule = [
@@ -166,7 +166,7 @@ delib.module {
             "${mod},    Return, exec, ${terminal}"
 
             "${mod}, d, exec, ${scratchpad} equibop equibop discord"
-            "${mod}, t, exec, ${scratchpad} AyuGram com.ayugram.desktop telegram"
+            "${mod}, t, exec, ${scratchpad} Telegram org.telegram.desktop telegram"
 
             "${modS}, s, exec, ${screenshot "window"}"
             "${modC}, 3, exec, ${screenshot "output -c"}"

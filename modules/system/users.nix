@@ -2,6 +2,7 @@
   delib,
   pkgs,
   config,
+  lib,
   ...
 }:
 delib.module {
@@ -14,29 +15,32 @@ delib.module {
 
   nixos.ifEnabled = {myconfig, ...}: {
     users = {
-      mutableUsers = false;
+      mutableUsers = myconfig.host.isServer;
 
-      users.${myconfig.constants.username} = {
-        hashedPasswordFile = config.age.secrets.passwd.path;
-        isNormalUser = true;
-        shell = pkgs.fish;
+      users.${myconfig.constants.username} =
+        {
+          isNormalUser = true;
+          shell = pkgs.fish;
 
-        extraGroups =
-          [
-            "disk"
-            "docker"
-            "gamemode"
-            "input"
-            "libvirtd"
-            "networkmanager"
-            "video"
-            "wheel"
-          ]
-          ++ myconfig.system.users.extraGroups;
-      };
+          extraGroups =
+            [
+              "disk"
+              "docker"
+              "gamemode"
+              "input"
+              "libvirtd"
+              "networkmanager"
+              "video"
+              "wheel"
+            ]
+            ++ myconfig.system.users.extraGroups;
+        }
+        // lib.optionalAttrs myconfig.host.isDesktop {
+          hashedPasswordFile = config.age.secrets.passwd.path;
+        };
     };
 
-    virtualisation = {
+    virtualisation = lib.mkIf myconfig.host.isDesktop {
       spiceUSBRedirection.enable = true;
       docker.enable = true;
     };

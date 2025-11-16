@@ -1,6 +1,7 @@
 {
   delib,
   pkgs,
+  lib,
   ...
 }:
 delib.module {
@@ -10,16 +11,17 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = {
-    i18n = {
-      inputMethod = {
-        enable = true;
-        type = "ibus";
-        ibus.engines = with pkgs.ibus-engines; [
-          uniemoji
-          typing-booster
-        ];
+  nixos.ifEnabled = {myconfig, ...}:
+    lib.mkIf myconfig.host.isDesktop {
+      i18n = {
+        inputMethod = {
+          enable = true;
+          type = "ibus";
+          ibus.engines = with pkgs.ibus-engines; [
+            uniemoji
+            typing-booster
+          ];
+        };
       };
     };
-  };
 }

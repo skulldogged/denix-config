@@ -41,6 +41,7 @@ delib.module {
         playerctl
         ryubing
         statix
+        telegram-desktop
         tlrc
         translate-shell
         uv
