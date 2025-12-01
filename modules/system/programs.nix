@@ -32,7 +32,7 @@ delib.module {
         flake = "/home/marshall/nix-config";
       };
 
-      nix-ld = pkgs.lib.mkIf myconfig.host.isDesktop {
+      nix-ld = {
         enable = true;
         libraries = with pkgs; [
           icu

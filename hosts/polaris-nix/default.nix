@@ -11,19 +11,17 @@ delib.host {
   type = "server";
 
   nixos = {
-    imports = [
-      inputs.agenix.nixosModules.default
-      inputs.nixos-facter-modules.nixosModules.facter
-      inputs.helium-services.nixosModules.default
+    imports = with inputs; [
+      agenix.nixosModules.default
+      nixos-facter-modules.nixosModules.facter
+      helium-services.nixosModules.default
+      vscode-server.nixosModules.default
     ];
 
-    # Allow unfree packages
     nixpkgs.config.allowUnfree = true;
 
-    # Facter hardware detection
     facter.reportPath = ./facter.json;
 
-    # Agenix secrets
     age = {
       identityPaths = ["/root/.ssh/id_ed25519"];
 
@@ -38,7 +36,6 @@ delib.host {
       };
     };
 
-    # Custom filesystems
     fileSystems = {
       "/" = {
         device = "/dev/disk/by-uuid/64079eb2-d3e3-47b7-a889-d5b2fee4fa82";
@@ -59,10 +56,8 @@ delib.host {
 
     swapDevices = [{device = "/dev/disk/by-uuid/d36507db-7392-4852-9b2a-12d2a476cd31";}];
 
-    # Time zone
     time.timeZone = "America/New_York";
 
-    # Server-specific packages
     environment.systemPackages =
       [inputs.agenix.packages.${pkgs.system}.default]
       ++ (with pkgs; [
@@ -72,7 +67,6 @@ delib.host {
         nodejs_20
       ]);
 
-    # Server-specific boot settings
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
       kernelPackages = pkgs.linuxPackages_xanmod_latest;
@@ -90,6 +84,7 @@ delib.host {
       mullvad-vpn.enable = true;
       tailscale.enable = true;
       xe-guest-utilities.enable = true;
+      vscode-server.enable = true;
 
       bluesky-pds = {
         enable = true;
@@ -103,6 +98,8 @@ delib.host {
           PDS_PORT = 6969;
         };
       };
+
+
 
       cloudflared = {
         enable = true;
@@ -213,6 +210,123 @@ delib.host {
         };
       };
 
+      glance = {
+        enable = true;
+        settings = {
+          server = {
+            host = "0.0.0.0";
+            port = 5678;
+          };
+
+          theme = {
+            background-color = "240 21 15";
+            negative-color = "347 70 65";
+            positive-color = "115 54 76";
+            primary-color = "217 92 83";
+          };
+
+          pages = [
+            {
+              name = "Startpage";
+              width = "slim";
+              hide-desktop-navigation = true;
+              center-vertically = true;
+              columns = [
+                {
+                  size = "full";
+                  widgets = [
+                    {
+                      type = "search";
+                      autofocus = true;
+                    }
+
+                    {
+                      type = "monitor";
+                      cache = "1m";
+                      title = "Services";
+                      sites = [
+                        {
+                          title = "Jellyfin";
+                          url = "https://jellyfin.pupbrained.dev/";
+                          icon = "si:jellyfin";
+                        }
+                        {
+                          title = "Forgejo";
+                          url = "https://git.pupbrained.dev/";
+                          icon = "si:forgejo";
+                        }
+                        {
+                          title = "Vaultwarden";
+                          url = "https://vault.pupbrained.dev/";
+                          icon = "si:vaultwarden";
+                        }
+                      ];
+                    }
+
+                    {
+                      type = "bookmarks";
+                      groups = [
+                        {
+                          title = "General";
+                          links = [
+                            {
+                              title = "Gmail";
+                              url = "https://mail.google.com/mail/u/0/";
+                            }
+                            {
+                              title = "Amazon";
+                              url = "https://www.amazon.com/";
+                            }
+                            {
+                              title = "Github";
+                              url = "https://github.com/";
+                            }
+                          ];
+                        }
+                        {
+                          title = "Entertainment";
+                          links = [
+                            {
+                              title = "YouTube";
+                              url = "https://www.youtube.com/";
+                            }
+                            {
+                              title = "Prime Video";
+                              url = "https://www.primevideo.com/";
+                            }
+                            {
+                              title = "Disney+";
+                              url = "https://www.disneyplus.com/";
+                            }
+                          ];
+                        }
+                        {
+                          title = "Social";
+                          links = [
+                            {
+                              title = "Reddit";
+                              url = "https://www.reddit.com/";
+                            }
+                            {
+                              title = "Twitter";
+                              url = "https://twitter.com/";
+                            }
+                            {
+                              title = "Instagram";
+                              url = "https://www.instagram.com/";
+                            }
+                          ];
+                        }
+                      ];
+                    }
+                  ];
+                }
+              ];
+            }
+          ];
+        };
+      };
+
       helium-services = {
         enable = true;
         hostname = "skulldogged.dev";
@@ -266,18 +380,7 @@ delib.host {
         settings = {
           directories.downloads = "/mnt/music";
           shares.directories = ["/mnt/music"];
-
-          web.authentication.api_keys.local = {
-            key = "sAA1Uj25ghNJ4jTh23+IbmktGzX5mZGdZSG3IlOMtg0=";
-            role = "Administrator";
-            cidr = "127.0.0.1/32";
-          };
         };
-      };
-
-      wastebin = {
-        enable = true;
-        settings.WASTEBIN_BASE_URL = "https://bin.pupbrained.dev";
       };
 
       zipline = {
@@ -294,32 +397,7 @@ delib.host {
       services = {
         bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
         slskd.serviceConfig.ReadOnlyPaths = pkgs.lib.mkForce [""];
-
-        slskd-api-rescan = {
-          description = "Trigger slskd share rescan via HTTP API";
-          preStart = ''
-            echo "Waiting for slskd to start..."
-            sleep 5
-          '';
-          serviceConfig = {
-            Type = "oneshot";
-            ExecStart = "${pkgs.curl}/bin/curl -X POST -H 'Authorization: sAA1Uj25ghNJ4jTh23+IbmktGzX5mZGdZSG3IlOMtg0=' http://127.0.0.1:5030/api/shares/rescan";
-          };
-          after = ["slskd.service"];
-          requires = ["slskd.service"];
-          wantedBy = ["multi-user.target"];
-        };
-
         zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
-      };
-
-      timers.slskd-api-rescan = {
-        description = "Periodic slskd API rescan trigger";
-        wantedBy = ["timers.target"];
-        timerConfig = {
-          OnCalendar = "*/30 * * * *";
-          Persistent = true;
-        };
       };
     };
 
@@ -331,7 +409,38 @@ delib.host {
         home = config.services.forgejo.stateDir;
       };
 
+      users.cobalt = {
+        isSystemUser = true;
+        group = "cobalt";
+      };
+
       groups.git = {};
+      groups.cobalt = {};
+    };
+
+    systemd.services.cobalt-api = let
+      cobaltApi = pkgs.callPackage ../../pkgs/cobalt-api.nix { inherit inputs; };
+      cobaltWeb = pkgs.callPackage ../../pkgs/cobalt-web.nix { inherit inputs; };
+    in {
+      description = "Cobalt API service";
+      after = [ "network.target" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        ExecStart = "${cobaltApi}/bin/cobalt-api";
+        User = "cobalt";
+        Group = "cobalt";
+        Restart = "on-failure";
+      };
+
+      environment = {
+        API_URL = "https://cobalt.skulldogged.dev";
+        COOKIE_PATH = "/var/lib/cobalt/cookies.json";
+        CUSTOM_INNERTUBE_CLIENT = "ANDROID";
+        API_PORT = "9000";
+        PORT = "9000";
+        WEB_PATH = "${cobaltWeb}";
+      };
     };
 
     virtualisation = {
@@ -355,21 +464,31 @@ delib.host {
   };
 
   myconfig = {
-    # System modules
-    system.boot.enable = true;
-    system.boot.bootloader = "systemd-boot";
-    system.environment.enable = true;
-    system.hardware.enable = true;
-    system.i18n.enable = true;
-    system.networking.enable = true;
-    system.networking.hostName = "polaris-nix";
-    system.nix.enable = true;
-    system.programs.enable = true;
-    system.security.enable = true;
-    system.services.enable = true;
-    system.stateversion.version = "23.11";
-    system.users.enable = true;
-    system.users.extraGroups = ["kvm" "podman"];
+    system = {
+      environment.enable = true;
+      hardware.enable = true;
+      i18n.enable = true;
+      nix.enable = true;
+      programs.enable = true;
+      security.enable = true;
+      services.enable = true;
+      stateversion.version = "23.11";
+
+      boot = {
+        enable = true;
+        bootloader = "systemd-boot";
+      };
+
+      networking = {
+        enable = true;
+        hostName = "polaris-nix";
+      };
+
+      users = {
+        enable = true;
+        extraGroups = ["kvm" "podman"];
+      };
+    };
 
     home = {
       fish.enable = true;

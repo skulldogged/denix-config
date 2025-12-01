@@ -16,9 +16,11 @@
 
     denix = {
       url = "github:yunfachi/denix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-      inputs.nix-darwin.follows = "nix-darwin";
+      inputs = {
+        home-manager.follows = "home-manager";
+        nix-darwin.follows = "nix-darwin";
+        nixpkgs.follows = "nixpkgs";
+      };
     };
 
     # Additional inputs from old config
@@ -32,6 +34,7 @@
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixvim.url = "github:skulldogged/nixvim-new";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     hyprland = {
       url = "github:hyprwm/Hyprland";
@@ -56,6 +59,11 @@
     vicinae = {
       url = "github:vicinaehq/vicinae";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    cobalt = {
+      url = "github:imputnet/cobalt/develop";
+      flake = false;
     };
   };
 
