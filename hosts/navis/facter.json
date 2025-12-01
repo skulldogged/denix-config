@@ -1052,7 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
-        "tlb_size": 32517,
+        "tlb_size": 32541,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -2915,9 +2915,9 @@
           "hex": "307a",
           "value": 12410
         },
-        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN1203:00/0018:04F3:307A.000F/input/input30",
+        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.000F/input/input30",
         "unix_device_names": [
-          "/dev/input/event26",
+          "/dev/input/event27",
           "/dev/input/ + handler"
         ]
       }
@@ -3179,7 +3179,7 @@
     ],
     "network_interface": [
       {
-        "index": 77,
+        "index": 78,
         "attached_to": 32,
         "class_list": [
           "network_interface"
@@ -3221,6 +3221,28 @@
       },
       {
         "index": 79,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
+        },
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
+        "unix_device_names": [
+          "lo"
+        ]
+      },
+      {
+        "index": 80,
         "attached_to": 36,
         "class_list": [
           "network_interface"
@@ -3258,28 +3280,6 @@
         ],
         "driver_modules": [
           "iwlwifi"
-        ]
-      },
-      {
-        "index": 80,
-        "attached_to": 0,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_names": [
-          "lo"
         ]
       }
     ],

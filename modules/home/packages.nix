@@ -13,7 +13,8 @@ delib.module {
   };
 
   home.ifEnabled = {myconfig, ...}: let
-    system = pkgs.stdenv.hostPlatform.system;
+    inherit (pkgs.stdenv.hostPlatform) system;
+
     windsurfInfo =
       (pkgs.lib.importJSON ../packages/windsurf/info.json)."${system}"
         or (throw "windsurf: unsupported system ${system}");
@@ -30,10 +31,13 @@ delib.module {
         };
     });
 
+    equibopPackage = pkgs.callPackage ../../pkgs/equibop/package.nix {};
+
     basePackages =
       (with pkgs; [
         alejandra
         bun
+        file
         grc
         mullvad-vpn
         wl-clipboard
@@ -48,7 +52,6 @@ delib.module {
         claude-code
         distrobox_git
         duf
-        equibop
         glow
         jellyfin-tui
         killall
@@ -68,7 +71,7 @@ delib.module {
         translate-shell
         uv
       ])
-      ++ [windsurfPackage];
+      ++ [windsurfPackage equibopPackage];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 

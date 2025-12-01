@@ -120,17 +120,17 @@ delib.host {
         ];
       };
 
-      "/mnt/windows" = {
-        device = "/dev/disk/by-uuid/52C84B24C84B0627";
-        fsType = "ntfs3";
-        options = [
-          "rw"
-          "uid=1000"
-          "gid=1000"
-          "umask=007"
-          "nofail"
-        ];
-      };
+      # "/mnt/windows" = {
+      #   device = "/dev/disk/by-uuid/52C84B24C84B0627";
+      #   fsType = "ntfs3";
+      #   options = [
+      #     "rw"
+      #     "uid=1000"
+      #     "gid=1000"
+      #     "umask=007"
+      #     "nofail"
+      #   ];
+      # };
 
       "/mnt/music" = {
         device = "//192.168.1.82/music";
