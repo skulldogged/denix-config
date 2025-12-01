@@ -248,7 +248,6 @@ delib.host {
       helium.enable = true;
       mpv.enable = true;
       quickshell.enable = true;
-      xmobar.enable = true;
 
       git = {
         enable = true;
