@@ -25,10 +25,8 @@ delib.module {
           extraGroups =
             [
               "disk"
-              "docker"
               "gamemode"
               "input"
-              "libvirtd"
               "networkmanager"
               "video"
               "wheel"
@@ -38,11 +36,6 @@ delib.module {
         // lib.optionalAttrs myconfig.host.isDesktop {
           hashedPasswordFile = config.age.secrets.passwd.path;
         };
-    };
-
-    virtualisation = lib.mkIf myconfig.host.isDesktop {
-      spiceUSBRedirection.enable = true;
-      docker.enable = true;
     };
   };
 }

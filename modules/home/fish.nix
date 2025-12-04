@@ -42,7 +42,7 @@ delib.module {
 
       interactiveShellInit = ''
         function fish_greeting
-          draconis++
+          draconis++ --logo-path ${../../files/tiger-cub.gif} --logo-protocol iterm2 --logo-height 200 --logo-width 200
         end
 
         bind --erase \ct

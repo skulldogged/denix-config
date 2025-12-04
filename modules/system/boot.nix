@@ -15,7 +15,7 @@ delib.module {
 
   nixos.ifEnabled = {myconfig, ...}: {
     boot = {
-      kernelPackages = lib.mkIf myconfig.host.isDesktop pkgs.linuxPackages_cachyos;
+      kernelPackages = lib.mkIf myconfig.host.isDesktop pkgs.linuxPackages_zen;
       tmp.useTmpfs = true;
 
       kernel.sysctl = lib.mkIf myconfig.host.isDesktop {

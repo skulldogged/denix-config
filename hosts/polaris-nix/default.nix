@@ -99,8 +99,6 @@ delib.host {
         };
       };
 
-
-
       cloudflared = {
         enable = true;
         tunnels = {
@@ -419,12 +417,12 @@ delib.host {
     };
 
     systemd.services.cobalt-api = let
-      cobaltApi = pkgs.callPackage ../../pkgs/cobalt-api.nix { inherit inputs; };
-      cobaltWeb = pkgs.callPackage ../../pkgs/cobalt-web.nix { inherit inputs; };
+      cobaltApi = pkgs.callPackage ../../pkgs/cobalt-api.nix {inherit inputs;};
+      cobaltWeb = pkgs.callPackage ../../pkgs/cobalt-web.nix {inherit inputs;};
     in {
       description = "Cobalt API service";
-      after = [ "network.target" ];
-      wantedBy = [ "multi-user.target" ];
+      after = ["network.target"];
+      wantedBy = ["multi-user.target"];
 
       serviceConfig = {
         ExecStart = "${cobaltApi}/bin/cobalt-api";

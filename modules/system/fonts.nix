@@ -36,21 +36,21 @@ delib.module {
               src = ../../files/TwitterColorEmoji-SVGinOT-Linux-17.0.2.tar.gz; # source: https://github.com/RyeMutt/twemoji-color-font
             })
 
-            (twitter-color-emoji.overrideAttrs rec {
+            (twitter-color-emoji.overrideAttrs (old: {
               version = "17.0.2";
               __intentionallyOverridingVersion = true;
 
               srcs = [
                 noto-fonts-color-emoji.src
-                (fetchFromGitHub {
-                  name = "twemoji";
-                  owner = "jdecked";
-                  repo = "twemoji";
-                  rev = "v${version}";
-                  hash = "sha256-LeAIXrPzp6rmmrz4ixehaD4/U1i15NDR0wvYyFOjw0U=";
-                })
+                ../../files/twemoji-17.0.2.tar.gz # source: https://github.com/jdecked/twemoji
               ];
-            })
+
+              postUnpack =
+                ''
+                  mv twemoji-17.0.2 twemoji-src
+                ''
+                + (old.postUnpack or "");
+            }))
           ]
           ++ (with nerd-fonts; [
             iosevka

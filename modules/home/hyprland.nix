@@ -101,13 +101,13 @@ delib.module {
         ];
 
         windowrule = [
-          "float, class:equibop"
-          "float, class:org.telegram.desktop"
+          "match:class equibop, float"
+          "match:class org.telegram.desktop, float"
         ];
 
         layerrule = [
-          "dimaround, vicinae"
-          "noanim, selection"
+          "match:namespace vicinae, dimaround"
+          "match:namespace selection, noanim"
         ];
 
         animations = {

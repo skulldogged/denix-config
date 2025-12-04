@@ -37,6 +37,7 @@ delib.module {
       (with pkgs; [
         alejandra
         bun
+        codex
         file
         grc
         mullvad-vpn
