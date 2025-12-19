@@ -16,11 +16,13 @@ delib.module {
     programs.draconisplusplus = {
       enable = true;
 
+      pluginsSrc = inputs.draconisplusplus-plugins;
+
       configFormat = "hpp";
       enableCaching = true;
       enablePackageCount = true;
       enablePlugins = true;
-      packageManagers = ["cargo" "nix"];
+      packageManagers = ["nix"];
       staticPlugins = ["now_playing" "weather"];
       username = "Mars";
 
@@ -80,10 +82,8 @@ delib.module {
       pluginConfigs = {
         weather = {
           enabled = true;
-
           provider = "openmeteo";
           units = "imperial";
-
           coords = {
             lat = 39.953388;
             lon = -74.198151;

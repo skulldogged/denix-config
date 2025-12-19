@@ -28,7 +28,7 @@
     catppuccin.url = "github:catppuccin/nix";
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     draconisplusplus.url = "github:skulldogged/draconisplusplus";
-    helium-services.url = "git+ssh://git@github.com/skulldogged/helium-services";
+    helium-services.url = "github:skulldogged/helium-services";
     impermanence.url = "github:nix-community/impermanence";
     nix-colors.url = "github:Misterio77/nix-colors";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
@@ -63,6 +63,11 @@
 
     cobalt = {
       url = "github:imputnet/cobalt/develop";
+      flake = false;
+    };
+
+    draconisplusplus-plugins = {
+      url = "github:skulldogged/draconisplusplus-plugins";
       flake = false;
     };
   };

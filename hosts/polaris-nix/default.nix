@@ -365,6 +365,16 @@ delib.host {
             "directory mask" = "0775";
             "valid users" = "marshall";
           };
+
+          gamesaves = {
+            path = "/mnt/saves";
+            browseable = "yes";
+            "read only" = "no";
+            "guest ok" = "no";
+            "create mask" = "0664";
+            "directory mask" = "0775";
+            "valid users" = "marshall";
+          };
         };
       };
 
