@@ -114,15 +114,22 @@ delib.module {
           enabled = true;
 
           bezier = [
-            "overshot,0.7,0.6,0.1,1.1"
-            "bounce,1,1.6,0.1,0.85"
+            "decel, 0.05, 0.7, 0.1, 1"
+            "accel, 0.3, 0, 0.8, 0.15"
+            "linear, 0, 0, 1, 1"
           ];
 
           animation = [
-            "windows,1,5,bounce,popin"
-            "border,1,20,default"
-            "fade,1,5,default"
-            "workspaces,1,5,overshot,slide"
+            "windows, 1, 3, decel, popin"
+            "fade, 1, 4, decel"
+            "fadeIn, 1, 4, decel"
+            "fadeOut, 1, 3, accel"
+            "fadeDim, 1, 4, decel"
+            "border, 1, 10, default"
+            "borderangle, 1, 100, linear, loop"
+            "workspaces, 1, 4.5, decel, slide"
+            "specialWorkspace, 1, 3, decel, slidevert"
+            "layers, 1, 4, decel, fade"
           ];
         };
 

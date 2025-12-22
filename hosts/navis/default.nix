@@ -204,7 +204,7 @@ delib.host {
         enable = true;
         settings = rec {
           initial_session = {
-            command = "${inputs.hyprland.packages.x86_64-linux.hyprland}/bin/Hyprland";
+            command = "${inputs.hyprland.packages.x86_64-linux.hyprland}/bin/start-hyprland";
             user = "marshall";
           };
           default_session = initial_session;
@@ -247,7 +247,7 @@ delib.host {
       draconisplusplus.enable = true;
       helium.enable = true;
       mpv.enable = true;
-      quickshell.enable = true;
+      caelestia-shell.enable = true;
 
       git = {
         enable = true;
