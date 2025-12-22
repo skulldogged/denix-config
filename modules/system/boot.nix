@@ -2,7 +2,6 @@
   delib,
   pkgs,
   lib,
-  inputs,
   ...
 }:
 delib.module {
@@ -10,7 +9,6 @@ delib.module {
 
   options.system.boot = with delib; {
     enable = boolOption false;
-    bootloader = strOption "limine"; # "limine" or "systemd-boot"
   };
 
   nixos.ifEnabled = {myconfig, ...}: {
@@ -54,23 +52,7 @@ delib.module {
         "nvidia_drm.fbdev=1"
       ];
 
-      loader = {
-        efi.canTouchEfiVariables = true;
-
-        limine = lib.mkIf (myconfig.system.boot.bootloader == "limine") {
-          enable = true;
-          maxGenerations = 3;
-
-          style = {
-            wallpapers = [(inputs.self + "/walls/blaidd.png")];
-            interface.resolution = "2560x1440";
-          };
-        };
-
-        systemd-boot = lib.mkIf (myconfig.system.boot.bootloader == "systemd-boot") {
-          enable = true;
-        };
-      };
+      loader.efi.canTouchEfiVariables = true;
     };
   };
 }

@@ -2,6 +2,7 @@
   config,
   delib,
   inputs,
+  pkgs,
   ...
 }:
 delib.host {
@@ -14,6 +15,7 @@ delib.host {
     imports = [
       inputs.agenix.nixosModules.default
       inputs.impermanence.nixosModules.impermanence
+      inputs.lanzaboote.nixosModules.lanzaboote
       inputs.nixos-facter-modules.nixosModules.facter
       inputs.chaotic.nixosModules.nyx-cache
       inputs.chaotic.nixosModules.nyx-overlay
@@ -27,6 +29,10 @@ delib.host {
     age = {
       secrets.cifs.file = ../../secrets/cifs.age;
       secrets.passwd.file = ../../secrets/passwd.age;
+      secrets.zipline_token = {
+        file = ../../secrets/zipline_token.age;
+        owner = "marshall";
+      };
       identityPaths = ["/persist/root/.ssh/id_ed25519"];
     };
 
@@ -43,6 +49,7 @@ delib.host {
           "/var/lib/bluetooth"
           "/var/lib/iwd"
           "/var/lib/nixos"
+          "/var/lib/sbctl"
           "/var/lib/systemd/coredump"
           "/var/lib/decky-loader"
           "/var/lib/libvirt"
@@ -139,6 +146,19 @@ delib.host {
           "noauto,x-systemd.automount,x-systemd.idle-timeout=5m,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,uid=1000,gid=100,credentials=${config.age.secrets.cifs.path}"
         ];
       };
+    };
+
+    environment.systemPackages = [pkgs.sbctl];
+
+    boot.lanzaboote = {
+      enable = true;
+      pkiBundle = "/var/lib/sbctl";
+      configurationLimit = 3;
+      autoEnrollKeys = {
+        enable = true;
+        includeMicrosoftKeys = true;
+      };
+      settings.timeout = 0;
     };
 
     boot.initrd = {

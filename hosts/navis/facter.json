@@ -23,7 +23,7 @@
       "pnp_id": 0,
       "lba_support": false,
       "low_memory_size": 0,
-      "smbios_version": 771
+      "smbios_version": 773
     },
     "bluetooth": [
       {
@@ -1052,7 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
-        "tlb_size": 32736,
+        "tlb_size": 32659,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -1064,87 +1064,6 @@
     "disk": [
       {
         "index": 42,
-        "attached_to": 16,
-        "class_list": [
-          "disk",
-          "block_device",
-          "nvme"
-        ],
-        "bus_type": {
-          "hex": "0096",
-          "name": "NVME",
-          "value": 150
-        },
-        "slot": {
-          "bus": 0,
-          "number": 0
-        },
-        "base_class": {
-          "hex": "0106",
-          "name": "Mass Storage Device",
-          "value": 262
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Disk",
-          "value": 0
-        },
-        "vendor": {
-          "hex": "144d",
-          "value": 5197
-        },
-        "sub_vendor": {
-          "hex": "144d",
-          "value": 5197
-        },
-        "device": {
-          "hex": "a808",
-          "name": "Samsung SSD 970 EVO Plus 1TB",
-          "value": 43016
-        },
-        "sub_device": {
-          "hex": "a801",
-          "value": 43009
-        },
-        "serial": "S6S1NG0RA02239Z",
-        "model": "Samsung SSD 970 EVO Plus 1TB",
-        "sysfs_id": "/class/block/nvme0n1",
-        "sysfs_bus_id": "nvme0",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme0",
-        "unix_device_names": [
-          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z",
-          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z_1",
-          "/dev/disk/by-id/nvme-eui.0025385a1150c740",
-          "/dev/disk/by-path/pci-0000:03:00.0-nvme-1",
-          "/dev/nvme0n1"
-        ],
-        "resources": [
-          {
-            "type": "disk_geo",
-            "cylinders": 953869,
-            "heads": 64,
-            "sectors": 32,
-            "size": "0x0",
-            "geo_type": "logical"
-          },
-          {
-            "type": "size",
-            "unit": "sectors",
-            "value_1": 1953525168,
-            "value_2": 512
-          }
-        ],
-        "driver": "nvme",
-        "driver_module": "nvme",
-        "drivers": [
-          "nvme"
-        ],
-        "driver_modules": [
-          "nvme"
-        ]
-      },
-      {
-        "index": 43,
         "attached_to": 21,
         "class_list": [
           "disk",
@@ -1158,7 +1077,7 @@
         },
         "slot": {
           "bus": 0,
-          "number": 1
+          "number": 0
         },
         "base_class": {
           "hex": "0106",
@@ -1189,15 +1108,15 @@
         },
         "serial": "FYA7N020713207841",
         "model": "HFM512GD3JX013N",
-        "sysfs_id": "/class/block/nvme1n1",
-        "sysfs_bus_id": "nvme1",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme1",
+        "sysfs_id": "/class/block/nvme0n1",
+        "sysfs_bus_id": "nvme0",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme0",
         "unix_device_names": [
           "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841",
           "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841_1",
           "/dev/disk/by-id/nvme-nvme.1c5c-465941374e303230373133323037383431-48464d3531324744334a583031334e-00000001",
           "/dev/disk/by-path/pci-0000:02:00.0-nvme-1",
-          "/dev/nvme1n1"
+          "/dev/nvme0n1"
         ],
         "resources": [
           {
@@ -1212,6 +1131,87 @@
             "type": "size",
             "unit": "sectors",
             "value_1": 1000215216,
+            "value_2": 512
+          }
+        ],
+        "driver": "nvme",
+        "driver_module": "nvme",
+        "drivers": [
+          "nvme"
+        ],
+        "driver_modules": [
+          "nvme"
+        ]
+      },
+      {
+        "index": 43,
+        "attached_to": 16,
+        "class_list": [
+          "disk",
+          "block_device",
+          "nvme"
+        ],
+        "bus_type": {
+          "hex": "0096",
+          "name": "NVME",
+          "value": 150
+        },
+        "slot": {
+          "bus": 0,
+          "number": 1
+        },
+        "base_class": {
+          "hex": "0106",
+          "name": "Mass Storage Device",
+          "value": 262
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Disk",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "144d",
+          "value": 5197
+        },
+        "sub_vendor": {
+          "hex": "144d",
+          "value": 5197
+        },
+        "device": {
+          "hex": "a808",
+          "name": "Samsung SSD 970 EVO Plus 1TB",
+          "value": 43016
+        },
+        "sub_device": {
+          "hex": "a801",
+          "value": 43009
+        },
+        "serial": "S6S1NG0RA02239Z",
+        "model": "Samsung SSD 970 EVO Plus 1TB",
+        "sysfs_id": "/class/block/nvme1n1",
+        "sysfs_bus_id": "nvme1",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme1",
+        "unix_device_names": [
+          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z",
+          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z_1",
+          "/dev/disk/by-id/nvme-eui.0025385a1150c740",
+          "/dev/disk/by-path/pci-0000:03:00.0-nvme-1",
+          "/dev/nvme1n1"
+        ],
+        "resources": [
+          {
+            "type": "disk_geo",
+            "cylinders": 953869,
+            "heads": 64,
+            "sectors": 32,
+            "size": "0x0",
+            "geo_type": "logical"
+          },
+          {
+            "type": "size",
+            "unit": "sectors",
+            "value_1": 1953525168,
             "value_2": 512
           }
         ],
@@ -1493,7 +1493,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.0-zen1 xhci-hcd",
+          "name": "Linux 6.18.1-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1507,7 +1507,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.18.0-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.1-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -1665,7 +1665,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.0-zen1 xhci-hcd",
+          "name": "Linux 6.18.1-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1679,7 +1679,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.18.0-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.1-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -1742,7 +1742,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.0-zen1 xhci-hcd",
+          "name": "Linux 6.18.1-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1756,7 +1756,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.18.0-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.1-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -1829,7 +1829,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.0-zen1 xhci-hcd",
+          "name": "Linux 6.18.1-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1843,7 +1843,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.18.0-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.1-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -2656,6 +2656,47 @@
     "network_interface": [
       {
         "index": 73,
+        "attached_to": 32,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Ethernet",
+          "value": 1
+        },
+        "model": "Ethernet network interface",
+        "sysfs_id": "/class/net/enp5s0",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:1d.0/0000:05:00.0",
+        "unix_device_names": [
+          "enp5s0"
+        ],
+        "resources": [
+          {
+            "type": "hwaddr",
+            "address": 48
+          },
+          {
+            "type": "phwaddr",
+            "address": 48
+          }
+        ],
+        "driver": "r8169",
+        "driver_module": "r8169",
+        "drivers": [
+          "r8169"
+        ],
+        "driver_modules": [
+          "r8169"
+        ]
+      },
+      {
+        "index": 74,
         "attached_to": 36,
         "class_list": [
           "network_interface"
@@ -2696,7 +2737,7 @@
         ]
       },
       {
-        "index": 74,
+        "index": 75,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -2715,47 +2756,6 @@
         "sysfs_id": "/class/net/lo",
         "unix_device_names": [
           "lo"
-        ]
-      },
-      {
-        "index": 75,
-        "attached_to": 32,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0001",
-          "name": "Ethernet",
-          "value": 1
-        },
-        "model": "Ethernet network interface",
-        "sysfs_id": "/class/net/enp5s0",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:1d.0/0000:05:00.0",
-        "unix_device_names": [
-          "enp5s0"
-        ],
-        "resources": [
-          {
-            "type": "hwaddr",
-            "address": 48
-          },
-          {
-            "type": "phwaddr",
-            "address": 48
-          }
-        ],
-        "driver": "r8169",
-        "driver_module": "r8169",
-        "drivers": [
-          "r8169"
-        ],
-        "driver_modules": [
-          "r8169"
         ]
       }
     ],
@@ -3950,7 +3950,7 @@
           },
           "interface_protocol": 0,
           "interface_number": 4,
-          "interface_alternate_setting": 0
+          "interface_alternate_setting": 2
         },
         "hotplug": "usb",
         "driver": "snd-usb-audio",
@@ -4333,7 +4333,7 @@
           "/dev/input/by-id/usb-Microsoft_Controller_3039565836353439313237313235-event-joystick",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0-event-joystick",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.0-event-joystick",
-          "/dev/input/event9"
+          "/dev/input/event16"
         ],
         "resources": [
           {
@@ -5152,8 +5152,8 @@
     "bios": {
       "handle": 0,
       "vendor": "American Megatrends International, LLC.",
-      "version": "FX506HCB.311",
-      "date": "08/12/2022",
+      "version": "FX506HCB.316",
+      "date": "06/17/2025",
       "features": [
         "PCI supported",
         "BIOS flashable",
@@ -5199,7 +5199,7 @@
     },
     "cache": [
       {
-        "handle": 73,
+        "handle": 55,
         "socket": "L1 Cache",
         "size_max": 288,
         "size_current": 288,
@@ -5240,7 +5240,7 @@
         ]
       },
       {
-        "handle": 74,
+        "handle": 56,
         "socket": "L1 Cache",
         "size_max": 192,
         "size_current": 192,
@@ -5281,7 +5281,7 @@
         ]
       },
       {
-        "handle": 75,
+        "handle": 57,
         "socket": "L2 Cache",
         "size_max": 7680,
         "size_current": 7680,
@@ -5322,7 +5322,7 @@
         ]
       },
       {
-        "handle": 76,
+        "handle": 58,
         "socket": "L3 Cache",
         "size_max": 12288,
         "size_current": 12288,
@@ -5398,41 +5398,41 @@
       }
     ],
     "config": {
-      "handle": 22,
+      "handle": 16,
       "options": [
         "Default string"
       ]
     },
     "group_associations": [
       {
-        "handle": 147,
+        "handle": 129,
         "name": "$MEI",
         "handles": [
           0
         ]
       },
       {
-        "handle": 150,
+        "handle": 132,
         "name": "Firmware Version Info",
         "handles": [
-          296352743492,
-          300647710789,
-          304942678086,
-          309237645383,
-          438086664264,
-          4488240824422
+          219043332146,
+          223338299443,
+          227633266740,
+          231928234037,
+          360777252918,
+          4488240824404
         ]
       }
     ],
     "language": [
       {
-        "handle": 23,
+        "handle": 17,
         "languages": [
           "en|US|iso8859-1"
         ]
       },
       {
-        "handle": 104,
+        "handle": 86,
         "languages": [
           "enUS"
         ]
@@ -5440,7 +5440,7 @@
     ],
     "memory_array": [
       {
-        "handle": 58,
+        "handle": 40,
         "location": {
           "hex": "0003",
           "name": "Motherboard",
@@ -5463,8 +5463,8 @@
     ],
     "memory_array_mapped_address": [
       {
-        "handle": 63,
-        "array_handle": 58,
+        "handle": 45,
+        "array_handle": 40,
         "start_address": "0x0",
         "end_address": "0x1000000000",
         "part_width": 2
@@ -5472,12 +5472,12 @@
     ],
     "memory_device": [
       {
-        "handle": 60,
+        "handle": 42,
         "location": "Controller0-ChannelA-DIMM1",
         "bank_location": "BANK 0",
         "manufacturer": "",
         "part_number": "",
-        "array_handle": 58,
+        "array_handle": 40,
         "error_handle": 65534,
         "width": 0,
         "ecc_bits": 0,
@@ -5497,12 +5497,12 @@
         "speed": 0
       },
       {
-        "handle": 62,
+        "handle": 44,
         "location": "Controller1-ChannelA-DIMM1",
         "bank_location": "BANK 0",
         "manufacturer": "",
         "part_number": "",
-        "array_handle": 58,
+        "array_handle": 40,
         "error_handle": 65534,
         "width": 0,
         "ecc_bits": 0,
@@ -5522,12 +5522,12 @@
         "speed": 0
       },
       {
-        "handle": 64,
+        "handle": 46,
         "location": "Controller0-ChannelA-DIMM0",
         "bank_location": "BANK 0",
         "manufacturer": "Crucial Technology",
         "part_number": "CT32G4SFD832A.M16FF",
-        "array_handle": 58,
+        "array_handle": 40,
         "error_handle": 65534,
         "width": 64,
         "ecc_bits": 0,
@@ -5549,12 +5549,12 @@
         "speed": 3200
       },
       {
-        "handle": 65,
+        "handle": 47,
         "location": "Controller1-ChannelA-DIMM0",
         "bank_location": "BANK 0",
         "manufacturer": "Crucial Technology",
         "part_number": "CT32G4SFD832A.M16FF",
-        "array_handle": 58,
+        "array_handle": 40,
         "error_handle": 65534,
         "width": 64,
         "ecc_bits": 0,
@@ -5578,9 +5578,9 @@
     ],
     "memory_device_mapped_address": [
       {
-        "handle": 66,
-        "memory_device_handle": 64,
-        "array_map_handle": 63,
+        "handle": 48,
+        "memory_device_handle": 46,
+        "array_map_handle": 45,
         "start_address": "0x0",
         "end_address": "0x800000000",
         "row_position": 255,
@@ -5588,9 +5588,9 @@
         "interleave_depth": 2
       },
       {
-        "handle": 67,
-        "memory_device_handle": 65,
-        "array_map_handle": 63,
+        "handle": 49,
+        "memory_device_handle": 47,
+        "array_map_handle": 45,
         "start_address": "0x800000000",
         "end_address": "0x1000000000",
         "row_position": 255,
@@ -5600,7 +5600,7 @@
     ],
     "onboard": [
       {
-        "handle": 20,
+        "handle": 14,
         "devices": [
           {
             "name": "Device 1",
@@ -5646,7 +5646,7 @@
         "external_reference_designator": "External Connector 5"
       },
       {
-        "handle": 105,
+        "handle": 87,
         "port_type": {
           "hex": "000d",
           "name": "Keyboard Port",
@@ -5661,7 +5661,7 @@
         "external_reference_designator": "Keyboard"
       },
       {
-        "handle": 106,
+        "handle": 88,
         "port_type": {
           "hex": "000e",
           "name": "Mouse Port",
@@ -5676,7 +5676,7 @@
         "external_reference_designator": "Mouse"
       },
       {
-        "handle": 107,
+        "handle": 89,
         "port_type": {
           "hex": "0009",
           "name": "Serial Port 16550A Compatible",
@@ -5691,7 +5691,7 @@
         "external_reference_designator": "COM 1"
       },
       {
-        "handle": 108,
+        "handle": 90,
         "port_type": {
           "hex": "001c",
           "name": "Video Port",
@@ -5711,7 +5711,7 @@
         "external_reference_designator": "Video"
       },
       {
-        "handle": 109,
+        "handle": 91,
         "port_type": {
           "hex": "001c",
           "name": "Video Port",
@@ -5726,7 +5726,7 @@
         "external_reference_designator": "HDMI"
       },
       {
-        "handle": 110,
+        "handle": 92,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5741,7 +5741,7 @@
         "external_reference_designator": "USB1.1 - 1#"
       },
       {
-        "handle": 111,
+        "handle": 93,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5756,7 +5756,7 @@
         "external_reference_designator": "USB1.1 - 2#"
       },
       {
-        "handle": 112,
+        "handle": 94,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5771,7 +5771,7 @@
         "external_reference_designator": "USB1.1 - 3#"
       },
       {
-        "handle": 113,
+        "handle": 95,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5786,7 +5786,7 @@
         "external_reference_designator": "USB1.1 - 4#"
       },
       {
-        "handle": 114,
+        "handle": 96,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5801,7 +5801,7 @@
         "external_reference_designator": "USB1.1 - 5#"
       },
       {
-        "handle": 115,
+        "handle": 97,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5816,7 +5816,7 @@
         "external_reference_designator": "USB2.0 - 1#"
       },
       {
-        "handle": 116,
+        "handle": 98,
         "port_type": {
           "hex": "0010",
           "name": "USB",
@@ -5831,7 +5831,7 @@
         "external_reference_designator": "USB2.0 - 2#"
       },
       {
-        "handle": 117,
+        "handle": 99,
         "port_type": {
           "hex": "001f",
           "name": "Network Port",
@@ -5846,7 +5846,7 @@
         "external_reference_designator": "Ethernet"
       },
       {
-        "handle": 118,
+        "handle": 100,
         "port_type": {
           "hex": "0020",
           "name": "Other",
@@ -5861,7 +5861,7 @@
         "external_reference_designator": "SATA Port 0 Direct Connect"
       },
       {
-        "handle": 119,
+        "handle": 101,
         "port_type": {
           "hex": "0020",
           "name": "Other",
@@ -5876,7 +5876,7 @@
         "external_reference_designator": "eSATA Port 4"
       },
       {
-        "handle": 120,
+        "handle": 102,
         "port_type": {
           "hex": "0020",
           "name": "Other",
@@ -5891,7 +5891,7 @@
         "external_reference_designator": "eSATA Port 3"
       },
       {
-        "handle": 121,
+        "handle": 103,
         "port_type": {
           "hex": "0020",
           "name": "Other",
@@ -5906,7 +5906,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 122,
+        "handle": 104,
         "port_type": {
           "hex": "0020",
           "name": "Other",
@@ -5921,7 +5921,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 123,
+        "handle": 105,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -5936,7 +5936,7 @@
         "external_reference_designator": "AC IN"
       },
       {
-        "handle": 124,
+        "handle": 106,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -5951,7 +5951,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 125,
+        "handle": 107,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -5966,7 +5966,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 126,
+        "handle": 108,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -5981,7 +5981,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 127,
+        "handle": 109,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -5996,7 +5996,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 128,
+        "handle": 110,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6011,7 +6011,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 129,
+        "handle": 111,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6026,7 +6026,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 130,
+        "handle": 112,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6041,7 +6041,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 131,
+        "handle": 113,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6056,7 +6056,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 132,
+        "handle": 114,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6071,7 +6071,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 133,
+        "handle": 115,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6086,7 +6086,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 134,
+        "handle": 116,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6101,7 +6101,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 135,
+        "handle": 117,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6116,7 +6116,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 136,
+        "handle": 118,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6131,7 +6131,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 137,
+        "handle": 119,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6146,7 +6146,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 138,
+        "handle": 120,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6161,7 +6161,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 139,
+        "handle": 121,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6176,7 +6176,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 140,
+        "handle": 122,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6191,7 +6191,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 141,
+        "handle": 123,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6206,7 +6206,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 142,
+        "handle": 124,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6221,7 +6221,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 143,
+        "handle": 125,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6236,7 +6236,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 144,
+        "handle": 126,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6251,7 +6251,7 @@
         "external_reference_designator": "None"
       },
       {
-        "handle": 145,
+        "handle": 127,
         "port_type": {
           "hex": "00ff",
           "name": "Other",
@@ -6268,7 +6268,7 @@
     ],
     "processor": [
       {
-        "handle": 77,
+        "handle": 59,
         "socket": "U3E1",
         "socket_type": {
           "hex": "0001",
@@ -6296,9 +6296,9 @@
         },
         "clock_ext": 100,
         "clock_max": 4400,
-        "cache_handle_l1": 74,
-        "cache_handle_l2": 75,
-        "cache_handle_l3": 76
+        "cache_handle_l1": 56,
+        "cache_handle_l2": 57,
+        "cache_handle_l3": 58
       }
     ],
     "slot": [
@@ -6332,7 +6332,7 @@
         ]
       },
       {
-        "handle": 16,
+        "handle": 10,
         "designation": "Slot 2",
         "slot_type": {
           "hex": "00a6",
@@ -6361,7 +6361,7 @@
         ]
       },
       {
-        "handle": 17,
+        "handle": 11,
         "designation": "Slot 3",
         "slot_type": {
           "hex": "00a6",
@@ -6390,7 +6390,7 @@
         ]
       },
       {
-        "handle": 18,
+        "handle": 12,
         "designation": "Slot 4",
         "slot_type": {
           "hex": "00a6",
@@ -6419,7 +6419,7 @@
         ]
       },
       {
-        "handle": 19,
+        "handle": 13,
         "designation": "Slot 5",
         "slot_type": {
           "hex": "00a6",

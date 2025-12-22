@@ -70,6 +70,11 @@
       url = "github:skulldogged/draconisplusplus-plugins";
       flake = false;
     };
+
+    lanzaboote = {
+      url = "github:nix-community/lanzaboote";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {denix, ...} @ inputs: let

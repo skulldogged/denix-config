@@ -70,6 +70,7 @@ delib.host {
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
       kernelPackages = pkgs.linuxPackages_xanmod_latest;
+      loader.systemd-boot.enable = true;
     };
 
     services = {
@@ -482,10 +483,7 @@ delib.host {
       services.enable = true;
       stateversion.version = "23.11";
 
-      boot = {
-        enable = true;
-        bootloader = "systemd-boot";
-      };
+      boot.enable = true;
 
       networking = {
         enable = true;

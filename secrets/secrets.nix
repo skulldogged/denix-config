@@ -12,4 +12,5 @@ in {
   "passwd.age".publicKeys = [marshall system];
   "slskd_env.age".publicKeys = [marshall server system];
   "zipline_secret.age".publicKeys = [marshall server system];
+  "zipline_token.age".publicKeys = [marshall system];
 }

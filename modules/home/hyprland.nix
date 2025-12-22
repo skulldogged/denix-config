@@ -18,7 +18,6 @@ delib.module {
       hyprpicker
       hyprshot
       libqalculate
-      swww
       wl-clipboard
       (pkgs.writeShellScriptBin "hyprexit" ''
         ${inputs.hyprland.packages.${pkgs.system}.hyprland}/bin/hyprctl dispatch exit
@@ -68,7 +67,27 @@ delib.module {
         launcher = "vicinae";
         terminal = "wezterm";
 
-        screenshot = mode: "${lib.getExe pkgs.hyprshot} --freeze --clipboard-only -m ${mode}";
+        zipline-screenshot = pkgs.writeShellScript "zipline-screenshot" ''
+          set -e
+
+          TMPFILE=$(mktemp --suffix=.png)
+          trap 'rm -f "$TMPFILE"' EXIT
+
+          ${lib.getExe pkgs.hyprshot} --freeze --raw -m "$1" > "$TMPFILE"
+
+          TOKEN=$(cat /run/agenix/zipline_token)
+          RESPONSE=$(${lib.getExe pkgs.curl} -s \
+            -H "Authorization: $TOKEN" \
+            -F "file=@$TMPFILE" \
+            "https://zip.pupbrained.dev/api/upload")
+
+          URL=$(echo "$RESPONSE" | ${lib.getExe pkgs.jq} -r '.files[0]')
+          echo -n "$URL" | ${pkgs.wl-clipboard}/bin/wl-copy
+
+          ${lib.getExe pkgs.libnotify} "Screenshot uploaded" "$URL"
+        '';
+
+        screenshot = mode: "${zipline-screenshot} ${mode}";
       in {
         decoration.rounding = 5;
         dwindle.preserve_split = true;
@@ -144,8 +163,6 @@ delib.module {
 
         exec-once = [
           "${hyprscreensharefix}"
-          "swww-daemon"
-          "swww img ${inputs.self}/walls/blaidd.png"
         ];
 
         misc = {
@@ -180,8 +197,8 @@ delib.module {
             "${mod}, t, exec, ${scratchpad} Telegram org.telegram.desktop telegram"
 
             "${modS}, s, exec, ${screenshot "window"}"
-            "${modC}, 3, exec, ${screenshot "output -c"}"
-            "${modC}, 4, exec, ${screenshot "region -C 0,0"}"
+            "CTRL, 3, exec, ${screenshot "output -c"}"
+            "CTRL, 4, exec, ${screenshot "region -C 0,0"}"
 
             "${mod}, mouse_down, workspace, e-1"
             "${mod},   mouse_up, workspace, e+1"
