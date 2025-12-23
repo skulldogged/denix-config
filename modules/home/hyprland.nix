@@ -34,19 +34,19 @@ delib.module {
       systemd.variables = ["--all"];
 
       settings = let
-        ddc-brightness = pkgs.writeScript "ddc-brightness" ''
+        ddc-brightness = pkgs.writeShellScript "ddc-brightness" ''
           display_serial_num=$(hyprctl monitors -j | jq '.[].serial' --raw-output)
 
           ddcutil --sn "$display_serial_num" setvcp 10 $@
         '';
 
-        hyprscreensharefix = pkgs.writeScript "hyprscreensharefix" ''
+        hyprscreensharefix = pkgs.writeShellScript "hyprscreensharefix" ''
           dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=hyprland
           systemctl --user stop pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland
           systemctl --user start pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland
         '';
 
-        scratchpad = pkgs.writeScript "hyprscratchpad" ''
+        scratchpad = pkgs.writeShellScript "hyprscratchpad" ''
           COMMAND=$1
           CLASS=$2
           WORKSPACE=$3
@@ -69,27 +69,30 @@ delib.module {
 
         zipline-screenshot = pkgs.writeShellScript "zipline-screenshot" ''
           set -e
-
           TMPFILE=$(mktemp --suffix=.png)
           trap 'rm -f "$TMPFILE"' EXIT
 
-          ${lib.getExe pkgs.hyprshot} --freeze --raw -m "$1" > "$TMPFILE"
+          ${lib.getExe pkgs.hyprshot} -s -m $@ --freeze -o "$(dirname "$TMPFILE")" -f "$(basename "$TMPFILE")"
 
-          TOKEN=$(cat /run/agenix/zipline_token)
-          RESPONSE=$(${lib.getExe pkgs.curl} -s \
+          # Wait for file stability
+          while [ "$(stat -c%s "$TMPFILE" 2>/dev/null)" != "$(sleep 0.05; stat -c%s "$TMPFILE" 2>/dev/null)" ]; do :; done
+
+          TOKEN=$(cat /run/agenix/zipline_token | tr -d '\n')
+          URL=$(${lib.getExe pkgs.curl} -s \
             -H "Authorization: $TOKEN" \
-            -F "file=@$TMPFILE" \
-            "https://zip.pupbrained.dev/api/upload")
+            -F "file=@$TMPFILE;type=image/png" \
+            "https://zip.pupbrained.dev/api/upload" | ${lib.getExe pkgs.jq} -r '.files[0].url')
 
-          URL=$(echo "$RESPONSE" | ${lib.getExe pkgs.jq} -r '.files[0]')
           echo -n "$URL" | ${pkgs.wl-clipboard}/bin/wl-copy
+          ${lib.getExe pkgs.libnotify} -i "$TMPFILE" "Screenshot uploaded" "$URL"
 
-          ${lib.getExe pkgs.libnotify} "Screenshot uploaded" "$URL"
+          trap - EXIT
+          (sleep 1 && rm "$TMPFILE") &
         '';
 
         screenshot = mode: "${zipline-screenshot} ${mode}";
       in {
-        decoration.rounding = 5;
+        decoration.rounding = 16;
         dwindle.preserve_split = true;
         experimental.xx_color_management_v4 = true;
         debug.disable_logs = false;
@@ -157,7 +160,7 @@ delib.module {
           gaps_in = 10;
           resize_on_border = true;
 
-          "col.active_border" = "rgba(f38ba8ee) rgba(fab387ee) rgba(a6e3a1ee) rgba(89dcebee) rgba(89b4faee) rgba(cba6f7ee) 45deg";
+          "col.active_border" = "rgba(cba6f7ee)";
           "col.inactive_border" = "rgba(595959aa)";
         };
 
@@ -197,8 +200,8 @@ delib.module {
             "${mod}, t, exec, ${scratchpad} Telegram org.telegram.desktop telegram"
 
             "${modS}, s, exec, ${screenshot "window"}"
-            "CTRL, 3, exec, ${screenshot "output -c"}"
-            "CTRL, 4, exec, ${screenshot "region -C 0,0"}"
+            "CTRL,    3, exec, ${screenshot "output -m active"}"
+            "CTRL,    4, exec, ${screenshot "region -C 0,0"}"
 
             "${mod}, mouse_down, workspace, e-1"
             "${mod},   mouse_up, workspace, e+1"

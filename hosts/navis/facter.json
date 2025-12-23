@@ -1052,7 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
-        "tlb_size": 32659,
+        "tlb_size": 32764,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -2391,9 +2391,9 @@
           "hex": "307a",
           "value": 12410
         },
-        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.0008/input/input25",
+        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN1203:00/0018:04F3:307A.0008/input/input21",
         "unix_device_names": [
-          "/dev/input/event22",
+          "/dev/input/event18",
           "/dev/input/ + handler"
         ]
       }
@@ -2697,6 +2697,28 @@
       },
       {
         "index": 74,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
+        },
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
+        "unix_device_names": [
+          "lo"
+        ]
+      },
+      {
+        "index": 75,
         "attached_to": 36,
         "class_list": [
           "network_interface"
@@ -2734,28 +2756,6 @@
         ],
         "driver_modules": [
           "iwlwifi"
-        ]
-      },
-      {
-        "index": 75,
-        "attached_to": 0,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_names": [
-          "lo"
         ]
       }
     ],
@@ -3497,7 +3497,7 @@
           },
           "interface_protocol": 0,
           "interface_number": 2,
-          "interface_alternate_setting": 0
+          "interface_alternate_setting": 1
         },
         "hotplug": "usb",
         "driver": "snd-usb-audio",
@@ -4333,7 +4333,7 @@
           "/dev/input/by-id/usb-Microsoft_Controller_3039565836353439313237313235-event-joystick",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0-event-joystick",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.0-event-joystick",
-          "/dev/input/event16"
+          "/dev/input/event8"
         ],
         "resources": [
           {
@@ -4427,7 +4427,7 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.5",
         "sysfs_bus_id": "3-3.4:1.5",
         "unix_device_names": [
-          "/dev/input/event7"
+          "/dev/input/event9"
         ],
         "resources": [
           {
@@ -5420,7 +5420,7 @@
           227633266740,
           231928234037,
           360777252918,
-          4488240824404
+          4471060955220
         ]
       }
     ],

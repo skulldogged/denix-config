@@ -398,6 +398,9 @@ delib.host {
         settings = {
           CORE_HOSTNAME = "0.0.0.0";
           DATASOURCE_LOCAL_DIRECTORY = "/mnt/zipline";
+          UPLOADER_MAX_SIZE = "100MB";
+          CORE_MAX_SIZE = "100MB";
+          CORE_CHUNKED_MAX_SIZE = "100MB";
         };
       };
     };
