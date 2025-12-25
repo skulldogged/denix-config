@@ -17,18 +17,22 @@ delib.module {
 
     services.vicinae = {
       enable = true;
-      autoStart = true;
-      useLayerShell = true;
+
+      systemd = {
+        enable = true;
+        autoStart = true;
+
+        environment = {
+          USE_LAYER_SHELL = true;
+        };
+      };
 
       settings = {
-        popToRootOnClose = false;
-        faviconService = "twenty";
-        font.size = 11;
-        theme.name = "catppuccin-mocha";
+        launcher_window.opacity = 0.95;
 
-        window = {
-          opacity = 0.95;
-          rounding = 10;
+        theme.dark = {
+          name = "catppuccin-mocha";
+          icon_theme = "default";
         };
       };
     };

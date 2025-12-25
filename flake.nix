@@ -75,6 +75,11 @@
       url = "github:nix-community/lanzaboote";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    linux-wallpaperengine-src = {
+      url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
+      flake = false;
+    };
   };
 
   outputs = {denix, ...} @ inputs: let

@@ -10,7 +10,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {
+  home.ifEnabled = {myconfig, ...}: {
     imports = [inputs.draconisplusplus.homeModules.default];
 
     programs.draconisplusplus = {
@@ -78,6 +78,16 @@ delib.module {
           ];
         }
       ];
+
+      logo = {
+        path =
+          if myconfig.host.isDesktop
+          then ../../files/tiger-cub.gif
+          else null;
+        protocol = "iterm2";
+        width = 200;
+        height = 200;
+      };
 
       pluginConfigs = {
         weather = {

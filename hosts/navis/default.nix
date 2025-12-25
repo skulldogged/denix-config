@@ -27,13 +27,16 @@ delib.host {
     facter.reportPath = ./facter.json;
 
     age = {
-      secrets.cifs.file = ../../secrets/cifs.age;
-      secrets.passwd.file = ../../secrets/passwd.age;
-      secrets.zipline_token = {
-        file = ../../secrets/zipline_token.age;
-        owner = "marshall";
-      };
       identityPaths = ["/persist/root/.ssh/id_ed25519"];
+
+      secrets = {
+        cifs.file = ../../secrets/cifs.age;
+        passwd.file = ../../secrets/passwd.age;
+        zipline_token = {
+          file = ../../secrets/zipline_token.age;
+          owner = "marshall";
+        };
+      };
     };
 
     environment = {
@@ -150,66 +153,73 @@ delib.host {
 
     environment.systemPackages = [pkgs.sbctl];
 
-    boot.lanzaboote = {
-      enable = true;
-      pkiBundle = "/var/lib/sbctl";
-      configurationLimit = 3;
-      autoEnrollKeys = {
+    boot = {
+      lanzaboote = {
         enable = true;
-        includeMicrosoftKeys = true;
-      };
-      settings.timeout = 0;
-    };
-
-    boot.initrd = {
-      availableKernelModules = ["tpm_tis"];
-
-      luks.devices."enc" = {
-        device = "/dev/disk/by-uuid/9952fcd1-46eb-4c9c-ab7d-361d31fdb9a2";
-        crypttabExtraOpts = ["tpm2-device=auto" "tpm2-measure-pcr=yes"];
+        pkiBundle = "/var/lib/sbctl";
+        configurationLimit = 3;
+        autoEnrollKeys = {
+          enable = true;
+          includeMicrosoftKeys = true;
+        };
+        settings.timeout = 0;
       };
 
-      systemd = {
-        enable = true;
-        emergencyAccess = true;
-        tpm2.enable = true;
+      initrd = {
+        availableKernelModules = ["tpm_tis"];
 
-        services.wipe-root = {
-          description = "Rollback BTRFS root subvolume to a pristine state";
-          wantedBy = ["initrd.target"];
-          after = ["dev-mapper-enc.device"];
-          requires = ["dev-mapper-enc.device"];
-          before = ["sysroot.mount"];
-          unitConfig.DefaultDependencies = "no";
-          serviceConfig.Type = "oneshot";
-          script = ''
-            (
-              set -xe
+        luks.devices."enc" = {
+          device = "/dev/disk/by-uuid/9952fcd1-46eb-4c9c-ab7d-361d31fdb9a2";
+          crypttabExtraOpts = ["tpm2-device=auto" "tpm2-measure-pcr=yes"];
+        };
 
-              btrfs_subvolume_delete_recursive() {
-                btrfs subvolume list -o "$1" |
-                  cut -f 9- -d ' ' |
-                  while read -r subvolume; do
-                    btrfs_subvolume_delete_recursive "$mount_point/$subvolume"
-                  done
+        systemd = {
+          enable = true;
+          emergencyAccess = true;
+          tpm2.enable = true;
 
-                btrfs subvolume delete "$1"
-              }
+          services.wipe-root = {
+            description = "Rollback BTRFS root subvolume to a pristine state";
+            wantedBy = ["initrd.target"];
+            after = ["dev-mapper-enc.device"];
+            requires = ["dev-mapper-enc.device"];
+            before = ["sysroot.mount"];
+            unitConfig.DefaultDependencies = "no";
+            serviceConfig.Type = "oneshot";
+            script = ''
+              (
+                set -xe
 
-              mount_point=/mnt
-              mkdir -p "$mount_point"
-              mount -t btrfs "/dev/mapper/enc" "$mount_point"
+                btrfs_subvolume_delete_recursive() {
+                  btrfs subvolume list -o "$1" |
+                    cut -f 9- -d ' ' |
+                    while read -r subvolume; do
+                      btrfs_subvolume_delete_recursive "$mount_point/$subvolume"
+                    done
 
-              trap 'umount "$mount_point" && rmdir "$mount_point"' EXIT
+                  btrfs subvolume delete "$1"
+                }
 
-              btrfs_subvolume_delete_recursive \
-                "$mount_point/root"
+                mount_point=/mnt
+                mkdir -p "$mount_point"
+                mount -t btrfs "/dev/mapper/enc" "$mount_point"
 
-              btrfs subvolume create "$mount_point/root"
-            )
-          '';
+                trap 'umount "$mount_point" && rmdir "$mount_point"' EXIT
+
+                btrfs_subvolume_delete_recursive \
+                  "$mount_point/root"
+
+                btrfs subvolume create "$mount_point/root"
+              )
+            '';
+          };
         };
       };
+    };
+
+    hardware.logitech.wireless = {
+      enable = true;
+      enableGraphical = true;
     };
 
     services = {
@@ -258,7 +268,6 @@ delib.host {
       nix-index.enable = true;
       packages.enable = true;
       shell.enable = true;
-      vicinae.enable = true;
       wezterm.enable = true;
     };
 
@@ -273,6 +282,13 @@ delib.host {
         enable = true;
         credentialHelper = "libsecret";
         signingKey = "0FF5B8826803F895";
+      };
+
+      linux-wallpaperengine = {
+        enable = true;
+        assetsDir = "/mnt/games/SteamLibrary/steamapps/common/wallpaper_engine/assets";
+        wallpaperPath = "/mnt/games/SteamLibrary/steamapps/workshop/content/431960/2847826034";
+        screen = "DP-1";
       };
     };
   };

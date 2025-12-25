@@ -64,7 +64,6 @@ delib.module {
 
         browser = "helium";
         fileManager = "nautilus";
-        launcher = "vicinae";
         terminal = "wezterm";
 
         zipline-screenshot = pkgs.writeShellScript "zipline-screenshot" ''
@@ -128,7 +127,6 @@ delib.module {
         ];
 
         layerrule = [
-          "match:namespace vicinae, dim_around true"
           "match:namespace selection, no_anim true"
         ];
 
@@ -192,7 +190,7 @@ delib.module {
         bind =
           [
             "${mod},         e, exec, ${fileManager}"
-            "${mod},         r, exec, ${launcher} toggle"
+            "${mod},         r, global, caelestia:launcher"
             "${mod},         w, exec, ${browser}"
             "${mod},    Return, exec, ${terminal}"
 
