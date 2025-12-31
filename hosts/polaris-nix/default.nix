@@ -89,8 +89,10 @@ delib.host {
 
       mpd = {
         enable = true;
-        musicDirectory = "/mnt/music";
         settings = {
+          music_directory = "/mnt/music";
+          bind_to_address = "any";
+          port = 6600;
           audio_output = [
             {
               type = "null";
@@ -99,17 +101,15 @@ delib.host {
             {
               type = "httpd";
               name = "HTTP Stream";
-              encoder = "lame";
+              encoder = "vorbis";
               port = "8800";
               bind_to_address = "0.0.0.0";
-              bitrate = "128";
+              bitrate = "320";
               format = "44100:16:2";
               always_on = "yes";
             }
           ];
         };
-        network.listenAddress = "any";
-        network.port = 6600;
         openFirewall = true;
       };
 
