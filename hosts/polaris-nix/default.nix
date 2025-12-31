@@ -90,12 +90,6 @@ delib.host {
       mpd = {
         enable = true;
         musicDirectory = "/mnt/music";
-        extraConfig = ''
-          audio_output {
-            type "null"
-            name "My Null Output"
-          }
-        '';
         network.listenAddress = "any";
       };
 
@@ -345,7 +339,7 @@ delib.host {
       };
 
       qbittorrent = {
-        enable = true;
+        enable = false;
 
         serverConfig = {
           LegalNotice.Accepted = true;
@@ -354,6 +348,7 @@ delib.host {
             WebUI = {
               AlternativeUIEnabled = true;
               RootFolder = "${pkgs.vuetorrent}/share/vuetorrent";
+              Port = 8090;
 
               Username = "mars";
               Password_PBKDF2 = "K/xm0Byb8Iq2d4QI/yYpow==:52QryAiEcyZ3uxxT11R2dCkWFeG0nU/Z0Qd4Z//VbddM6YlYwKwgWyALcTbIpD4wfxSBwejyxz4bsmBqCKm1eg==";
@@ -433,42 +428,19 @@ delib.host {
         home = config.services.forgejo.stateDir;
       };
 
-      users.cobalt = {
-        isSystemUser = true;
-        group = "cobalt";
-      };
-
       groups.git = {};
-      groups.cobalt = {};
-    };
-
-    systemd.services.cobalt-api = let
-      cobaltApi = pkgs.callPackage ../../pkgs/cobalt-api.nix {inherit inputs;};
-      cobaltWeb = pkgs.callPackage ../../pkgs/cobalt-web.nix {inherit inputs;};
-    in {
-      description = "Cobalt API service";
-      after = ["network.target"];
-      wantedBy = ["multi-user.target"];
-
-      serviceConfig = {
-        ExecStart = "${cobaltApi}/bin/cobalt-api";
-        User = "cobalt";
-        Group = "cobalt";
-        Restart = "on-failure";
-      };
-
-      environment = {
-        API_URL = "https://cobalt.skulldogged.dev";
-        COOKIE_PATH = "/var/lib/cobalt/cookies.json";
-        CUSTOM_INNERTUBE_CLIENT = "ANDROID";
-        API_PORT = "9000";
-        PORT = "9000";
-        WEB_PATH = "${cobaltWeb}";
-      };
     };
 
     virtualisation = {
       containers.enable = true;
+      oci-containers.backend = "podman";
+      oci-containers.containers = {
+        yt-session-generator = {
+          image = "ghcr.io/imputnet/yt-session-generator:webserver";
+          extraOptions = ["--network=host" "--shm-size=2gb" "--security-opt=seccomp=unconfined"];
+          autoStart = true;
+        };
+      };
 
       podman = {
         enable = true;

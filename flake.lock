@@ -189,23 +189,6 @@
         "type": "github"
       }
     },
-    "cobalt": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1766513941,
-        "narHash": "sha256-sYC4bcO84FGq/56O2kIfdQrLfP6JGJrKfKdFYfUFk9M=",
-        "owner": "imputnet",
-        "repo": "cobalt",
-        "rev": "eb5cf3b64c26543dcf052529b2e005813b4e92ca",
-        "type": "github"
-      },
-      "original": {
-        "owner": "imputnet",
-        "ref": "develop",
-        "repo": "cobalt",
-        "type": "github"
-      }
-    },
     "codeium": {
       "inputs": {
         "flake-utils": "flake-utils_2",
@@ -1671,7 +1654,6 @@
         "caelestia-shell": "caelestia-shell",
         "catppuccin": "catppuccin",
         "chaotic": "chaotic",
-        "cobalt": "cobalt",
         "denix": "denix",
         "draconisplusplus": "draconisplusplus",
         "draconisplusplus-plugins": "draconisplusplus-plugins",

@@ -61,11 +61,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    cobalt = {
-      url = "github:imputnet/cobalt/develop";
-      flake = false;
-    };
-
     draconisplusplus-plugins = {
       url = "github:skulldogged/draconisplusplus-plugins";
       flake = false;
