@@ -87,6 +87,18 @@ delib.host {
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
 
+      mpd = {
+        enable = true;
+        musicDirectory = "/mnt/music";
+        extraConfig = ''
+          audio_output {
+            type "null"
+            name "My Null Output"
+          }
+        '';
+        network.listenAddress = "any";
+      };
+
       bluesky-pds = {
         enable = true;
         pdsadmin.enable = true;

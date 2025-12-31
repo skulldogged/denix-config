@@ -24,6 +24,8 @@ delib.module {
         packages = with pkgs;
           [
             brygada-1918
+            fairfax
+            fairfax-hd
             maple-mono.NF
             material-symbols
             overpass

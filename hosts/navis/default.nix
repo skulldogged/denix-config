@@ -130,18 +130,6 @@ delib.host {
         ];
       };
 
-      # "/mnt/windows" = {
-      #   device = "/dev/disk/by-uuid/52C84B24C84B0627";
-      #   fsType = "ntfs3";
-      #   options = [
-      #     "rw"
-      #     "uid=1000"
-      #     "gid=1000"
-      #     "umask=007"
-      #     "nofail"
-      #   ];
-      # };
-
       "/mnt/music" = {
         device = "//192.168.1.82/music";
         fsType = "cifs";
@@ -149,6 +137,14 @@ delib.host {
           "noauto,x-systemd.automount,x-systemd.idle-timeout=5m,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,uid=1000,gid=100,credentials=${config.age.secrets.cifs.path}"
         ];
       };
+    };
+
+    systemd.services.fix-games-mount = {
+      description = "Fix NTFS filesystem on games drive before mounting";
+      before = ["mnt-games.mount"];
+      wantedBy = ["mnt-games.mount"];
+      serviceConfig.Type = "oneshot";
+      script = "${pkgs.ntfs3g}/bin/ntfsfix -d /dev/disk/by-uuid/00AFAB5C797254C7";
     };
 
     environment.systemPackages = [pkgs.sbctl];
@@ -276,6 +272,7 @@ delib.host {
       draconisplusplus.enable = true;
       helium.enable = true;
       mpv.enable = true;
+      rmpc.enable = true;
       caelestia-shell.enable = true;
 
       git = {
