@@ -272,6 +272,7 @@ delib.host {
       draconisplusplus.enable = true;
       helium.enable = true;
       mpv.enable = true;
+      mpd.enable = true;
       rmpc.enable = true;
       caelestia-shell.enable = true;
 

@@ -87,34 +87,6 @@ delib.host {
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
 
-      mpd = {
-        enable = true;
-        settings = {
-          music_directory = "/mnt/music";
-          bind_to_address = "any";
-          port = 6600;
-          audio_output = [
-            {
-              type = "null";
-              name = "Null Output";
-              mixer_type = "software";
-            }
-            {
-              type = "httpd";
-              name = "HTTP Stream";
-              encoder = "vorbis";
-              port = "8800";
-              bind_to_address = "0.0.0.0";
-              bitrate = "320";
-              format = "44100:16:2";
-              always_on = "yes";
-              mixer_type = "software";
-            }
-          ];
-        };
-        openFirewall = true;
-      };
-
       bluesky-pds = {
         enable = true;
         pdsadmin.enable = true;
@@ -472,7 +444,6 @@ delib.host {
     };
 
     networking = {
-      firewall.allowedTCPPorts = [8800];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
       resolvconf.enable = false;

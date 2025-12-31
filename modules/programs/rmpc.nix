@@ -4,7 +4,7 @@ delib.module {
 
   options.programs.rmpc = with delib; {
     enable = boolOption false;
-    address = strOption "192.168.1.82:6600";
+    address = strOption "127.0.0.1:6600";
   };
 
   home.ifEnabled = {myconfig, ...}: {
@@ -13,10 +13,6 @@ delib.module {
       config = ''
         (
             address: "${myconfig.programs.rmpc.address}",
-            internal_audio: Some((
-                address: "192.168.1.82:8800",
-                enabled: true,
-            )),
         )
       '';
     };
