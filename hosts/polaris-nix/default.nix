@@ -93,8 +93,8 @@ delib.host {
         settings = {
           audio_output = [
             {
-              type = "pipewire";
-              name = "PipeWire Output";
+              type = "null";
+              name = "Null Output";
             }
             {
               type = "httpd";
