@@ -97,6 +97,7 @@ delib.host {
             {
               type = "null";
               name = "Null Output";
+              mixer_type = "software";
             }
             {
               type = "httpd";
@@ -107,6 +108,7 @@ delib.host {
               bitrate = "320";
               format = "44100:16:2";
               always_on = "yes";
+              mixer_type = "software";
             }
           ];
         };
