@@ -11,8 +11,11 @@ delib.module {
     programs.rmpc = {
       enable = true;
       config = ''
-        Config(
+        (
             address: "${myconfig.programs.rmpc.address}",
+            internal_audio: Some((
+                address: "192.168.1.82:8800",
+            )),
         )
       '';
     };
