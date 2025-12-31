@@ -90,23 +90,24 @@ delib.host {
       mpd = {
         enable = true;
         musicDirectory = "/mnt/music";
-        extraConfig = ''
-          audio_output {
-            type "pipewire"
-            name "PipeWire Output"
-          }
-
-          audio_output {
-            type "httpd"
-            name "HTTP Stream"
-            encoder "lame"
-            port "8800"
-            bind_to_address "0.0.0.0"
-            bitrate "128"
-            format "44100:16:2"
-            always_on "yes"
-          }
-        '';
+        settings = {
+          audio_output = [
+            {
+              type = "pipewire";
+              name = "PipeWire Output";
+            }
+            {
+              type = "httpd";
+              name = "HTTP Stream";
+              encoder = "lame";
+              port = "8800";
+              bind_to_address = "0.0.0.0";
+              bitrate = "128";
+              format = "44100:16:2";
+              always_on = "yes";
+            }
+          ];
+        };
         network.listenAddress = "any";
         network.port = 6600;
         openFirewall = true;
