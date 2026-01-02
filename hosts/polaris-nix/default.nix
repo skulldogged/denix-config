@@ -427,14 +427,6 @@ delib.host {
 
     virtualisation = {
       containers.enable = true;
-      oci-containers.backend = "podman";
-      oci-containers.containers = {
-        yt-session-generator = {
-          image = "ghcr.io/imputnet/yt-session-generator:webserver";
-          extraOptions = ["--network=host" "--shm-size=2gb" "--security-opt=seccomp=unconfined"];
-          autoStart = true;
-        };
-      };
 
       podman = {
         enable = true;

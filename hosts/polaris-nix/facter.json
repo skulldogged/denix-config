@@ -393,7 +393,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 32767,
+        "tlb_size": 32604,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -521,7 +521,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 32767,
+        "tlb_size": 32604,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -649,7 +649,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 32767,
+        "tlb_size": 32604,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -777,7 +777,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 32767,
+        "tlb_size": 32604,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -1247,7 +1247,7 @@
     ],
     "network_interface": [
       {
-        "index": 29,
+        "index": 30,
         "attached_to": 22,
         "class_list": [
           "network_interface"
@@ -1288,7 +1288,7 @@
         ]
       },
       {
-        "index": 30,
+        "index": 31,
         "attached_to": 0,
         "class_list": [
           "network_interface"
