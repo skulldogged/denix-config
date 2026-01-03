@@ -93,7 +93,6 @@ delib.module {
       in {
         decoration.rounding = 16;
         dwindle.preserve_split = true;
-        experimental.xx_color_management_v4 = true;
         debug.disable_logs = false;
 
         cursor = {
@@ -172,7 +171,7 @@ delib.module {
           vrr = 3;
         };
 
-        monitor = ["DP-1, highrr, auto, auto"];
+        monitor = ["DP-1, highrr, auto, auto, bitdepth, 10"];
 
         env = [
           "__GLX_VENDOR_LIBRARY_NAME, nvidia"

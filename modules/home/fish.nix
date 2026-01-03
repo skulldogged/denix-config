@@ -30,6 +30,23 @@ delib.module {
     programs.fish = {
       enable = true;
 
+      functions.export =
+        # fish
+        ''
+          if test -z "$argv"
+            set -x
+            return 0
+          end
+          for arg in $argv
+            set -l v (string split -m 1 = -- $arg)
+            if test (count $v) -eq 2
+              set -gx $v[1] $v[2]
+            else
+              set -gx $v[1] $v[1]
+            end
+          end
+        '';
+
       plugins =
         extraPlugins
         ++ (mkFishPlugins ["autopair" "bass" "colored-man-pages" "done" "fifc" "forgit"]);
