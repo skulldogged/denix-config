@@ -60,7 +60,13 @@ delib.module {
           then pkgs.pinentry-gnome3
           else pkgs.pinentry-curses;
       };
-      ssh.startAgent = myconfig.host.isServer;
+      ssh = {
+        startAgent = myconfig.host.isServer;
+        askPassword =
+          if myconfig.host.isServer
+          then "${pkgs.kdePackages.ksshaskpass}/bin/ksshaskpass"
+          else "";
+      };
     };
   };
 

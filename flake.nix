@@ -71,6 +71,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-clawdbot = {
+      url = "github:clawdbot/nix-clawdbot";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     linux-wallpaperengine-src = {
       url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
       flake = false;

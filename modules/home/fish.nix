@@ -49,7 +49,7 @@ delib.module {
 
       plugins =
         extraPlugins
-        ++ (mkFishPlugins ["autopair" "bass" "colored-man-pages" "done" "fifc" "forgit"]);
+        ++ (mkFishPlugins ["autopair" "bass" "colored-man-pages" "done" "fifc"]);
 
       shellAliases = {
         cat = "${pkgs.bat}/bin/bat";

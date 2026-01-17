@@ -16,7 +16,7 @@ delib.module {
       geoclue2.enable = myconfig.host.isDesktop;
       getty.autologinUser = lib.mkIf myconfig.host.isDesktop myconfig.constants.username;
       gnome.gnome-keyring.enable = myconfig.host.isDesktop;
-      mullvad-vpn.enable = true;
+      mullvad-vpn.enable = false;
       openssh.enable = true;
       udisks2.enable = true;
 

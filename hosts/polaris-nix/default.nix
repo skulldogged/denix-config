@@ -19,6 +19,7 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
+    nixpkgs.overlays = [inputs.nix-clawdbot.overlays.default];
 
     facter.reportPath = ./facter.json;
 
@@ -82,7 +83,6 @@ delib.host {
       eternal-terminal.enable = true;
       jellyfin.enable = true;
       jellyfin.dataDir = "/mnt/jellyfin";
-      mullvad-vpn.enable = true;
       tailscale.enable = true;
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
@@ -189,25 +189,25 @@ delib.host {
         };
       };
 
-      gitea-actions-runner = {
-        package = pkgs.forgejo-runner;
-        instances.default = {
-          enable = true;
-          name = "main";
-          url = "https://git.pupbrained.dev";
-          tokenFile = config.age.secrets.forgejo_token.path;
-          labels = [
-            "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
-            "native-linux:host"
-          ];
-          settings = {
-            cache = {
-              enabled = true;
-              dir = "/var/cache/forgejo-runner";
-            };
-          };
-        };
-      };
+      # gitea-actions-runner = {
+      #   package = pkgs.forgejo-runner;
+      #   instances.default = {
+      #     enable = true;
+      #     name = "main";
+      #     url = "https://git.pupbrained.dev";
+      #     tokenFile = config.age.secrets.forgejo_token.path;
+      #     labels = [
+      #       "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
+      #       "native-linux:host"
+      #     ];
+      #     settings = {
+      #       cache = {
+      #         enabled = true;
+      #         dir = "/var/cache/forgejo-runner";
+      #       };
+      #     };
+      #   };
+      # };
 
       glance = {
         enable = true;
@@ -406,12 +406,10 @@ delib.host {
       };
     };
 
-    systemd = {
-      services = {
-        bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
-        slskd.serviceConfig.ReadOnlyPaths = pkgs.lib.mkForce [""];
-        zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
-      };
+    systemd.services = {
+      bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
+      slskd.serviceConfig.ReadOnlyPaths = pkgs.lib.mkForce [""];
+      zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
     };
 
     users = {
@@ -477,6 +475,7 @@ delib.host {
     };
 
     programs = {
+      clawdbot.enable = true;
       draconisplusplus.enable = true;
 
       git = {
