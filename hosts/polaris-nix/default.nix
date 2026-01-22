@@ -440,8 +440,6 @@ delib.host {
       nameservers = ["9.9.9.10" "9.9.9.9"];
     };
 
-    programs.chromium.enable = true;
-
     security.pam.services.gdm.enableGnomeKeyring = true;
   };
 
