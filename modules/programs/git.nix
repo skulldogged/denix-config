@@ -19,7 +19,10 @@ delib.module {
       git = {
         enable = true;
         lfs.enable = true;
-        signing.signByDefault = true;
+        signing = {
+          signByDefault = true;
+          key = myconfig.programs.git.signingKey;
+        };
 
         settings = {
           user = {
@@ -28,7 +31,6 @@ delib.module {
           };
 
           credential.helper = myconfig.programs.git.credentialHelper;
-          signing.key = myconfig.programs.git.signingKey;
 
           init.defaultBranch = "main";
           push.autoSetupRemote = true;

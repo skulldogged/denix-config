@@ -475,6 +475,7 @@ delib.host {
     };
 
     programs = {
+      chromium.enable = true;
       clawdbot.enable = true;
       draconisplusplus.enable = true;
 
