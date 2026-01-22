@@ -9,8 +9,10 @@ delib.module {
 
   home.ifEnabled = {myconfig, ...}: {
     services.mpd = {
+      inherit (myconfig.programs.mpd) musicDirectory;
+
       enable = true;
-      musicDirectory = myconfig.programs.mpd.musicDirectory;
+
       extraConfig = ''
         audio_output {
           type "pipewire"

@@ -67,6 +67,10 @@ delib.module {
           then "${pkgs.kdePackages.ksshaskpass}/bin/ksshaskpass"
           else "";
       };
+
+      chromium = pkgs.lib.mkIf myconfig.programs.clawdbot.enable {
+        enable = true;
+      };
     };
   };
 

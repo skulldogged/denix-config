@@ -11,11 +11,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = _: {
-    programs.chromium.enable = true;
-  };
-
-  home.ifEnabled = _: {
+  home.ifEnabled = {
     home.packages = [inputs.nix-clawdbot.packages.${pkgs.system}.default];
   };
 }
