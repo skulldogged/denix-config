@@ -506,7 +506,6 @@ delib.host {
     };
 
     home = {
-      beets.enable = true;
       fish.enable = true;
       nix-index.enable = true;
       packages.enable = true;

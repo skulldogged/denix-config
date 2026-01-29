@@ -393,6 +393,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
+        "tlb_size": 32628,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -520,6 +521,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
+        "tlb_size": 32628,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -647,6 +649,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
+        "tlb_size": 32628,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -774,6 +777,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
+        "tlb_size": 32628,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
