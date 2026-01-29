@@ -37,6 +37,7 @@ delib.module {
       (with pkgs; [
         alejandra
         bun
+        claude-code
         codex
         file
         grc
@@ -50,7 +51,6 @@ delib.module {
       (with pkgs; [
         bitwarden-cli
         bitwarden-desktop
-        claude-code
         distrobox_git
         duf
         glow

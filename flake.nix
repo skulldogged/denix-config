@@ -71,8 +71,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-clawdbot = {
-      url = "github:clawdbot/nix-clawdbot";
+    nix-moltbot = {
+      url = "github:moltbot/nix-moltbot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

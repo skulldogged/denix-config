@@ -5,9 +5,9 @@
   ...
 }:
 delib.module {
-  name = "programs.clawdbot";
+  name = "programs.moltbot";
 
-  options.programs.clawdbot = with delib; {
+  options.programs.moltbot = with delib; {
     enable = boolOption false;
   };
 
@@ -18,6 +18,6 @@ delib.module {
   };
 
   home.ifEnabled = {
-    home.packages = [inputs.nix-clawdbot.packages.${pkgs.system}.default];
+    home.packages = [inputs.nix-moltbot.packages.${pkgs.system}.default];
   };
 }

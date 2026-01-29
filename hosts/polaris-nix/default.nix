@@ -19,7 +19,7 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.overlays = [inputs.nix-clawdbot.overlays.default];
+    nixpkgs.overlays = [inputs.nix-moltbot.overlays.default];
 
     facter.reportPath = ./facter.json;
 
@@ -389,6 +389,7 @@ delib.host {
 
         settings = {
           directories.downloads = "/mnt/music";
+          feature.swagger = true;
           shares.directories = ["/mnt/music"];
         };
       };
@@ -408,8 +409,45 @@ delib.host {
 
     systemd.services = {
       bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
-      slskd.serviceConfig.ReadOnlyPaths = pkgs.lib.mkForce [""];
       zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+
+      slskd = {
+        serviceConfig = {
+          ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config /run/slskd/slskd.yml";
+          ReadOnlyPaths = pkgs.lib.mkForce [""];
+          RuntimeDirectory = "slskd";
+        };
+
+        preStart = ''
+          cat > /run/slskd/slskd.yml <<EOF
+          directories:
+            downloads: /mnt/music
+          shares:
+            directories:
+              - /mnt/music
+          feature:
+            swagger: true
+          web:
+            port: 5030
+            authentication:
+              apiKey: "$SLSKD_API_KEY"
+          EOF
+        '';
+      };
+
+      slskd-permissions-fix = {
+        description = "Auto-fix permissions on slskd downloads";
+        wantedBy = ["multi-user.target"];
+        after = ["network.target"];
+        serviceConfig = {
+          ExecStart = pkgs.writeShellScript "slskd-permissions-fix" ''
+            ${pkgs.inotify-tools}/bin/inotifywait -m -r -e create,moved_to /mnt/music --format '%w%f' | ${pkgs.bash}/bin/bash -c 'while read -r path; do ${pkgs.coreutils}/bin/chmod 777 "$path" && ${pkgs.coreutils}/bin/chown slskd:slskd "$path"; done'
+          '';
+          Restart = "on-failure";
+          RestartSec = "5s";
+          Type = "simple";
+        };
+      };
     };
 
     users = {
@@ -468,6 +506,7 @@ delib.host {
     };
 
     home = {
+      beets.enable = true;
       fish.enable = true;
       nix-index.enable = true;
       packages.enable = true;
@@ -475,7 +514,7 @@ delib.host {
     };
 
     programs = {
-      clawdbot.enable = true;
+      moltbot.enable = true;
       draconisplusplus.enable = true;
 
       git = {

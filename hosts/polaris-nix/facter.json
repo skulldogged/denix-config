@@ -916,24 +916,26 @@
           "value": 0
         },
         "vendor": {
-          "hex": "1013",
-          "name": "Cirrus Logic",
-          "value": 4115
+          "hex": "1234",
+          "value": 4660
         },
         "sub_vendor": {
           "hex": "1af4",
           "value": 6900
         },
         "device": {
-          "hex": "00b8",
-          "name": "GD 5446",
-          "value": 184
+          "hex": "1111",
+          "value": 4369
         },
         "sub_device": {
           "hex": "1100",
           "value": 4352
         },
-        "model": "Cirrus Logic GD 5446",
+        "revision": {
+          "hex": "0002",
+          "value": 2
+        },
+        "model": "VGA compatible controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:02.0",
         "sysfs_bus_id": "0000:00:02.0",
         "detail": {
@@ -943,35 +945,15 @@
           "secondary_bus": 0,
           "prog_if": 0
         },
-        "driver": "cirrus-qemu",
-        "driver_module": "cirrus_qemu",
+        "driver": "bochs-drm",
+        "driver_module": "bochs",
         "drivers": [
-          "cirrus-qemu"
+          "bochs-drm"
         ],
         "driver_modules": [
-          "cirrus_qemu"
+          "bochs"
         ],
-        "driver_info": {
-          "type": "x11",
-          "db_entry_0": [
-            "4",
-            "cirrus"
-          ],
-          "server": "cirrus",
-          "xf86_version": "4",
-          "supports_3d": false,
-          "Colors": {
-            "all": 0,
-            "c8": 0,
-            "c15": 0,
-            "c16": 0,
-            "c24": 0,
-            "c32": 0
-          },
-          "dac_speed": 0,
-          "script": ""
-        },
-        "module_alias": "pci:v00001013d000000B8sv00001AF4sd00001100bc03sc00i00"
+        "module_alias": "pci:v00001234d00001111sv00001AF4sd00001100bc03sc00i00"
       }
     ],
     "hub": [
@@ -998,7 +980,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.17.12-xanmod1 uhci_hcd",
+          "name": "Linux 6.18.6-xanmod1 uhci_hcd",
           "value": 7531
         },
         "device": {
@@ -1008,11 +990,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.17",
+          "name": "6.18",
           "value": 0
         },
         "serial": "0000:00:01.2",
-        "model": "Linux 6.17.12-xanmod1 uhci_hcd UHCI Host Controller",
+        "model": "Linux 6.18.6-xanmod1 uhci_hcd UHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:01.2/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -1060,7 +1042,7 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0001d0617dc09dsc00dp00ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0001d0618dc09dsc00dp00ic09isc00ip00in00"
       }
     ],
     "memory": [
@@ -1722,7 +1704,7 @@
       "handle": 0,
       "vendor": "Xen",
       "version": "4.17",
-      "date": "02/28/2025",
+      "date": "12/08/2025",
       "features": [
         "PCI supported",
         "EDD spec supported"
@@ -1782,7 +1764,7 @@
           "name": "Multi-bit",
           "value": 6
         },
-        "max_size": "0x17ff000",
+        "max_size": "0x17fc000",
         "error_handle": 65534,
         "slots": 2
       }
@@ -1799,7 +1781,7 @@
         "handle": 4865,
         "array_handle": 4096,
         "start_address": "0x400000000",
-        "end_address": "0x5ffc00000",
+        "end_address": "0x5ff000000",
         "part_width": 1
       }
     ],
@@ -1839,7 +1821,7 @@
         "error_handle": 0,
         "width": 64,
         "ecc_bits": 0,
-        "size": 8384512,
+        "size": 8372224,
         "form_factor": {
           "hex": "0009",
           "name": "DIMM",
@@ -1871,7 +1853,7 @@
         "memory_device_handle": 4353,
         "array_map_handle": 4865,
         "start_address": "0x400000000",
-        "end_address": "0x5ffc00000",
+        "end_address": "0x5ff000000",
         "row_position": 1,
         "interleave_position": 0,
         "interleave_depth": 0
