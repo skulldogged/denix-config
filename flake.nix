@@ -26,7 +26,6 @@
     # Additional inputs from old config
     agenix.url = "github:ryantm/agenix";
     catppuccin.url = "github:catppuccin/nix";
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     draconisplusplus.url = "github:skulldogged/draconisplusplus";
     helium-services.url = "github:skulldogged/helium-services";
     impermanence.url = "github:nix-community/impermanence";

@@ -15,22 +15,6 @@ delib.module {
   home.ifEnabled = {myconfig, ...}: let
     inherit (pkgs.stdenv.hostPlatform) system;
 
-    windsurfInfo =
-      (pkgs.lib.importJSON ../packages/windsurf/info.json)."${system}"
-        or (throw "windsurf: unsupported system ${system}");
-
-    windsurfPackage = pkgs.windsurf.overrideAttrs (oldAttrs: {
-      inherit (windsurfInfo) version;
-      src = pkgs.fetchurl {
-        inherit (windsurfInfo) url sha256;
-      };
-      passthru =
-        oldAttrs.passthru
-        // {
-          inherit (windsurfInfo) vscodeVersion;
-        };
-    });
-
     equibopPackage = pkgs.callPackage ../../pkgs/equibop/package.nix {};
 
     basePackages =
@@ -51,7 +35,6 @@ delib.module {
       (with pkgs; [
         bitwarden-cli
         bitwarden-desktop
-        distrobox_git
         duf
         glow
         jellyfin-tui
@@ -72,7 +55,7 @@ delib.module {
         translate-shell
         uv
       ])
-      ++ [windsurfPackage equibopPackage];
+      ++ [equibopPackage];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 

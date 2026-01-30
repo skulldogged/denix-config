@@ -50,7 +50,6 @@ delib.module {
 
       steam = pkgs.lib.mkIf myconfig.host.isDesktop {
         enable = true;
-        extraCompatPackages = [pkgs.proton-ge-custom];
       };
 
       gnupg.agent = {

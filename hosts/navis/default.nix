@@ -17,9 +17,6 @@ delib.host {
       inputs.impermanence.nixosModules.impermanence
       inputs.lanzaboote.nixosModules.lanzaboote
       inputs.nixos-facter-modules.nixosModules.facter
-      inputs.chaotic.nixosModules.nyx-cache
-      inputs.chaotic.nixosModules.nyx-overlay
-      inputs.chaotic.nixosModules.nyx-registry
     ];
 
     nixpkgs.config.allowUnfree = true;
@@ -244,7 +241,6 @@ delib.host {
   myconfig = {
     system = {
       boot.enable = true;
-      chaotic.enable = true;
       environment.enable = true;
       fonts.enable = true;
       hardware.enable = true;

@@ -14,11 +14,11 @@ delib.module {
     home.packages = with pkgs; [
       (appimageTools.wrapType2 rec {
         pname = "helium";
-        version = "0.6.9.1";
+        version = "0.8.4.1";
 
         src = fetchurl {
           url = "https://github.com/imputnet/helium-linux/releases/download/${version}/${pname}-${version}-x86_64.AppImage";
-          sha256 = "sha256-L59Sm5qgORlV3L2yM6C0R8lDRyk05jOZcD5JPhQtbJE=";
+          sha256 = "sha256-y4KzR+pkBUuyVU+ALrzdY0n2rnTB7lTN2ZmVSzag5vE=";
         };
 
         extraInstallCommands = let
