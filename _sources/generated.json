@@ -1,6 +1,6 @@
 {
   "bang-bang": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2023-07-23",
     "extract": null,
     "name": "bang-bang",
@@ -21,7 +21,7 @@
     "version": "ec991b80ba7d4dda7a962167b036efc5c2d79419"
   },
   "git-abbr": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2024-08-14",
     "extract": null,
     "name": "git-abbr",
@@ -42,7 +42,7 @@
     "version": "faa3d2581b800c45960e8cd5087ff09acb936b85"
   },
   "gityaw": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2019-01-07",
     "extract": null,
     "name": "gityaw",
@@ -63,7 +63,7 @@
     "version": "59196560e0f4520db63fb8cab645510377bb8b13"
   },
   "jj-abbr": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2025-07-25",
     "extract": null,
     "name": "jj-abbr",
@@ -84,7 +84,7 @@
     "version": "bc4968b588fc0cc2f3c1f9459195c5b0184fe2ca"
   },
   "license": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2018-10-22",
     "extract": null,
     "name": "license",
@@ -105,7 +105,7 @@
     "version": "0155b16f102957ec0c734a90979245dc1073f979"
   },
   "replay-fish": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2024-07-01",
     "extract": null,
     "name": "replay-fish",
@@ -126,7 +126,7 @@
     "version": "d2ecacd3fe7126e822ce8918389f3ad93b14c86c"
   },
   "wttr": {
-    "cargoLocks": null,
+    "cargoLock": null,
     "date": "2016-05-23",
     "extract": null,
     "name": "wttr",
