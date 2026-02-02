@@ -70,8 +70,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-moltbot = {
-      url = "github:moltbot/nix-moltbot";
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

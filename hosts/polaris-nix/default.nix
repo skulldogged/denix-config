@@ -19,7 +19,7 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.overlays = [inputs.nix-moltbot.overlays.default];
+    nixpkgs.overlays = [inputs.nix-openclaw.overlays.default];
 
     facter.reportPath = ./facter.json;
 
@@ -391,6 +391,7 @@ delib.host {
           directories.downloads = "/mnt/music";
           feature.swagger = true;
           shares.directories = ["/mnt/music"];
+          global.download.slots = 5;
         };
       };
 
@@ -427,6 +428,9 @@ delib.host {
               - /mnt/music
           feature:
             swagger: true
+          global:
+            download:
+              slots: 5
           web:
             port: 5030
             authentication:
@@ -513,7 +517,7 @@ delib.host {
     };
 
     programs = {
-      moltbot.enable = true;
+      openclaw.enable = true;
       draconisplusplus.enable = true;
 
       git = {

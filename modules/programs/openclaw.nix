@@ -5,9 +5,9 @@
   ...
 }:
 delib.module {
-  name = "programs.moltbot";
+  name = "programs.openclaw";
 
-  options.programs.moltbot = with delib; {
+  options.programs.openclaw = with delib; {
     enable = boolOption false;
   };
 
@@ -18,6 +18,6 @@ delib.module {
   };
 
   home.ifEnabled = {
-    home.packages = [inputs.nix-moltbot.packages.${pkgs.system}.default];
+    home.packages = [inputs.nix-openclaw.packages.${pkgs.system}.default];
   };
 }
