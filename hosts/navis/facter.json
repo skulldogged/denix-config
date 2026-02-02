@@ -4646,6 +4646,14 @@
           "interface_alternate_setting": 0
         },
         "hotplug": "usb",
+        "driver": "usbfs",
+        "driver_module": "usbcore",
+        "drivers": [
+          "usbfs"
+        ],
+        "driver_modules": [
+          "usbcore"
+        ],
         "module_alias": "usb:v18D1p4EE7d0601dc00dsc00dp00icFFisc42ip01in00"
       },
       {
