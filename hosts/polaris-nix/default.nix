@@ -38,22 +38,27 @@ delib.host {
         zipline_secret = {};
       };
 
-      templates."slskd.yml".content = ''
-        directories:
-          downloads: /mnt/music
-        shares:
+      templates."slskd.yml" = {
+        owner = "slskd";
+        group = "media";
+        mode = "0440";
+        content = ''
           directories:
-            - /mnt/music
-        feature:
-          swagger: true
-        global:
-          download:
-            slots: 5
-        web:
-          port: 5030
-          authentication:
-            apiKey: "${config.sops.placeholder.slskd_api_key}"
-      '';
+            downloads: /mnt/music
+          shares:
+            directories:
+              - /mnt/music
+          feature:
+            swagger: true
+          global:
+            download:
+              slots: 5
+          web:
+            port: 5030
+            authentication:
+              apiKey: "${config.sops.placeholder.slskd_api_key}"
+        '';
+      };
     };
 
     fileSystems = {
