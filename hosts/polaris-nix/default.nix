@@ -33,9 +33,27 @@ delib.host {
         forgejo_token = {};
         helium_hmac = {};
         mailer_passwd = {};
+        slskd_api_key = {};
         slskd_env = {};
         zipline_secret = {};
       };
+
+      templates."slskd.yml".content = ''
+        directories:
+          downloads: /mnt/music
+        shares:
+          directories:
+            - /mnt/music
+        feature:
+          swagger: true
+        global:
+          download:
+            slots: 5
+        web:
+          port: 5030
+          authentication:
+            apiKey: "${config.sops.placeholder.slskd_api_key}"
+      '';
     };
 
     fileSystems = {
@@ -421,29 +439,10 @@ delib.host {
 
       slskd = {
         serviceConfig = {
-          ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config /run/slskd/slskd.yml";
+          ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
           ReadOnlyPaths = pkgs.lib.mkForce [""];
           RuntimeDirectory = "slskd";
         };
-
-        preStart = ''
-          cat > /run/slskd/slskd.yml <<EOF
-          directories:
-            downloads: /mnt/music
-          shares:
-            directories:
-              - /mnt/music
-          feature:
-            swagger: true
-          global:
-            download:
-              slots: 5
-          web:
-            port: 5030
-            authentication:
-              apiKey: "$SLSKD_API_KEY"
-          EOF
-        '';
       };
     };
 
