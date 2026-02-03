@@ -34,7 +34,7 @@ delib.module {
             ++ myconfig.system.users.extraGroups;
         }
         // lib.optionalAttrs myconfig.host.isDesktop {
-          hashedPasswordFile = config.age.secrets.passwd.path;
+          hashedPasswordFile = config.sops.secrets.passwd.path;
         };
     };
   };

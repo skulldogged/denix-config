@@ -76,7 +76,7 @@ delib.module {
           # Wait for file stability
           while [ "$(stat -c%s "$TMPFILE" 2>/dev/null)" != "$(sleep 0.05; stat -c%s "$TMPFILE" 2>/dev/null)" ]; do :; done
 
-          TOKEN=$(cat /run/agenix/zipline_token | tr -d '\n')
+          TOKEN=$(cat /run/secrets/zipline_token | tr -d '\n')
           URL=$(${lib.getExe pkgs.curl} -s \
             -H "Authorization: $TOKEN" \
             -F "file=@$TMPFILE;type=image/png" \

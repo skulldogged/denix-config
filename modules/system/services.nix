@@ -17,15 +17,23 @@ delib.module {
       getty.autologinUser = lib.mkIf myconfig.host.isDesktop myconfig.constants.username;
       gnome.gnome-keyring.enable = myconfig.host.isDesktop;
       mullvad-vpn.enable = false;
-      openssh.enable = true;
       udisks2.enable = true;
+      xserver.enable = lib.mkDefault myconfig.host.isDesktop;
 
       libinput = lib.mkIf myconfig.host.isDesktop {
         enable = true;
         touchpad.naturalScrolling = true;
       };
 
-      xserver.enable = lib.mkDefault myconfig.host.isDesktop;
+      openssh = {
+        enable = true;
+
+        settings = {
+          PasswordAuthentication = false;
+          PermitRootLogin = "no";
+          KbdInteractiveAuthentication = false;
+        };
+      };
 
       pipewire = {
         enable = true;

@@ -13,7 +13,7 @@ delib.host {
 
   nixos = {
     imports = [
-      inputs.agenix.nixosModules.default
+      inputs.sops-nix.nixosModules.sops
       inputs.impermanence.nixosModules.impermanence
       inputs.lanzaboote.nixosModules.lanzaboote
       inputs.nixos-facter-modules.nixosModules.facter
@@ -23,14 +23,14 @@ delib.host {
 
     facter.reportPath = ./facter.json;
 
-    age = {
-      identityPaths = ["/persist/root/.ssh/id_ed25519"];
+    sops = {
+      defaultSopsFile = ../../secrets/navis.yaml;
+      age.sshKeyPaths = ["/persist/root/.ssh/id_ed25519"];
 
       secrets = {
-        cifs.file = ../../secrets/cifs.age;
-        passwd.file = ../../secrets/passwd.age;
+        cifs = {};
+        passwd = {};
         zipline_token = {
-          file = ../../secrets/zipline_token.age;
           owner = "marshall";
         };
       };
@@ -131,7 +131,7 @@ delib.host {
         device = "//192.168.1.82/music";
         fsType = "cifs";
         options = [
-          "noauto,x-systemd.automount,x-systemd.idle-timeout=5m,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,uid=1000,gid=100,credentials=${config.age.secrets.cifs.path}"
+          "noauto,x-systemd.automount,x-systemd.idle-timeout=5m,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s,uid=1000,gid=100,credentials=${config.sops.secrets.cifs.path}"
         ];
       };
     };

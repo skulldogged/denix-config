@@ -1,7 +1,6 @@
 {
   delib,
   pkgs,
-  inputs,
   lib,
   ...
 }:
@@ -29,7 +28,7 @@ delib.module {
 
       systemPackages = with pkgs;
         [
-          inputs.agenix.packages.${system}.default
+          sops
           libsecret
           man-pages
           man-pages-posix

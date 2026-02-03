@@ -13,7 +13,7 @@ delib.module {
 
   nixos.ifEnabled = {myconfig, ...}: {
     networking = {
-      firewall.enable = false;
+      firewall.enable = true;
       hostName = myconfig.system.networking.hostName;
       useDHCP = lib.mkForce true;
 

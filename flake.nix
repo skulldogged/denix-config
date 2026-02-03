@@ -24,7 +24,7 @@
     };
 
     # Additional inputs from old config
-    agenix.url = "github:ryantm/agenix";
+    sops-nix.url = "github:Mic92/sops-nix";
     catppuccin.url = "github:catppuccin/nix";
     draconisplusplus.url = "github:skulldogged/draconisplusplus";
     helium-services.url = "github:skulldogged/helium-services";

@@ -12,7 +12,7 @@ delib.host {
 
   nixos = {
     imports = with inputs; [
-      agenix.nixosModules.default
+      sops-nix.nixosModules.sops
       nixos-facter-modules.nixosModules.facter
       helium-services.nixosModules.default
       vscode-server.nixosModules.default
@@ -23,17 +23,18 @@ delib.host {
 
     facter.reportPath = ./facter.json;
 
-    age = {
-      identityPaths = ["/root/.ssh/id_ed25519"];
+    sops = {
+      defaultSopsFile = ../../secrets/polaris-nix.yaml;
+      age.sshKeyPaths = ["/root/.ssh/id_ed25519"];
 
       secrets = {
-        bsky_pds.file = ../../secrets/bsky_pds.age;
-        cloudflare_token.file = ../../secrets/cloudflare_token.age;
-        forgejo_token.file = ../../secrets/forgejo_token.age;
-        helium_hmac.file = ../../secrets/helium_hmac.age;
-        mailer_passwd.file = ../../secrets/mailer_passwd.age;
-        slskd_env.file = ../../secrets/slskd_env.age;
-        zipline_secret.file = ../../secrets/zipline_secret.age;
+        bsky_pds = {};
+        cloudflare_token = {};
+        forgejo_token = {};
+        helium_hmac = {};
+        mailer_passwd = {};
+        slskd_env = {};
+        zipline_secret = {};
       };
     };
 
@@ -59,14 +60,12 @@ delib.host {
 
     time.timeZone = "America/New_York";
 
-    environment.systemPackages =
-      [inputs.agenix.packages.${pkgs.system}.default]
-      ++ (with pkgs; [
-        codeium
-        graalvmPackages.graalvm-oracle_17
-        miniupnpc
-        nodejs_20
-      ]);
+    environment.systemPackages = with pkgs; [
+      codeium
+      graalvmPackages.graalvm-oracle_17
+      miniupnpc
+      nodejs_20
+    ];
 
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
@@ -82,15 +81,17 @@ delib.host {
 
       eternal-terminal.enable = true;
       jellyfin.enable = true;
+      jellyfin.openFirewall = true;
       jellyfin.dataDir = "/mnt/jellyfin";
       tailscale.enable = true;
+      tailscale.openFirewall = true;
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
 
       bluesky-pds = {
         enable = true;
         pdsadmin.enable = true;
-        environmentFiles = [config.age.secrets.bsky_pds.path];
+        environmentFiles = [config.sops.secrets.bsky_pds.path];
 
         settings = {
           PDS_BLOBSTORE_DISK_LOCATION = "/mnt/pds/blocks";
@@ -104,7 +105,7 @@ delib.host {
         enable = true;
         tunnels = {
           "c9bd4d77-2b10-4880-8c79-9c970f08cbd8" = {
-            credentialsFile = config.age.secrets.cloudflare_token.path;
+            credentialsFile = config.sops.secrets.cloudflare_token.path;
             default = "http_status:404";
           };
         };
@@ -119,7 +120,7 @@ delib.host {
         group = "git";
         lfs.enable = true;
 
-        secrets.mailer.PASSWD = config.age.secrets.mailer_passwd.path;
+        secrets.mailer.PASSWD = config.sops.secrets.mailer_passwd.path;
 
         settings = {
           log.LEVEL = "Debug";
@@ -168,7 +169,7 @@ delib.host {
           };
 
           server = {
-            HTTP_ADDR = "0.0.0.0";
+            HTTP_ADDR = "127.0.0.1";
             HTTP_PORT = 6610;
             DOMAIN = forgejoDomain;
             ROOT_URL = "https://${forgejoDomain}/";
@@ -195,7 +196,7 @@ delib.host {
       #     enable = true;
       #     name = "main";
       #     url = "https://git.pupbrained.dev";
-      #     tokenFile = config.age.secrets.forgejo_token.path;
+      #     tokenFile = config.sops.secrets.forgejo_token.path;
       #     labels = [
       #       "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
       #       "native-linux:host"
@@ -211,9 +212,10 @@ delib.host {
 
       glance = {
         enable = true;
+        openFirewall = true;
         settings = {
           server = {
-            host = "0.0.0.0";
+            host = "127.0.0.1";
             port = 5678;
           };
 
@@ -329,7 +331,7 @@ delib.host {
       helium-services = {
         enable = true;
         hostname = "skulldogged.dev";
-        hmacSecretFile = config.age.secrets.helium_hmac.path;
+        hmacSecretFile = config.sops.secrets.helium_hmac.path;
       };
 
       qbittorrent = {
@@ -355,6 +357,7 @@ delib.host {
 
       samba = {
         enable = true;
+        openFirewall = true;
         nmbd.enable = false;
 
         settings = {
@@ -384,8 +387,11 @@ delib.host {
 
       slskd = {
         enable = true;
+        openFirewall = true;
+        user = "slskd";
+        group = "media";
         domain = null;
-        environmentFile = config.age.secrets.slskd_env.path;
+        environmentFile = config.sops.secrets.slskd_env.path;
 
         settings = {
           directories.downloads = "/mnt/music";
@@ -397,9 +403,10 @@ delib.host {
 
       zipline = {
         enable = true;
-        environmentFiles = [config.age.secrets.zipline_secret.path];
+        environmentFiles = [config.sops.secrets.zipline_secret.path];
         settings = {
-          CORE_HOSTNAME = "0.0.0.0";
+          CORE_HOSTNAME = "127.0.0.1";
+          CORE_PORT = 3000;
           DATASOURCE_LOCAL_DIRECTORY = "/mnt/zipline";
           UPLOADER_MAX_SIZE = "100MB";
           CORE_MAX_SIZE = "100MB";
@@ -438,23 +445,11 @@ delib.host {
           EOF
         '';
       };
-
-      slskd-permissions-fix = {
-        description = "Auto-fix permissions on slskd downloads";
-        wantedBy = ["multi-user.target"];
-        after = ["network.target"];
-        serviceConfig = {
-          ExecStart = pkgs.writeShellScript "slskd-permissions-fix" ''
-            ${pkgs.inotify-tools}/bin/inotifywait -m -r -e create,moved_to /mnt/music --format '%w%f' | ${pkgs.bash}/bin/bash -c 'while read -r path; do ${pkgs.coreutils}/bin/chmod 777 "$path" && ${pkgs.coreutils}/bin/chown slskd:slskd "$path"; done'
-          '';
-          Restart = "on-failure";
-          RestartSec = "5s";
-          Type = "simple";
-        };
-      };
     };
 
     users = {
+      groups.media = {};
+
       users.git = {
         isSystemUser = true;
         useDefaultShell = true;
@@ -476,11 +471,24 @@ delib.host {
     };
 
     networking = {
+      firewall.allowedTCPPorts = [
+        22 # ssh
+        2022 # eternal-terminal
+        3000 # zipline
+        6610 # forgejo
+        6969 # bluesky-pds
+        8081 # helium-services nginx
+      ];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
       resolvconf.enable = false;
       nameservers = ["9.9.9.10" "9.9.9.9"];
     };
+
+    systemd.tmpfiles.rules = [
+      "d /mnt/music 2775 root media - -"
+      "A /mnt/music - - - - d:g:media:rwx,d:o::rx,d:m::rwx,g:media:rwX,o::rX,m::rwX"
+    ];
 
     security.pam.services.gdm.enableGnomeKeyring = true;
   };
@@ -505,7 +513,7 @@ delib.host {
 
       users = {
         enable = true;
-        extraGroups = ["kvm" "podman"];
+        extraGroups = ["kvm" "podman" "media"];
       };
     };
 
