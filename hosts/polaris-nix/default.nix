@@ -56,7 +56,7 @@ delib.host {
           web:
             port: 5030
             authentication:
-              apiKey: "${config.sops.placeholder.slskd_api_key}"
+              apiKey: ${config.sops.placeholder.slskd_api_key}
         '';
       };
     };
