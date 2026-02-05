@@ -88,6 +88,7 @@ delib.host {
       graalvmPackages.graalvm-oracle_17
       miniupnpc
       nodejs_20
+      (callPackage ../../pkgs/lobster {})
     ];
 
     boot = {

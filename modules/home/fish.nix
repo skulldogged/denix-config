@@ -10,7 +10,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = { ...}: let
+  home.ifEnabled = {...}: let
     mkFishPlugin = sources: {
       inherit (sources) src;
       name = sources.pname;
