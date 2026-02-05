@@ -103,9 +103,6 @@ delib.host {
       displayManager.sddm.enable = true;
 
       eternal-terminal.enable = true;
-      jellyfin.enable = true;
-      jellyfin.openFirewall = true;
-      jellyfin.dataDir = "/mnt/jellyfin";
       tailscale.enable = true;
       tailscale.openFirewall = true;
       xe-guest-utilities.enable = true;
@@ -127,8 +124,31 @@ delib.host {
       cloudflared = {
         enable = true;
         tunnels = {
-          "c9bd4d77-2b10-4880-8c79-9c970f08cbd8" = {
+          "29205063-551c-44a0-9c85-c1c51f40a0d2" = {
             credentialsFile = config.sops.secrets.cloudflare_token.path;
+            ingress = {
+              "git.pupbrained.dev" = {
+                service = "http://localhost:6610";
+              };
+              "jellyfin.pupbrained.dev" = {
+                service = "http://localhost:8096";
+              };
+              "zip.pupbrained.dev" = {
+                service = "http://localhost:3000";
+              };
+              "sky.skulldogged.dev" = {
+                service = "http://localhost:6969";
+              };
+              "services.skulldogged.dev" = {
+                service = "http://localhost:8081";
+              };
+              "slskd.skulldogged.dev" = {
+                service = "http://localhost:5030";
+              };
+              "glance.skulldogged.dev" = {
+                service = "http://localhost:5678";
+              };
+            };
             default = "http_status:404";
           };
         };
@@ -213,25 +233,99 @@ delib.host {
         };
       };
 
-      # gitea-actions-runner = {
-      #   package = pkgs.forgejo-runner;
-      #   instances.default = {
-      #     enable = true;
-      #     name = "main";
-      #     url = "https://git.pupbrained.dev";
-      #     tokenFile = config.sops.secrets.forgejo_token.path;
-      #     labels = [
-      #       "ubuntu-24.04:docker://catthehacker/ubuntu:act-latest"
-      #       "native-linux:host"
-      #     ];
-      #     settings = {
-      #       cache = {
-      #         enabled = true;
-      #         dir = "/var/cache/forgejo-runner";
-      #       };
-      #     };
-      #   };
-      # };
+      blocky = {
+        enable = true;
+        settings = {
+          ports.dns = 53;
+          upstream.default = [
+            "9.9.9.9"
+            "149.112.112.112"
+            "9.9.9.10"
+            "149.112.112.10"
+          ];
+          blocking = {
+            blackLists = {
+              ads = [
+                "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+              ];
+              tracking = [
+                "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts"
+              ];
+            };
+            clientGroupsBlock = {
+              default = ["ads" "tracking"];
+            };
+          };
+          caching = {
+            minTime = "5m";
+            maxTime = "30m";
+            prefetching = true;
+          };
+        };
+      };
+
+      gatus = {
+        enable = true;
+        openFirewall = true;
+        settings = {
+          web = {
+            port = 8082;
+          };
+          storage = {
+            type = "memory";
+          };
+          endpoints = [
+            {
+              name = "Jellyfin";
+              url = "https://jellyfin.pupbrained.dev";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Forgejo";
+              url = "https://git.pupbrained.dev";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Bluesky PDS";
+              url = "https://sky.skulldogged.dev";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Glance";
+              url = "http://127.0.0.1:5678";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Zipline";
+              url = "http://127.0.0.1:3000";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "slskd";
+              url = "http://127.0.0.1:5030";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Blocky DNS";
+              url = "udp://127.0.0.1:53";
+              conditions = ["[CONNECTED] == true"];
+              interval = "1m";
+            }
+            {
+              name = "Tailscale";
+              url = "udp://100.92.239.38:41641";
+              conditions = ["[CONNECTED] == true"];
+              interval = "1m";
+            }
+          ];
+        };
+      };
 
       glance = {
         enable = true;
@@ -355,6 +449,12 @@ delib.host {
         enable = true;
         hostname = "skulldogged.dev";
         hmacSecretFile = config.sops.secrets.helium_hmac.path;
+      };
+
+      jellyfin = {
+        enable = true;
+        openFirewall = true;
+        dataDir = "/mnt/jellyfin";
       };
 
       qbittorrent = {
