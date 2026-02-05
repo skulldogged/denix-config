@@ -23,10 +23,8 @@
       };
     };
 
-    # Additional inputs from old config
     sops-nix.url = "github:Mic92/sops-nix";
     catppuccin.url = "github:catppuccin/nix";
-    draconisplusplus.url = "github:skulldogged/draconisplusplus";
     helium-services.url = "github:skulldogged/helium-services";
     impermanence.url = "github:nix-community/impermanence";
     nix-colors.url = "github:Misterio77/nix-colors";
@@ -34,6 +32,11 @@
     nixvim.url = "github:skulldogged/nixvim-new";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
+
+    draconisplusplus = {
+      url = "github:skulldogged/draconisplusplus";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     hyprland = {
       url = "github:hyprwm/Hyprland";

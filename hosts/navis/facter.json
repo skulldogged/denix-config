@@ -1063,87 +1063,6 @@
     "disk": [
       {
         "index": 42,
-        "attached_to": 21,
-        "class_list": [
-          "disk",
-          "block_device",
-          "nvme"
-        ],
-        "bus_type": {
-          "hex": "0096",
-          "name": "NVME",
-          "value": 150
-        },
-        "slot": {
-          "bus": 0,
-          "number": 0
-        },
-        "base_class": {
-          "hex": "0106",
-          "name": "Mass Storage Device",
-          "value": 262
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Disk",
-          "value": 0
-        },
-        "vendor": {
-          "hex": "1c5c",
-          "value": 7260
-        },
-        "sub_vendor": {
-          "hex": "1c5c",
-          "value": 7260
-        },
-        "device": {
-          "hex": "174a",
-          "name": "HFM512GD3JX013N",
-          "value": 5962
-        },
-        "sub_device": {
-          "hex": "174a",
-          "value": 5962
-        },
-        "serial": "FYA7N020713207841",
-        "model": "HFM512GD3JX013N",
-        "sysfs_id": "/class/block/nvme0n1",
-        "sysfs_bus_id": "nvme0",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme0",
-        "unix_device_names": [
-          "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841",
-          "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841_1",
-          "/dev/disk/by-id/nvme-nvme.1c5c-465941374e303230373133323037383431-48464d3531324744334a583031334e-00000001",
-          "/dev/disk/by-path/pci-0000:02:00.0-nvme-1",
-          "/dev/nvme0n1"
-        ],
-        "resources": [
-          {
-            "type": "disk_geo",
-            "cylinders": 488386,
-            "heads": 64,
-            "sectors": 32,
-            "size": "0x0",
-            "geo_type": "logical"
-          },
-          {
-            "type": "size",
-            "unit": "sectors",
-            "value_1": 1000215216,
-            "value_2": 512
-          }
-        ],
-        "driver": "nvme",
-        "driver_module": "nvme",
-        "drivers": [
-          "nvme"
-        ],
-        "driver_modules": [
-          "nvme"
-        ]
-      },
-      {
-        "index": 43,
         "attached_to": 16,
         "class_list": [
           "disk",
@@ -1157,7 +1076,7 @@
         },
         "slot": {
           "bus": 0,
-          "number": 1
+          "number": 0
         },
         "base_class": {
           "hex": "0106",
@@ -1188,15 +1107,15 @@
         },
         "serial": "S6S1NG0RA02239Z",
         "model": "Samsung SSD 970 EVO Plus 1TB",
-        "sysfs_id": "/class/block/nvme1n1",
-        "sysfs_bus_id": "nvme1",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme1",
+        "sysfs_id": "/class/block/nvme0n1",
+        "sysfs_bus_id": "nvme0",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme0",
         "unix_device_names": [
           "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z",
           "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z_1",
           "/dev/disk/by-id/nvme-eui.0025385a1150c740",
           "/dev/disk/by-path/pci-0000:03:00.0-nvme-1",
-          "/dev/nvme1n1"
+          "/dev/nvme0n1"
         ],
         "resources": [
           {
@@ -1211,6 +1130,87 @@
             "type": "size",
             "unit": "sectors",
             "value_1": 1953525168,
+            "value_2": 512
+          }
+        ],
+        "driver": "nvme",
+        "driver_module": "nvme",
+        "drivers": [
+          "nvme"
+        ],
+        "driver_modules": [
+          "nvme"
+        ]
+      },
+      {
+        "index": 43,
+        "attached_to": 21,
+        "class_list": [
+          "disk",
+          "block_device",
+          "nvme"
+        ],
+        "bus_type": {
+          "hex": "0096",
+          "name": "NVME",
+          "value": 150
+        },
+        "slot": {
+          "bus": 0,
+          "number": 1
+        },
+        "base_class": {
+          "hex": "0106",
+          "name": "Mass Storage Device",
+          "value": 262
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Disk",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "1c5c",
+          "value": 7260
+        },
+        "sub_vendor": {
+          "hex": "1c5c",
+          "value": 7260
+        },
+        "device": {
+          "hex": "174a",
+          "name": "HFM512GD3JX013N",
+          "value": 5962
+        },
+        "sub_device": {
+          "hex": "174a",
+          "value": 5962
+        },
+        "serial": "FYA7N020713207841",
+        "model": "HFM512GD3JX013N",
+        "sysfs_id": "/class/block/nvme1n1",
+        "sysfs_bus_id": "nvme1",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme1",
+        "unix_device_names": [
+          "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841",
+          "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841_1",
+          "/dev/disk/by-id/nvme-nvme.1c5c-465941374e303230373133323037383431-48464d3531324744334a583031334e-00000001",
+          "/dev/disk/by-path/pci-0000:02:00.0-nvme-1",
+          "/dev/nvme1n1"
+        ],
+        "resources": [
+          {
+            "type": "disk_geo",
+            "cylinders": 488386,
+            "heads": 64,
+            "sectors": 32,
+            "size": "0x0",
+            "geo_type": "logical"
+          },
+          {
+            "type": "size",
+            "unit": "sectors",
+            "value_1": 1000215216,
             "value_2": 512
           }
         ],
@@ -1492,7 +1492,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.4-zen1 xhci-hcd",
+          "name": "Linux 6.18.7-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1506,7 +1506,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.18.4-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.7-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -1664,7 +1664,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.4-zen1 xhci-hcd",
+          "name": "Linux 6.18.7-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1678,7 +1678,7 @@
           "value": 0
         },
         "serial": "0000:00:14.0",
-        "model": "Linux 6.18.4-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.7-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -1741,7 +1741,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.4-zen1 xhci-hcd",
+          "name": "Linux 6.18.7-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1755,7 +1755,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.18.4-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.7-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -1828,7 +1828,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.4-zen1 xhci-hcd",
+          "name": "Linux 6.18.7-zen1 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -1842,7 +1842,7 @@
           "value": 0
         },
         "serial": "0000:00:0d.0",
-        "model": "Linux 6.18.4-zen1 xhci-hcd xHCI Host Controller",
+        "model": "Linux 6.18.7-zen1 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:0d.0/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -2392,7 +2392,7 @@
         },
         "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.0008/input/input24",
         "unix_device_names": [
-          "/dev/input/event21",
+          "/dev/input/event17",
           "/dev/input/ + handler"
         ]
       }
@@ -4328,6 +4328,9 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.4/3-3.4:1.5",
         "sysfs_bus_id": "3-3.4:1.5",
         "unix_device_names": [
+          "/dev/input/by-id/usb-SteelSeries_SteelSeries_Arctis_7-event-if05",
+          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.4:1.5-event",
+          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.4:1.5-event",
           "/dev/input/event7"
         ],
         "resources": [

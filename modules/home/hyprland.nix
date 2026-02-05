@@ -71,18 +71,42 @@ delib.module {
           TMPFILE=$(mktemp --suffix=.png)
           trap 'rm -f "$TMPFILE"' EXIT
 
-          ${lib.getExe pkgs.hyprshot} -s -m $@ --freeze -o "$(dirname "$TMPFILE")" -f "$(basename "$TMPFILE")"
+          notify_error() {
+            ${lib.getExe pkgs.libnotify} -u critical "Screenshot failed" "$1"
+            exit 1
+          }
+
+          # Capture screenshot
+          if ! ${lib.getExe pkgs.hyprshot} -s -m "$@" --freeze -o "$(dirname "$TMPFILE")" -f "$(basename "$TMPFILE")"; then
+            notify_error "Failed to capture screenshot"
+          fi
 
           # Wait for file stability
           while [ "$(stat -c%s "$TMPFILE" 2>/dev/null)" != "$(sleep 0.05; stat -c%s "$TMPFILE" 2>/dev/null)" ]; do :; done
 
-          TOKEN=$(cat /run/secrets/zipline_token | tr -d '\n')
-          URL=$(${lib.getExe pkgs.curl} -s \
+          # Check if file exists and has content
+          if [ ! -s "$TMPFILE" ]; then
+            notify_error "Screenshot file is empty"
+          fi
+
+          # Get token
+          TOKEN=$(cat /run/secrets/zipline_token 2>/dev/null | tr -d '\n') || notify_error "Failed to read zipline token"
+
+          # Upload to zipline
+          RESPONSE=$(${lib.getExe pkgs.curl} -s \
             -H "Authorization: $TOKEN" \
             -F "file=@$TMPFILE;type=image/png" \
-            "https://zip.pupbrained.dev/api/upload" | ${lib.getExe pkgs.jq} -r '.files[0].url')
+            "https://zip.pupbrained.dev/api/upload") || notify_error "Upload request failed"
 
-          echo -n "$URL" | ${pkgs.wl-clipboard}/bin/wl-copy
+          # Parse URL from response
+          URL=$(echo "$RESPONSE" | ${lib.getExe pkgs.jq} -r '.files[0].url') || notify_error "Failed to parse upload response"
+
+          # Validate URL is not null/empty
+          if [ -z "$URL" ] || [ "$URL" = "null" ]; then
+            notify_error "Upload failed: invalid response from server"
+          fi
+
+          echo -n "$URL" | ${pkgs.wl-clipboard}/bin/wl-copy || notify_error "Failed to copy URL to clipboard"
           ${lib.getExe pkgs.libnotify} -i "$TMPFILE" "Screenshot uploaded" "$URL"
 
           trap - EXIT

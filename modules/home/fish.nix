@@ -10,7 +10,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = _: let
+  home.ifEnabled = {myconfig, ...}: let
     mkFishPlugin = sources: {
       inherit (sources) src;
       name = sources.pname;
@@ -60,7 +60,7 @@ delib.module {
       interactiveShellInit = ''
         function fish_greeting
           if type -q draconis++
-            draconis++
+            draconis++ ${pkgs.lib.optionalString myconfig.host.isDesktop "--logo-path ${../../files/tiger-cub.gif} --logo-protocol iterm2 --logo-height 200 --logo-width 200"}
           end
         end
 
