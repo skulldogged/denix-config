@@ -19,6 +19,7 @@ delib.module {
       pluginsSrc = inputs.draconisplusplus-plugins;
 
       configFormat = "hpp";
+
       enableCaching = true;
       enablePackageCount = true;
       enablePlugins = true;
@@ -78,6 +79,13 @@ delib.module {
           ];
         }
       ];
+
+      logo = {
+        path = ../../files/tiger-cub.gif;
+        protocol = "iterm2";
+        width = 200;
+        height = 200;
+      };
 
       pluginConfigs = {
         weather = {

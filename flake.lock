@@ -216,11 +216,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1767312338,
-        "narHash": "sha256-XIdoyRnGS3NESax8vE1D0ilrdcaIT1qiseIMun9APxg=",
+        "lastModified": 1770275035,
+        "narHash": "sha256-zBh6XHPc3lq+1rURO2NaGqMoHpH7ZKmnTVs2kQki5Nw=",
         "owner": "skulldogged",
         "repo": "draconisplusplus",
-        "rev": "ebc39835078655cef728977e72506aef5a7ef015",
+        "rev": "005eb6b31f6971715661f8ac7d350746c0e4584d",
         "type": "github"
       },
       "original": {
