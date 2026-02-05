@@ -113,10 +113,32 @@ delib.module {
           tray.compact = true;
         };
 
-        general.apps = {
-          terminal = ["wezterm"];
-          explorer = ["nautilus"];
-          playback = ["mpv"];
+        general = {
+          apps = {
+            terminal = ["wezterm"];
+            explorer = ["nautilus"];
+            playback = ["mpv"];
+          };
+
+          idle = {
+            lockBeforeSleep = true;
+            inhibitWhenAudio = true;
+            timeouts = [
+              {
+                timeout = 1800; # 30min
+                idleAction = "lock";
+              }
+              {
+                timeout = 2700; # 45min
+                idleAction = "dpms off";
+                returnAction = "dpms on";
+              }
+              {
+                timeout = 3600; # 60min
+                idleAction = ["systemctl" "suspend-then-hibernate"];
+              }
+            ];
+          };
         };
 
         launcher.actions = [
