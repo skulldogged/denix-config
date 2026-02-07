@@ -138,6 +138,7 @@
             alejandra
             git
             lua-language-server
+            nh
             nvfetcher
             statix
 

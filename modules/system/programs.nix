@@ -73,6 +73,7 @@ delib.module {
   darwin.ifEnabled = {
     programs = {
       fish.enable = true;
+
       gnupg.agent = {
         enable = true;
         enableSSHSupport = true;

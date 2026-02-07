@@ -25,6 +25,8 @@ delib.module {
         codex
         file
         grc
+      ])
+      ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [
         mullvad-vpn
         wl-clipboard
         xclip

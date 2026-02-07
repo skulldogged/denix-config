@@ -1,4 +1,9 @@
-{delib, ...}:
+{
+  delib,
+  inputs,
+  lib,
+  ...
+}:
 delib.module {
   name = "system.nix";
 
@@ -83,10 +88,6 @@ delib.module {
   };
 
   darwin.ifEnabled = {
-    inputs,
-    lib,
-    ...
-  }: {
     nix = {
       optimise.automatic = true;
       gc = {

@@ -11,6 +11,7 @@ delib.host {
   darwin = {
     # Allow unfree packages
     nixpkgs.config.allowUnfree = true;
+    nixpkgs.hostPlatform = "aarch64-darwin";
 
     # macOS-specific settings
     ids.gids.nixbld = 30000;
@@ -57,17 +58,6 @@ delib.host {
       };
     };
 
-    # skhd keybindings
-    services.skhd = {
-      enable = true;
-      package = pkgs.skhd;
-
-      skhdConfig = ''
-        alt - return : open -na "WezTerm"
-        alt - w : open -a "Arc"
-      '';
-    };
-
     # Touch ID for sudo
     security.pam.services.sudo_local.touchIdAuth = true;
   };
@@ -80,6 +70,7 @@ delib.host {
     # Home modules
     home.shell.enable = true;
     home.fish.enable = true;
+    home.packages.enable = true;
     home.wezterm.enable = true;
 
     # Programs
