@@ -33,6 +33,7 @@ delib.host {
         cloudflare_token = {};
         forgejo_token = {};
         helium_hmac = {};
+        jellyfin_api_key = {};
         mailer_passwd = {};
         slskd_api_key = {};
         slskd_env = {};
@@ -453,8 +454,14 @@ delib.host {
         hmacSecretFile = config.sops.secrets.helium_hmac.path;
       };
 
-      aurelia-sidecar = {
+      aurelia-sidecar-daemon = {
         enable = true;
+        environmentFile = config.sops.secrets.jellyfin_api_key.path;
+        settings = {
+          jellyfin_url = "http://localhost:8096";
+          music_paths = ["/mnt/music"];
+          port = 8083;
+        };
       };
 
       jellyfin = {
@@ -588,6 +595,7 @@ delib.host {
         6610 # forgejo
         6969 # bluesky-pds
         8081 # helium-services nginx
+        8083 # aurelia-sidecar-daemon
       ];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
