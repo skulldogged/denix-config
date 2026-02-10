@@ -78,6 +78,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    aurelia = {
+      url = "git+ssh://git@github.com/skulldogged/aurelia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     linux-wallpaperengine-src = {
       url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
       flake = false;

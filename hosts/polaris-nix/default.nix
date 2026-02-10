@@ -15,6 +15,7 @@ delib.host {
       sops-nix.nixosModules.sops
       nixos-facter-modules.nixosModules.facter
       helium-services.nixosModules.default
+      aurelia.nixosModules.default
       vscode-server.nixosModules.default
     ];
 
@@ -450,6 +451,10 @@ delib.host {
         enable = true;
         hostname = "skulldogged.dev";
         hmacSecretFile = config.sops.secrets.helium_hmac.path;
+      };
+
+      aurelia-sidecar = {
+        enable = true;
       };
 
       jellyfin = {
