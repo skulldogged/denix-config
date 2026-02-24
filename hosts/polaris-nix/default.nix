@@ -17,10 +17,14 @@ delib.host {
       helium-services.nixosModules.default
       aurelia.nixosModules.default
       vscode-server.nixosModules.default
+      spacebot.nixosModules.default
     ];
 
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.overlays = [inputs.nix-openclaw.overlays.default];
+    nixpkgs.overlays = [
+      inputs.nix-openclaw.overlays.default
+      inputs.opencode.overlays.default
+    ];
 
     facter.reportPath = ./facter.json;
 
@@ -81,16 +85,16 @@ delib.host {
       };
     };
 
-    swapDevices = [{device = "/dev/disk/by-uuid/d36507db-7392-4852-9b2a-12d2a476cd31";}];
-
     time.timeZone = "America/New_York";
 
     environment.systemPackages = with pkgs; [
       codeium
       graalvmPackages.graalvm-oracle_17
+      ghostty.terminfo
       miniupnpc
       nodejs_20
-      (callPackage ../../pkgs/lobster {})
+      opencode
+      uv
     ];
 
     boot = {
@@ -136,6 +140,9 @@ delib.host {
               "jellyfin.pupbrained.dev" = {
                 service = "http://localhost:8096";
               };
+              "navidrome.skulldogged.dev" = {
+                service = "http://localhost:4533";
+              };
               "zip.pupbrained.dev" = {
                 service = "http://localhost:3000";
               };
@@ -150,6 +157,12 @@ delib.host {
               };
               "glance.skulldogged.dev" = {
                 service = "http://localhost:5678";
+              };
+              "lyrics.skulldogged.dev" = {
+                service = "http://localhost:8083";
+              };
+              "spacebot.skulldogged.dev" = {
+                service = "http://localhost:19898";
               };
             };
             default = "http_status:404";
@@ -250,13 +263,22 @@ delib.host {
             blackLists = {
               ads = [
                 "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+                "https://big.oisd.nl/"
+                ''
+                  saawsedge.com
+                ''
               ];
               tracking = [
                 "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts"
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt"
+              ];
+              malware = [
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/malicious.txt"
+                "https://urlhaus.abuse.ch/downloads/hostfile/"
               ];
             };
             clientGroupsBlock = {
-              default = ["ads" "tracking"];
+              default = ["ads" "tracking" "malware"];
             };
           };
           caching = {
@@ -281,6 +303,12 @@ delib.host {
             {
               name = "Jellyfin";
               url = "https://jellyfin.pupbrained.dev";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Navidrome";
+              url = "https://navidrome.skulldogged.dev";
               conditions = ["[STATUS] == 200"];
               interval = "5m";
             }
@@ -311,6 +339,18 @@ delib.host {
             {
               name = "slskd";
               url = "http://127.0.0.1:5030";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Aurelia";
+              url = "http://127.0.0.1:8083";
+              conditions = ["[STATUS] == 200"];
+              interval = "5m";
+            }
+            {
+              name = "Spacebot";
+              url = "http://127.0.0.1:19898/api/health";
               conditions = ["[STATUS] == 200"];
               interval = "5m";
             }
@@ -370,6 +410,11 @@ delib.host {
                           title = "Jellyfin";
                           url = "https://jellyfin.pupbrained.dev/";
                           icon = "si:jellyfin";
+                        }
+                        {
+                          title = "Navidrome";
+                          url = "https://navidrome.skulldogged.dev/";
+                          icon = "si:navidrome";
                         }
                         {
                           title = "Forgejo";
@@ -457,7 +502,9 @@ delib.host {
       aurelia-sidecar-daemon = {
         enable = true;
         environmentFile = config.sops.secrets.jellyfin_api_key.path;
+        openFirewall = true;
         settings = {
+          bind = "0.0.0.0";
           jellyfin_url = "http://localhost:8096";
           music_paths = ["/mnt/music"];
           port = 8083;
@@ -468,6 +515,16 @@ delib.host {
         enable = true;
         openFirewall = true;
         dataDir = "/mnt/jellyfin";
+      };
+
+      navidrome = {
+        enable = true;
+        openFirewall = true;
+        settings = {
+          Address = "0.0.0.0";
+          Port = 4533;
+          MusicFolder = "/mnt/music";
+        };
       };
 
       qbittorrent = {
@@ -549,11 +606,21 @@ delib.host {
           CORE_CHUNKED_MAX_SIZE = "100MB";
         };
       };
+
+      spacebot = {
+        enable = true;
+        bind = "0.0.0.0";
+        openFirewall = true;
+        pathUser = config.myconfig.constants.username;
+        port = 19898;
+        variant = "full";
+      };
     };
 
     systemd.services = {
       bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
       zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+      aurelia-sidecar-daemon.environment.RUST_LOG = "debug";
 
       slskd = {
         serviceConfig = {
@@ -595,7 +662,6 @@ delib.host {
         6610 # forgejo
         6969 # bluesky-pds
         8081 # helium-services nginx
-        8083 # aurelia-sidecar-daemon
       ];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
@@ -643,7 +709,7 @@ delib.host {
     };
 
     programs = {
-      openclaw.enable = true;
+      openclaw.enable = false;
       draconisplusplus.enable = true;
 
       git = {

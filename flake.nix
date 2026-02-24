@@ -78,6 +78,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    spacebot = {
+      url = "github:spacedriveapp/spacebot";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    opencode = {
+      url = "github:anomalyco/opencode/dev";
+    };
+
     aurelia = {
       url = "git+ssh://git@github.com/skulldogged/aurelia";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -393,7 +393,7 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 32568,
+        "tlb_size": 32736,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -430,7 +430,7 @@
         "resources": [
           {
             "type": "disk_geo",
-            "cylinders": 23497,
+            "cylinders": 52216,
             "heads": 255,
             "sectors": 63,
             "size": "0x0",
@@ -439,7 +439,7 @@
           {
             "type": "size",
             "unit": "sectors",
-            "value_1": 377487360,
+            "value_1": 838860800,
             "value_2": 512
           }
         ],
@@ -600,7 +600,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.8-xanmod1 uhci_hcd",
+          "name": "Linux 6.18.10-xanmod1 uhci_hcd",
           "value": 7531
         },
         "device": {
@@ -614,7 +614,7 @@
           "value": 0
         },
         "serial": "0000:00:01.2",
-        "model": "Linux 6.18.8-xanmod1 uhci_hcd UHCI Host Controller",
+        "model": "Linux 6.18.10-xanmod1 uhci_hcd UHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:01.2/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -845,7 +845,29 @@
     ],
     "network_interface": [
       {
-        "index": 30,
+        "index": 29,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
+        },
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
+        "unix_device_names": [
+          "lo"
+        ]
+      },
+      {
+        "index": 31,
         "attached_to": 22,
         "class_list": [
           "network_interface"
@@ -883,28 +905,6 @@
         ],
         "driver_modules": [
           "xen_netfront"
-        ]
-      },
-      {
-        "index": 31,
-        "attached_to": 0,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_names": [
-          "lo"
         ]
       }
     ],
