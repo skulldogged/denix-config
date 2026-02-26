@@ -51,10 +51,10 @@ delib.module {
         else ''
           SCREEN=$(${pkgs.wlr-randr}/bin/wlr-randr 2>/dev/null | grep -E '^[A-Za-z]' | head -1 | cut -d' ' -f1)
           if [ -z "$SCREEN" ]; then
-            SCREEN=$(${pkgs.xorg.xrandr}/bin/xrandr 2>/dev/null | grep ' connected primary' | cut -d' ' -f1)
+            SCREEN=$(${pkgs.xrandr}/bin/xrandr 2>/dev/null | grep ' connected primary' | cut -d' ' -f1)
           fi
           if [ -z "$SCREEN" ]; then
-            SCREEN=$(${pkgs.xorg.xrandr}/bin/xrandr 2>/dev/null | grep ' connected' | head -1 | cut -d' ' -f1)
+            SCREEN=$(${pkgs.xrandr}/bin/xrandr 2>/dev/null | grep ' connected' | head -1 | cut -d' ' -f1)
           fi
           if [ -z "$SCREEN" ]; then
             SCREEN="DP-1"

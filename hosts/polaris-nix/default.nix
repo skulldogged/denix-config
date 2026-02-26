@@ -14,7 +14,6 @@ delib.host {
     imports = with inputs; [
       sops-nix.nixosModules.sops
       nixos-facter-modules.nixosModules.facter
-      helium-services.nixosModules.default
       aurelia.nixosModules.default
       vscode-server.nixosModules.default
       spacebot.nixosModules.default
@@ -36,7 +35,6 @@ delib.host {
         bsky_pds = {};
         cloudflare_token = {};
         forgejo_token = {};
-        helium_hmac = {};
         jellyfin_api_key = {};
         mailer_passwd = {};
         slskd_api_key = {};
@@ -493,14 +491,9 @@ delib.host {
         };
       };
 
-      helium-services = {
-        enable = true;
-        hostname = "skulldogged.dev";
-        hmacSecretFile = config.sops.secrets.helium_hmac.path;
-      };
-
       aurelia-sidecar-daemon = {
         enable = true;
+        package = inputs.aurelia.packages.${pkgs.stdenv.hostPlatform.system}.aurelia-sidecar-daemon;
         environmentFile = config.sops.secrets.jellyfin_api_key.path;
         openFirewall = true;
         settings = {
@@ -519,6 +512,30 @@ delib.host {
 
       navidrome = {
         enable = true;
+        package = pkgs.navidrome.overrideAttrs (old: rec {
+          version = "0.60.3";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "navidrome";
+            repo = "navidrome";
+            rev = "v${version}";
+            hash = "sha256-DwVmNJKjwEhTKIVPYFqaUR9SD4HpACkK4XJoFfQVRus=";
+          };
+
+          vendorHash = "sha256-StI4CfWN/OnbYFktRriTJWMHTuJkCinpYk9qgsxMGG8=";
+
+          npmDeps = pkgs.fetchNpmDeps {
+            inherit src;
+            sourceRoot = "${src.name}/ui";
+            hash = "sha256-EA2WM7xaqP7rS0pjx+yXwpjdauaduvDefmFH73eByxI=";
+          };
+
+          env =
+            (old.env or {})
+            // {
+              CGO_CFLAGS_ALLOW = ".*--define-prefix.*";
+            };
+        });
         openFirewall = true;
         settings = {
           Address = "0.0.0.0";
@@ -596,6 +613,13 @@ delib.host {
 
       zipline = {
         enable = true;
+        package = pkgs.zipline.overrideAttrs (_: {
+          buildPhase = ''
+            runHook preBuild
+            pnpm build
+            runHook postBuild
+          '';
+        });
         environmentFiles = [config.sops.secrets.zipline_secret.path];
         settings = {
           CORE_HOSTNAME = "127.0.0.1";
@@ -661,7 +685,6 @@ delib.host {
         3000 # zipline
         6610 # forgejo
         6969 # bluesky-pds
-        8081 # helium-services nginx
       ];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
@@ -710,7 +733,7 @@ delib.host {
 
     programs = {
       openclaw.enable = false;
-      draconisplusplus.enable = true;
+      draconisplusplus.enable = false;
 
       git = {
         enable = true;

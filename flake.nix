@@ -25,7 +25,6 @@
 
     sops-nix.url = "github:Mic92/sops-nix";
     catppuccin.url = "github:catppuccin/nix";
-    helium-services.url = "github:skulldogged/helium-services";
     impermanence.url = "github:nix-community/impermanence";
     nix-colors.url = "github:Misterio77/nix-colors";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
@@ -79,7 +78,7 @@
     };
 
     spacebot = {
-      url = "github:spacedriveapp/spacebot";
+      url = "git+file:///home/marshall/spacebot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

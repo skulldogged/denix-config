@@ -20,7 +20,7 @@ delib.module {
       libqalculate
       wl-clipboard
       (pkgs.writeShellScriptBin "hyprexit" ''
-        ${inputs.hyprland.packages.${pkgs.system}.hyprland}/bin/hyprctl dispatch exit
+        ${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl dispatch exit
         ${pkgs.systemd}/bin/loginctl terminate-user ${myconfig.constants.username}
       '')
     ];

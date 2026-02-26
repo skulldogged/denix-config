@@ -18,6 +18,6 @@ delib.module {
   };
 
   home.ifEnabled = {
-    home.packages = [inputs.nix-openclaw.packages.${pkgs.system}.default];
+    home.packages = [inputs.nix-openclaw.packages.${pkgs.stdenv.hostPlatform.system}.default];
   };
 }
