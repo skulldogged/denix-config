@@ -33,7 +33,7 @@
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     draconisplusplus = {
-      url = "github:skulldogged/draconisplusplus";
+      url = "github:skulldogged/draconisplusplus-monorepo";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -78,7 +78,7 @@
     };
 
     spacebot = {
-      url = "git+file:///home/marshall/spacebot";
+      url = "github:spacedriveapp/spacebot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
