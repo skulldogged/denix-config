@@ -21,7 +21,7 @@ delib.host {
       distributedBuilds = true;
       buildMachines = [
         {
-          hostName = "ssh.pupbrained.dev";
+          hostName = "polaris-nix";
           protocol = "ssh-ng";
           sshUser = "nix-builder";
           sshKey = "/root/.ssh/id_ed25519";
@@ -122,6 +122,11 @@ delib.host {
       ATTR{address}=="ea:4b:04:13:ec:50", NAME="eth0"
       ATTR{address}=="02:bf:7a:a8:a8:cb", NAME="eth1"
     '';
+
+    services.tailscale = {
+      enable = true;
+      openFirewall = true;
+    };
 
     users.users.marshall.openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"

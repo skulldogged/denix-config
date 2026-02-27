@@ -25,7 +25,7 @@ delib.host {
       distributedBuilds = true;
       buildMachines = [
         {
-          hostName = "ssh.pupbrained.dev";
+          hostName = "polaris-nix";
           protocol = "ssh-ng";
           sshUser = "nix-builder";
           sshKey = "/persist/root/.ssh/id_ed25519";

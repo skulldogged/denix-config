@@ -18,7 +18,7 @@ delib.host {
 
     nix.buildMachines = [
       {
-        hostName = "ssh.pupbrained.dev";
+        hostName = "polaris-nix";
         protocol = "ssh-ng";
         sshUser = "nix-builder";
         sshKey = "/Users/marshall/.ssh/id_ed25519";
