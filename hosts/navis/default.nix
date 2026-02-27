@@ -331,7 +331,7 @@ delib.host {
       git = {
         enable = true;
         credentialHelper = "libsecret";
-        signingKey = "0FF5B8826803F895";
+        signingKey = "263409D620072FB8";
       };
 
       linux-wallpaperengine = {
