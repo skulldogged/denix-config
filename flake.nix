@@ -78,12 +78,12 @@
     };
 
     spacebot = {
-      url = "github:spacedriveapp/spacebot";
+      url = "github:skulldogged/spacebot/chore/frontend-bun2nix-lock";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     opencode = {
-      url = "github:anomalyco/opencode/dev";
+      url = "github:anomalyco/opencode/aae75b3cfb10cdff965fb434c487980b152efdec";
     };
 
     aurelia = {

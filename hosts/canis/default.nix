@@ -16,6 +16,25 @@ delib.host {
     # macOS-specific settings
     ids.gids.nixbld = 30000;
 
+    nix.buildMachines = [
+      {
+        hostName = "ssh.pupbrained.dev";
+        protocol = "ssh-ng";
+        sshUser = "nix-builder";
+        sshKey = "/Users/marshall/.ssh/id_ed25519";
+        systems = ["x86_64-linux"];
+        maxJobs = 8;
+        speedFactor = 10;
+        supportedFeatures = [
+          "nixos-test"
+          "kvm"
+          "recursive-nix"
+          "big-parallel"
+          "gccarch-x86-64-v4"
+        ];
+      }
+    ];
+
     # Fonts
     fonts.packages = with pkgs; ([
         font-awesome

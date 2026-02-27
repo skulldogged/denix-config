@@ -17,6 +17,28 @@ delib.host {
 
     facter.reportPath = ./facter.json;
 
+    nix = {
+      distributedBuilds = true;
+      buildMachines = [
+        {
+          hostName = "ssh.pupbrained.dev";
+          protocol = "ssh-ng";
+          sshUser = "nix-builder";
+          sshKey = "/root/.ssh/id_ed25519";
+          systems = ["x86_64-linux"];
+          maxJobs = 8;
+          speedFactor = 10;
+          supportedFeatures = [
+            "nixos-test"
+            "kvm"
+            "recursive-nix"
+            "big-parallel"
+            "gccarch-x86-64-v4"
+          ];
+        }
+      ];
+    };
+
     boot = {
       loader.grub.device = "/dev/vda";
       tmp.cleanOnBoot = true;
