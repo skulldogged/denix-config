@@ -25,7 +25,7 @@ delib.host {
       distributedBuilds = true;
       buildMachines = [
         {
-          hostName = "polaris-nix";
+          hostName = "polaris";
           protocol = "ssh-ng";
           sshUser = "nix-builder";
           sshKey = "/persist/root/.ssh/id_ed25519";

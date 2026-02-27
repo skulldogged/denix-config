@@ -6,7 +6,7 @@
   ...
 }:
 delib.host {
-  name = "polaris-nix";
+  name = "polaris";
 
   type = "server";
 
@@ -28,7 +28,7 @@ delib.host {
     facter.reportPath = ./facter.json;
 
     sops = {
-      defaultSopsFile = ../../secrets/polaris-nix.yaml;
+      defaultSopsFile = ../../secrets/polaris.yaml;
       age.sshKeyPaths = ["/root/.ssh/id_ed25519"];
 
       secrets = {
@@ -725,7 +725,7 @@ delib.host {
 
       networking = {
         enable = true;
-        hostName = "polaris-nix";
+        hostName = "polaris";
       };
 
       users = {
