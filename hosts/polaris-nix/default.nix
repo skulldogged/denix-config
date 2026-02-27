@@ -670,6 +670,8 @@ delib.host {
         openssh.authorizedKeys.keys = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsHqYKt58eFcZo7UdPX45CaEhLeGge+cE1Gdt74IHSv MacBook"
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHvxKReLJz5kHLWVtgZanjj8tjJeT6c8l94gFezebri spacebot-droplet-root-builder"
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFQ0g6AYRpX99etX1jJArhly75WwSSRMLrKc4Z+UKUsC spacebot-droplet-marshall-builder"
         ];
       };
 

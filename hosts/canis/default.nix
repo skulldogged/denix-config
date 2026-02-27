@@ -22,6 +22,7 @@ delib.host {
         protocol = "ssh-ng";
         sshUser = "nix-builder";
         sshKey = "/Users/marshall/.ssh/id_ed25519";
+        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU9tTitBZGZTSW03L1pla3dzV0IvYytpZFBZRnJ2QlVqZEhTMWkzUDRPRSsgcm9vdEBwb2xhcmlzLW5peAo=";
         systems = ["x86_64-linux"];
         maxJobs = 8;
         speedFactor = 10;
