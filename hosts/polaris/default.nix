@@ -32,6 +32,8 @@ delib.host {
       age.sshKeyPaths = ["/root/.ssh/id_ed25519"];
 
       secrets = {
+        attic_jwt = {};
+        attic_writer_token = {};
         bsky_pds = {};
         cloudflare_token = {};
         forgejo_token = {};
@@ -63,6 +65,13 @@ delib.host {
               apiKey: ${config.sops.placeholder.slskd_api_key}
         '';
       };
+
+      templates."atticd.env" = {
+        mode = "0400";
+        content = ''
+          ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=${config.sops.placeholder.attic_jwt}
+        '';
+      };
     };
 
     fileSystems = {
@@ -86,6 +95,7 @@ delib.host {
     time.timeZone = "America/New_York";
 
     environment.systemPackages = with pkgs; [
+      attic-client
       codeium
       graalvmPackages.graalvm-oracle_17
       ghostty.terminfo
@@ -94,6 +104,19 @@ delib.host {
       opencode
       uv
     ];
+
+    environment.etc."attic/config.toml" = {
+      mode = "0600";
+      text =
+        # toml
+        ''
+          default-server = "polaris"
+
+          [servers.polaris]
+          endpoint = "http://127.0.0.1:8080"
+          token-file = "${config.sops.secrets.attic_writer_token.path}"
+        '';
+    };
 
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
@@ -112,6 +135,22 @@ delib.host {
       tailscale.openFirewall = true;
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
+
+      atticd = {
+        enable = true;
+        environmentFile = config.sops.templates."atticd.env".path;
+        settings = {
+          listen = "127.0.0.1:8080";
+          allowed-hosts = [
+            "cache.skulldogged.dev"
+            "127.0.0.1"
+            "127.0.0.1:8080"
+            "localhost"
+            "localhost:8080"
+          ];
+          api-endpoint = "https://cache.skulldogged.dev/";
+        };
+      };
 
       bluesky-pds = {
         enable = true;
@@ -155,6 +194,9 @@ delib.host {
               };
               "glance.skulldogged.dev" = {
                 service = "http://localhost:5678";
+              };
+              "cache.skulldogged.dev" = {
+                service = "http://localhost:8080";
               };
               "lyrics.skulldogged.dev" = {
                 service = "http://localhost:8083";
@@ -651,6 +693,25 @@ delib.host {
           ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
           ReadOnlyPaths = pkgs.lib.mkForce [""];
           RuntimeDirectory = "slskd";
+        };
+      };
+
+      attic-watch-store = {
+        description = "Upload new Nix store paths to Attic";
+        wantedBy = ["multi-user.target"];
+        after = [
+          "network-online.target"
+          "atticd.service"
+          "sops-nix.service"
+        ];
+        wants = ["network-online.target"];
+
+        serviceConfig = {
+          Type = "simple";
+          Environment = "XDG_CONFIG_HOME=/etc";
+          ExecStart = "${pkgs.attic-client}/bin/attic watch-store -j 2 nix";
+          Restart = "always";
+          RestartSec = 15;
         };
       };
     };
