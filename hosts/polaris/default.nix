@@ -748,7 +748,7 @@ delib.host {
       git = {
         enable = true;
         credentialHelper = "libsecret";
-        signingKey = "91B1F40056A01DDF";
+        signingKey = "6FB1AE28C81E4359";
       };
     };
   };

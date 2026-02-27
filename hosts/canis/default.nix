@@ -96,7 +96,7 @@ delib.host {
     # Programs
     programs.git.enable = true;
     programs.git.credentialHelper = "osxkeychain";
-    programs.git.signingKey = "874E22DF2F9DFCB5";
+    programs.git.signingKey = "54EAB4F200CE30C2";
     programs.draconisplusplus.enable = true;
   };
 }
