@@ -20,10 +20,6 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.overlays = [
-      inputs.nix-openclaw.overlays.default
-      inputs.opencode.overlays.default
-    ];
 
     facter.reportPath = ./facter.json;
 
@@ -94,16 +90,28 @@ delib.host {
 
     time.timeZone = "America/New_York";
 
-    environment.systemPackages = with pkgs; [
-      attic-client
-      codeium
-      graalvmPackages.graalvm-oracle_17
-      ghostty.terminfo
-      miniupnpc
-      nodejs_20
-      opencode
-      uv
-    ];
+    environment.systemPackages = let
+      opencodePatched =
+        inputs.opencode.packages.${pkgs.stdenv.hostPlatform.system}.opencode.overrideAttrs
+        (old: {
+          postPatch =
+            (old.postPatch or "")
+            + ''
+              mkdir -p .github
+              cp ${inputs.opencode}/.github/TEAM_MEMBERS .github/TEAM_MEMBERS
+            '';
+        });
+    in
+      with pkgs; [
+        attic-client
+        codeium
+        graalvmPackages.graalvm-oracle_17
+        ghostty.terminfo
+        miniupnpc
+        nodejs_20
+        uv
+        opencodePatched
+      ];
 
     environment.etc."attic/config.toml" = {
       mode = "0600";
@@ -803,7 +811,6 @@ delib.host {
     };
 
     programs = {
-      openclaw.enable = false;
       draconisplusplus.enable = false;
 
       git = {

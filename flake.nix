@@ -72,18 +72,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-openclaw = {
-      url = "github:openclaw/nix-openclaw";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     spacebot = {
       url = "github:skulldogged/spacebot/chore/frontend-bun2nix-lock";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    bun-unstable.url = "github:arch-fan/nixpkgs/bun-1.3.10";
+
     opencode = {
-      url = "github:anomalyco/opencode/aae75b3cfb10cdff965fb434c487980b152efdec";
+      url = "github:anomalyco/opencode";
+      inputs.nixpkgs.follows = "bun-unstable";
     };
 
     aurelia = {
