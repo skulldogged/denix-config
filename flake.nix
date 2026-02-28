@@ -80,7 +80,7 @@
     bun-unstable.url = "github:arch-fan/nixpkgs/bun-1.3.10";
 
     opencode = {
-      url = "github:anomalyco/opencode";
+      url = "github:skulldogged/opencode/fix/copilot-responses-endpoint-routing";
       inputs.nixpkgs.follows = "bun-unstable";
     };
 

@@ -1480,15 +1480,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1772241494,
-        "narHash": "sha256-/oguV33xt0PAKm1wCknMSnHz2rDFebf/ZDhxZ7fwoUE=",
-        "owner": "anomalyco",
+        "lastModified": 1772309308,
+        "narHash": "sha256-h1nlpBNIBzJsW0gWxjf88VGyKsO9izuGehY8PUGoFD4=",
+        "owner": "skulldogged",
         "repo": "opencode",
-        "rev": "2a2082233d9e8bda4674ce596f04b61b3b32522d",
+        "rev": "5f99efe25f6fe2e7892840b3554dc5e371f8193b",
         "type": "github"
       },
       "original": {
-        "owner": "anomalyco",
+        "owner": "skulldogged",
+        "ref": "fix/copilot-responses-endpoint-routing",
         "repo": "opencode",
         "type": "github"
       }
