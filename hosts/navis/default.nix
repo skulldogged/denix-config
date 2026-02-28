@@ -77,6 +77,7 @@ delib.host {
           "/var/lib/systemd/coredump"
           "/var/lib/decky-loader"
           "/var/lib/libvirt"
+          "/var/lib/tailscale"
         ];
       };
 
@@ -289,6 +290,9 @@ delib.host {
           default_session = initial_session;
         };
       };
+
+      tailscale.enable = true;
+      tailscale.openFirewall = true;
 
       xserver.videoDrivers = ["nvidia"];
     };
