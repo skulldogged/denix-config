@@ -29,6 +29,7 @@
     nix-colors.url = "github:Misterio77/nix-colors";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixvim.url = "github:skulldogged/nixvim-new";
+    opencode.url = "github:anomalyco/opencode/dev";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
@@ -75,13 +76,6 @@
     spacebot = {
       url = "github:skulldogged/spacebot/chore/frontend-bun2nix-lock";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    bun-unstable.url = "github:arch-fan/nixpkgs/bun-1.3.10";
-
-    opencode = {
-      url = "github:skulldogged/opencode/fix/copilot-responses-endpoint-routing";
-      inputs.nixpkgs.follows = "bun-unstable";
     };
 
     aurelia = {
