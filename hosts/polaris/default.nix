@@ -35,6 +35,7 @@ delib.host {
         forgejo_token = {};
         jellyfin_api_key = {};
         mailer_passwd = {};
+        spacebot_master_key = {};
         slskd_api_key = {};
         slskd_env = {};
         zipline_secret = {};
@@ -90,28 +91,16 @@ delib.host {
 
     time.timeZone = "America/New_York";
 
-    environment.systemPackages = let
-      opencodePatched =
-        inputs.opencode.packages.${pkgs.stdenv.hostPlatform.system}.opencode.overrideAttrs
-        (old: {
-          postPatch =
-            (old.postPatch or "")
-            + ''
-              mkdir -p .github
-              cp ${inputs.opencode}/.github/TEAM_MEMBERS .github/TEAM_MEMBERS
-            '';
-        });
-    in
-      with pkgs; [
-        attic-client
-        codeium
-        graalvmPackages.graalvm-oracle_17
-        ghostty.terminfo
-        miniupnpc
-        nodejs_20
-        uv
-        opencodePatched
-      ];
+    environment.systemPackages = with pkgs; [
+      attic-client
+      codeium
+      graalvmPackages.graalvm-oracle_17
+      ghostty.terminfo
+      miniupnpc
+      nodejs_20
+      uv
+      opencode
+    ];
 
     environment.etc."attic/config.toml" = {
       mode = "0600";
@@ -684,10 +673,12 @@ delib.host {
       spacebot = {
         enable = true;
         bind = "0.0.0.0";
+        masterKeyFile = config.sops.secrets.spacebot_master_key.path;
         openFirewall = true;
+        pathAppend = ["${pkgs.chromium}/bin"];
         pathUser = config.myconfig.constants.username;
         port = 19898;
-        variant = "full";
+        variant = "slim";
       };
     };
 
@@ -702,6 +693,11 @@ delib.host {
           ReadOnlyPaths = pkgs.lib.mkForce [""];
           RuntimeDirectory = "slskd";
         };
+      };
+
+      spacebot = {
+        after = ["sops-nix.service"];
+        wants = ["sops-nix.service"];
       };
 
       attic-watch-store = {

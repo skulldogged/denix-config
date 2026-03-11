@@ -599,7 +599,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.13-xanmod1 uhci_hcd",
+          "name": "Linux 6.19.5-xanmod1 uhci_hcd",
           "value": 7531
         },
         "device": {
@@ -609,11 +609,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "6.19",
           "value": 0
         },
         "serial": "0000:00:01.2",
-        "model": "Linux 6.18.13-xanmod1 uhci_hcd UHCI Host Controller",
+        "model": "Linux 6.19.5-xanmod1 uhci_hcd UHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:01.2/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -661,7 +661,7 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0001d0618dc09dsc00dp00ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0001d0619dc09dsc00dp00ic09isc00ip00in00"
       }
     ],
     "memory": [
@@ -844,6 +844,28 @@
     ],
     "network_interface": [
       {
+        "index": 29,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
+        },
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
+        "unix_device_names": [
+          "lo"
+        ]
+      },
+      {
         "index": 30,
         "attached_to": 22,
         "class_list": [
@@ -882,28 +904,6 @@
         ],
         "driver_modules": [
           "xen_netfront"
-        ]
-      },
-      {
-        "index": 31,
-        "attached_to": 0,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_names": [
-          "lo"
         ]
       }
     ],

@@ -74,7 +74,7 @@
     };
 
     spacebot = {
-      url = "github:skulldogged/spacebot/chore/frontend-bun2nix-lock";
+      url = "github:skulldogged/spacebot-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
