@@ -260,6 +260,22 @@
         "type": "github"
       }
     },
+    "difftastic-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773249415,
+        "narHash": "sha256-/JGMX/K1II+Ib6nAo+qmKDP6kv5C2tK1s/++sU4gvmg=",
+        "owner": "skulldogged",
+        "repo": "difftastic",
+        "rev": "d45676da59a5356a5b2fa3bb475914552330ba84",
+        "type": "github"
+      },
+      "original": {
+        "owner": "skulldogged",
+        "repo": "difftastic",
+        "type": "github"
+      }
+    },
     "draconisplusplus": {
       "inputs": {
         "nixpkgs": [
@@ -1512,6 +1528,7 @@
         "caelestia-shell": "caelestia-shell",
         "catppuccin": "catppuccin",
         "denix": "denix",
+        "difftastic-src": "difftastic-src",
         "draconisplusplus": "draconisplusplus",
         "draconisplusplus-plugins": "draconisplusplus-plugins",
         "home-manager": "home-manager",
@@ -1617,15 +1634,15 @@
     "spacebot-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1773144392,
-        "narHash": "sha256-EVLpw3FwACvdia32SE1jxvwbtS5epudmaH2cPTgJv8o=",
-        "owner": "spacedriveapp",
+        "lastModified": 1772406741,
+        "narHash": "sha256-It3nXVb22nXvomhFCUqGW0vj31GQ3mVoD7/q26dHrho=",
+        "owner": "deanfluencebot",
         "repo": "spacebot",
-        "rev": "0a97964ab9adc64c88f4e8847c788d72ab0840b0",
+        "rev": "7ebd1e14044b801034076742fc9942bd5269039a",
         "type": "github"
       },
       "original": {
-        "owner": "spacedriveapp",
+        "owner": "deanfluencebot",
         "repo": "spacebot",
         "type": "github"
       }

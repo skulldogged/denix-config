@@ -29,6 +29,10 @@
     nix-colors.url = "github:Misterio77/nix-colors";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixvim.url = "github:skulldogged/nixvim-new";
+    difftastic-src = {
+      url = "github:skulldogged/difftastic";
+      flake = false;
+    };
     opencode.url = "github:anomalyco/opencode/dev";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -76,6 +80,7 @@
     spacebot = {
       url = "github:skulldogged/spacebot-nix";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.spacebot-src.url = "github:deanfluencebot/spacebot";
     };
 
     aurelia = {
