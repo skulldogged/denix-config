@@ -2,15 +2,25 @@
   description = "Modular configuration of NixOS, Home Manager, and Nix-Darwin with Denix";
 
   inputs = {
+    catppuccin.url = "github:catppuccin/nix";
+    impermanence.url = "github:nix-community/impermanence";
+    nix-colors.url = "github:Misterio77/nix-colors";
+    nix-minecraft.url = "github:skulldogged/nix-minecraft";
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixvim.url = "github:skulldogged/nixvim-new";
+    opencode.url = "github:anomalyco/opencode/dev";
+    sops-nix.url = "github:Mic92/sops-nix";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    vscode-server.url = "github:nix-community/nixos-vscode-server";
 
-    home-manager = {
-      url = "github:nix-community/home-manager/master";
+    aurelia = {
+      url = "git+ssh://git@github.com/skulldogged/aurelia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-darwin = {
-      url = "github:nix-darwin/nix-darwin/master";
+    caelestia-shell = {
+      url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -23,22 +33,23 @@
       };
     };
 
-    sops-nix.url = "github:Mic92/sops-nix";
-    catppuccin.url = "github:catppuccin/nix";
-    impermanence.url = "github:nix-community/impermanence";
-    nix-colors.url = "github:Misterio77/nix-colors";
-    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
-    nixvim.url = "github:skulldogged/nixvim-new";
     difftastic-src = {
       url = "github:skulldogged/difftastic";
       flake = false;
     };
-    opencode.url = "github:anomalyco/opencode/dev";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-    vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     draconisplusplus = {
       url = "github:skulldogged/draconisplusplus-monorepo";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    draconisplusplus-plugins = {
+      url = "github:skulldogged/draconisplusplus-plugins";
+      flake = false;
+    };
+
+    home-manager = {
+      url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -52,45 +63,34 @@
       inputs.hyprland.follows = "hyprland";
     };
 
-    nix-index-database = {
-      url = "github:nix-community/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    caelestia-shell = {
-      url = "github:caelestia-dots/shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    vicinae = {
-      url = "github:vicinaehq/vicinae";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    draconisplusplus-plugins = {
-      url = "github:skulldogged/draconisplusplus-plugins";
-      flake = false;
-    };
-
     lanzaboote = {
       url = "github:nix-community/lanzaboote";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    spacebot = {
-      url = "github:skulldogged/spacebot-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.spacebot-src.url = "github:deanfluencebot/spacebot";
-    };
-
-    aurelia = {
-      url = "git+ssh://git@github.com/skulldogged/aurelia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     linux-wallpaperengine-src = {
       url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
       flake = false;
+    };
+
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    spacebot = {
+      url = "github:skulldogged/spacebot-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    vicinae = {
+      url = "github:vicinaehq/vicinae";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
