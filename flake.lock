@@ -1108,11 +1108,11 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1773531873,
-        "narHash": "sha256-aF2jWYndfhqQpK5ZfFTIyNWf8sU95mvJ7udaw5ZwxKw=",
+        "lastModified": 1773533743,
+        "narHash": "sha256-SdHf8k8uVKHJau9iz02LgUax6Hev2h1WAdA4PvuuNEY=",
         "owner": "skulldogged",
         "repo": "nix-minecraft",
-        "rev": "06e27304aba48ebc7e11acc8e239d672d4218a4e",
+        "rev": "c4878046c3747ad4e19691646f6676b9b28fafbb",
         "type": "github"
       },
       "original": {

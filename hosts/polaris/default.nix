@@ -21,7 +21,7 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
+    nixpkgs.overlays = [inputs.nix-minecraft.overlay];
 
     facter.reportPath = ./facter.json;
 
@@ -128,15 +128,18 @@ delib.host {
 
       minecraft-servers = {
         enable = true;
+        dataDir = "/mnt/minecraft";
         eula = true;
         openFirewall = true;
 
         servers.fabulously-optimized = {
           enable = true;
-          jvmOpts = "-Xms2G -Xmx4G";
-          package = pkgs.fabricServers.fabric-1_21_11;
+          jvmOpts = "-Xms2G -Xmx16G";
+          package = pkgs.fabricServers.fabric-1_21_11.override {
+            jre_headless = pkgs.jdk25_headless;
+          };
 
-          symlinks.mods = pkgs.fetchModrinthMods ./minecraft/fabulously-optimized/mods.lock.json;
+          symlinks.mods = pkgs.fetchModrinthMods ./mc-server/mods.lock.json;
         };
       };
 
@@ -210,6 +213,9 @@ delib.host {
               };
               "cache.skulldogged.dev" = {
                 service = "http://localhost:8080";
+              };
+              "mc.skulldogged.dev" = {
+                service = "tcp://localhost:25565";
               };
               "lyrics.skulldogged.dev" = {
                 service = "http://localhost:8083";

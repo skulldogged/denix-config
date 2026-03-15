@@ -55,6 +55,14 @@
     "hash": "sha512-ybERAFcvtxwwgP8RsBFGdiToATuZQqreCaXHfrYrMolme61wUB3eqPNd6wpdJohLefdtTtES0yNCRxynOEt4ig==",
     "filename": "c2me-fabric-mc1.21.11-0.3.6.0.0.jar"
   },
+  "cardinal-components-api": {
+    "version": "7.3.1",
+    "versionId": "O2RJYZwD",
+    "projectId": "K01OU20C",
+    "url": "https://cdn.modrinth.com/data/K01OU20C/versions/O2RJYZwD/cardinal-components-api-7.3.1.jar",
+    "hash": "sha512-mHSX1cWYgTVEzYnfJlEVWr3cyIHAtz/D/tRRTVqWZuYIcBo37JvlZfn9cFFKw+IrHRYtW4IgD2INoMxXQsyk/w==",
+    "filename": "cardinal-components-api-7.3.1.jar"
+  },
   "cloth-config": {
     "version": "21.11.153+fabric",
     "versionId": "xuX40TN5",
@@ -118,14 +126,6 @@
     "url": "https://cdn.modrinth.com/data/JrvR9OHr/versions/roVanbyg/doubledoors-1.21.11-7.2.jar",
     "hash": "sha512-hzMUKxBXQebtjPnUAA5sgWFZVl3P3DE3raHcAHiYzw0FbLFKHDJKyyfdPNaEeCAAGKx1+LUXG4E6V4yxZ7gOIA==",
     "filename": "doubledoors-1.21.11-7.2.jar"
-  },
-  "e4mc": {
-    "version": "6.0.6-fabric",
-    "versionId": "JSmcqwxn",
-    "projectId": "qANg5Jrr",
-    "url": "https://cdn.modrinth.com/data/qANg5Jrr/versions/JSmcqwxn/e4mc-fabric-6.0.6.jar",
-    "hash": "sha512-wXHk2Oq2vNTPyPaFpHZjNLqM9/7rHvGftSVi4UTN+Ny/TyBuS05+bYGUaIxJSQ1Bx7mgKWrp830ichiTguvh6w==",
-    "filename": "e4mc-fabric-6.0.6.jar"
   },
   "fabric-api": {
     "version": "0.141.3+1.21.11",
@@ -224,12 +224,20 @@
     "filename": "LeavesBeGone-v21.11.0-mc1.21.11-Fabric.jar"
   },
   "lithium": {
-    "version": "mc1.21.11-0.21.3-fabric",
-    "versionId": "qvNsoO3l",
+    "version": "mc1.21.11-0.21.4-fabric",
+    "versionId": "Ow7wA0kG",
     "projectId": "gvQqBUqZ",
-    "url": "https://cdn.modrinth.com/data/gvQqBUqZ/versions/qvNsoO3l/lithium-fabric-0.21.3%2Bmc1.21.11.jar",
-    "hash": "sha512-KINzkwPwu2AtN5fMYB7YbOaDPl7DE93OZ189avPuakC5sKBtr+OdMI2RlmkyXpXAqv0I14yXrNl2796JnHgQ/Q==",
-    "filename": "lithium-fabric-0.21.3+mc1.21.11.jar"
+    "url": "https://cdn.modrinth.com/data/gvQqBUqZ/versions/Ow7wA0kG/lithium-fabric-0.21.4%2Bmc1.21.11.jar",
+    "hash": "sha512-8UpcPS+teGNHyiUIP5AhOWlPYYt8EDlH8v0Genxe6Ipj4e+JJvfWk+p57X0A9XMXuud++cLWML9e0BrJenUrlA==",
+    "filename": "lithium-fabric-0.21.4+mc1.21.11.jar"
+  },
+  "lithostitched": {
+    "version": "1.6.1-fabric-1.21.11",
+    "versionId": "s47RpVwc",
+    "projectId": "XaDC71GB",
+    "url": "https://cdn.modrinth.com/data/XaDC71GB/versions/s47RpVwc/lithostitched-1.6.1-fabric-1.21.11.jar",
+    "hash": "sha512-JQ98wNZ8J5bOu9SWZy0wLBg30mAfcs/IpWiZS28r3D9x9mK9RGgdvHAtB2xhosoTHNyGDlIlRsNNxXbm0M16Aw==",
+    "filename": "lithostitched-1.6.1-fabric-1.21.11.jar"
   },
   "lmd": {
     "version": "1.6.2",
@@ -262,14 +270,6 @@
     "url": "https://cdn.modrinth.com/data/r4PuRGfV/versions/66xhbndk/MoogsEndStructures-1.21-2.0.1.jar",
     "hash": "sha512-vG6//glMU9xM2xoPeTjsZ5vdPaTyxHhnzMkZUnD+hJmv7gUmFuItKEk9oTpTpxtvHDTD8SpqegKAagJsOztuLw==",
     "filename": "MoogsEndStructures-1.21-2.0.1.jar"
-  },
-  "mixintrace": {
-    "version": "1.1.1+1.17",
-    "versionId": "LGYOH4RN",
-    "projectId": "sGmHWmeL",
-    "url": "https://cdn.modrinth.com/data/sGmHWmeL/versions/1.1.1%2B1.17/mixintrace-1.1.1%2B1.17.jar",
-    "hash": "sha512-6pA0tgvBxkYpqbytLmGZB2kv5udGQCYjbFXMWkiSog0h3WMYrQOAqy7CRfcHeTm2cX0u1Y4AcIwXRwvhT14LXw==",
-    "filename": "mixintrace-1.1.1+1.17.jar"
   },
   "mns-moogs-nether-structures": {
     "version": "2.0.31",
@@ -398,6 +398,14 @@
     "url": "https://cdn.modrinth.com/data/DjLobEOy/versions/vXLcy6ev/t_and_t-fabric-neoforge-1.13.8.jar",
     "hash": "sha512-Kue9/qBuJ6Tp2W+7/WQnHEaECsBMzfTE5EBxM8Lj5cIPa1b8yuh6/itbxMnjeiGd4Fyjf9hZYmltsY0YJV5LDA==",
     "filename": "t_and_t-fabric-neoforge-1.13.8.jar"
+  },
+  "travelersbackpack": {
+    "version": "1.21.11-10.11.5",
+    "versionId": "jDSDEMgY",
+    "projectId": "rlloIFEV",
+    "url": "https://cdn.modrinth.com/data/rlloIFEV/versions/jDSDEMgY/travelersbackpack-fabric-1.21.11-10.11.5.jar",
+    "hash": "sha512-Bs6QQHFYKTW/sgb9Bx/NIOlo7bcqFRq2d8Z2O4VJfBkyf/XSRXXOrsUQpRf7FPBb2mYM/fBs6j9da5/yj9mpAw==",
+    "filename": "travelersbackpack-fabric-1.21.11-10.11.5.jar"
   },
   "universal-graves": {
     "version": "3.10.2+1.21.11",
