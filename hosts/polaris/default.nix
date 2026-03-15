@@ -13,6 +13,7 @@ delib.host {
   nixos = {
     imports = with inputs; [
       sops-nix.nixosModules.sops
+      nix-minecraft.nixosModules.minecraft-servers
       nixos-facter-modules.nixosModules.facter
       aurelia.nixosModules.default
       vscode-server.nixosModules.default
@@ -20,6 +21,7 @@ delib.host {
     ];
 
     nixpkgs.config.allowUnfree = true;
+    nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
 
     facter.reportPath = ./facter.json;
 
@@ -123,6 +125,20 @@ delib.host {
 
     services = {
       resolved.enable = false;
+
+      minecraft-servers = {
+        enable = true;
+        eula = true;
+        openFirewall = true;
+
+        servers.fabulously-optimized = {
+          enable = true;
+          jvmOpts = "-Xms2G -Xmx4G";
+          package = pkgs.fabricServers.fabric-1_21_11;
+
+          symlinks.mods = pkgs.fetchModrinthMods ./minecraft/fabulously-optimized/mods.lock.json;
+        };
+      };
 
       desktopManager.plasma6.enable = true;
       displayManager.sddm.enable = true;
