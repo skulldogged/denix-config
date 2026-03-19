@@ -23,6 +23,14 @@
     "hash": "sha512-bG+UEfrYf1rQRkj+R5RnZLzl+RIa8hVaor53MeUrEekVCsLeFlfgQH7MTPHDc+9gW03gIKpx2zK6BRv4iuwlNQ==",
     "filename": "alternate-current-mc1.21.11-1.9.0.jar"
   },
+  "amplified-nether": {
+    "version": "1.2.13",
+    "versionId": "p0JyGVwi",
+    "projectId": "wXiGiyGX",
+    "url": "https://cdn.modrinth.com/data/wXiGiyGX/versions/p0JyGVwi/Amplified_Nether_1.21.x_v1.2.13.jar",
+    "hash": "sha512-BafInKc9Ytwrk3IDV2b224g2bIAePWyT7fWKW2aVTLJwgMtxmCRjIU8Qk9YHZNBo1BSpdKJigFlj7wGLjIqq7w==",
+    "filename": "Amplified_Nether_1.21.x_v1.2.13.jar"
+  },
   "appleskin": {
     "version": "3.0.8+mc1.21.11",
     "versionId": "59ti1rvg",
@@ -40,12 +48,12 @@
     "filename": "architectury-19.0.1-fabric.jar"
   },
   "balm": {
-    "version": "21.11.7+fabric-1.21.11",
-    "versionId": "6h7RAm0u",
+    "version": "21.11.8+fabric-1.21.11",
+    "versionId": "IYfoTfMp",
     "projectId": "MBAkmtvl",
-    "url": "https://cdn.modrinth.com/data/MBAkmtvl/versions/6h7RAm0u/balm-fabric-1.21.11-21.11.7.jar",
-    "hash": "sha512-nzMItwWFlYQJ+SsLjG2W30mQaMKWC4AHHUg6rCrNxqjAYBD5LhUeFQmAl4maWHsnKDEO4mBrnS8p0iY5gbo5Eg==",
-    "filename": "balm-fabric-1.21.11-21.11.7.jar"
+    "url": "https://cdn.modrinth.com/data/MBAkmtvl/versions/IYfoTfMp/balm-fabric-1.21.11-21.11.8.jar",
+    "hash": "sha512-PZrwhOaE4YFS6lV8uNqSFl8F2cp7nuHIfbRqJxaBt6HA8j6rEWyr4nNPH0RadZRRaJeNWI8Wynhe/jTnQhbYJg==",
+    "filename": "balm-fabric-1.21.11-21.11.8.jar"
   },
   "c2me-fabric": {
     "version": "0.3.6.0.0",
@@ -95,14 +103,6 @@
     "hash": "sha512-rurMOeWzHuamCiXU9c+UFaHBSS+ipmefYRW6N+tJF+lb8z/Cdsfonb9VBPIW426Ay/WByzIhPijNduqAPBlNLQ==",
     "filename": "ConfigManager-fabric-1.21.x-1.1.1.jar"
   },
-  "controlify": {
-    "version": "2.5.2",
-    "versionId": "XN6OUc3u",
-    "projectId": "DOUdJVEm",
-    "url": "https://cdn.modrinth.com/data/DOUdJVEm/versions/XN6OUc3u/controlify-2.5.2%2B1.21.11-fabric.jar",
-    "hash": "sha512-en1VMBzBpR2b25zJphSnzl6ljwS3aNuB0OG6TuPYPAuvufFKWhLpfsPmFHuQkKqUia2uPmYb8YWV+NJ5wa+xYA==",
-    "filename": "controlify-2.5.2+1.21.11-fabric.jar"
-  },
   "cristel-lib": {
     "version": "fabric-1.21.11-3.0.4",
     "versionId": "6vtzWpRI",
@@ -110,6 +110,14 @@
     "url": "https://cdn.modrinth.com/data/cl223EMc/versions/6vtzWpRI/cristellib-fabric-1.21.11-3.0.4.jar",
     "hash": "sha512-QBMFrhR5hkURYVpg1tnXLco0sKWNt6/66x+aVYLq/yS1FulraGvRGY8lFlPHpZgNhqFAf2hKuVLDxF5k+Irmtg==",
     "filename": "cristellib-fabric-1.21.11-3.0.4.jar"
+  },
+  "ct-overhaul-village": {
+    "version": "3.6.2a",
+    "versionId": "K2dNRnIZ",
+    "projectId": "fgmhI8kH",
+    "url": "https://cdn.modrinth.com/data/fgmhI8kH/versions/K2dNRnIZ/%5Bfabric%5Dctov-1.21.11-3.6.2a.jar",
+    "hash": "sha512-gHBttEfQcT8RLXaQxcX/5kBlx2Bwjz6k/lQhAVgKzqJujMn1KV9Fghm7L8d6khd2UaHWWha2dRJ+VQNp3VFDXQ==",
+    "filename": "[fabric]ctov-1.21.11-3.6.2a.jar"
   },
   "debugify": {
     "version": "1.21.11+1.0",
@@ -126,6 +134,22 @@
     "url": "https://cdn.modrinth.com/data/JrvR9OHr/versions/roVanbyg/doubledoors-1.21.11-7.2.jar",
     "hash": "sha512-hzMUKxBXQebtjPnUAA5sgWFZVl3P3DE3raHcAHiYzw0FbLFKHDJKyyfdPNaEeCAAGKx1+LUXG4E6V4yxZ7gOIA==",
     "filename": "doubledoors-1.21.11-7.2.jar"
+  },
+  "essential-commands": {
+    "version": "0.38.6-mc1.21.11",
+    "versionId": "3s9XXmZa",
+    "projectId": "6VdDUivB",
+    "url": "https://cdn.modrinth.com/data/6VdDUivB/versions/3s9XXmZa/essential_commands-0.38.6-mc1.21.11.jar",
+    "hash": "sha512-O76aemPpcYkwi/kHBXxsdm9g95n5gwp5EEjGBN8fmUz3zrwN5dnnA++Vhvx7Zeg4aUKXZSndclIiQ6x74eMROw==",
+    "filename": "essential_commands-0.38.6-mc1.21.11.jar"
+  },
+  "explorify": {
+    "version": "1.6.4",
+    "versionId": "9vHj342y",
+    "projectId": "HSfsxuTo",
+    "url": "https://cdn.modrinth.com/data/HSfsxuTo/versions/9vHj342y/Explorify%20v1.6.4%20f15-88.mod.jar",
+    "hash": "sha512-YB7mHjYZq2qSn/BuTj22zEgNl6GeVxasQKKjJdLWCbhXoawX8sDtKyQuZitUhvTg9ZWE+9R6zUgbMYxFwkQlSw==",
+    "filename": "Explorify v1.6.4 f15-88.mod.jar"
   },
   "fabric-api": {
     "version": "0.141.3+1.21.11",
@@ -183,14 +207,6 @@
     "hash": "sha512-XQrAMEamUk8BXGw4Dl/OWdi3Y+7F/VtrMB1nQY0lpyYIjpTZY4HsV3Ql0D99cMO3Ec/RPuop56SKAulaX7EQZQ==",
     "filename": "Geophilic v3.4.6.mod.jar"
   },
-  "immersive-winds": {
-    "version": "0.9+1.21.11",
-    "versionId": "380VWSlL",
-    "projectId": "smYLXoRt",
-    "url": "https://cdn.modrinth.com/data/smYLXoRt/versions/380VWSlL/immersive-winds-1.21.11-0.9.jar",
-    "hash": "sha512-+X9w49JWIHj0oDBP/m5NjXPsnpho1nHlVlnQjff3cvS0kK7b/1DFpEEjRPxMbHkUPIbP9pw/87/bSwqU6i5/5g==",
-    "filename": "immersive-winds-1.21.11-0.9.jar"
-  },
   "inventory-totem": {
     "version": "1.21.11-3.4-fabric+forge+neo",
     "versionId": "IzZmDI2F",
@@ -200,20 +216,20 @@
     "filename": "inventorytotem-1.21.11-3.4.jar"
   },
   "jade": {
-    "version": "21.1.3+fabric",
-    "versionId": "KoFDJ3lD",
+    "version": "21.1.4+fabric",
+    "versionId": "sGI08gfW",
     "projectId": "nvQzSEkH",
-    "url": "https://cdn.modrinth.com/data/nvQzSEkH/versions/KoFDJ3lD/Jade-1.21.11-Fabric-21.1.3.jar",
-    "hash": "sha512-22nVwFRF2Phw1TLYqfxJqpWRs/2g+yOGzz34mLszx+vMCb1kbOIb4sDvSB2hQh30U6erL7k0xEuLwvA3tSxAAg==",
-    "filename": "Jade-1.21.11-Fabric-21.1.3.jar"
+    "url": "https://cdn.modrinth.com/data/nvQzSEkH/versions/sGI08gfW/Jade-1.21.11-Fabric-21.1.4.jar",
+    "hash": "sha512-6jR7SLta++x50fcX3MTGpKGau2W2BBNtvwFqF8Mqb/KXkhshtfWOavdu3vfJ7yGhuN8c121kNrseEiFElVH47A==",
+    "filename": "Jade-1.21.11-Fabric-21.1.4.jar"
   },
   "jamlib": {
-    "version": "1.3.5+1.21.11",
-    "versionId": "SUWZN0xp",
+    "version": "1.3.6+1.21.11",
+    "versionId": "o6QdBCaA",
     "projectId": "IYY9Siz8",
-    "url": "https://cdn.modrinth.com/data/IYY9Siz8/versions/SUWZN0xp/jamlib-fabric-1.3.5%2B1.21.11.jar",
-    "hash": "sha512-E1X6/tEfwnHiXJTXmzye9xzdQkMXUFLS5agG6shnKOLV/tm5ZEBKJX2uLnDJuEkAGftDw0V3YFlxyKwPIsClUQ==",
-    "filename": "jamlib-fabric-1.3.5+1.21.11.jar"
+    "url": "https://cdn.modrinth.com/data/IYY9Siz8/versions/o6QdBCaA/jamlib-fabric-1.3.6%2B1.21.11.jar",
+    "hash": "sha512-BI5h8C5UlisxqtlcqSWzF3DxQi1FG8qIcdTQpGjoPlAFiWxxuwvD30H5cdNok7JVGtOpI6gbMYS+Hdpt0mdv6Q==",
+    "filename": "jamlib-fabric-1.3.6+1.21.11.jar"
   },
   "leaves-be-gone": {
     "version": "21.11.0",
@@ -327,6 +343,22 @@
     "hash": "sha512-0sNcyNYkYW9EFmWv9nwONm5BAduiQ7rSXtNRgXCULBo8Gkd7KIBc0aNsRFE2k7HFXna+pifT/O0Tkno9ZwIszA==",
     "filename": "NoChatReports-FABRIC-1.21.11-v2.18.0.jar"
   },
+  "no-creeper-grief": {
+    "version": "v1.2.1+mod",
+    "versionId": "lucKnHTD",
+    "projectId": "flHpkyzN",
+    "url": "https://cdn.modrinth.com/data/flHpkyzN/versions/lucKnHTD/no-creeper-grief-v1.2.1.jar",
+    "hash": "sha512-F6FasQwo9Arluxx7sxb2jy0z+tx9ULGDUw+jMu/KXiWN/JvmjNkpvRYTz7nMPtces9TsV2WWw1hgfVUuUX4oNw==",
+    "filename": "no-creeper-grief-v1.2.1.jar"
+  },
+  "no-enderman-grief": {
+    "version": "v3.0.2+mod",
+    "versionId": "mC9fRlG7",
+    "projectId": "ss02V75k",
+    "url": "https://cdn.modrinth.com/data/ss02V75k/versions/mC9fRlG7/no-enderman-grief-v3.0.2.jar",
+    "hash": "sha512-QLVZQmh9a0PXONQwKgKtIfiVtYSk+1fiHVfNZhsJwQtLAK2S4MOYywOAkrcgo1MDEgRr1wJMK7LiTr8Xu/ANZA==",
+    "filename": "no-enderman-grief-v3.0.2.jar"
+  },
   "notenoughcrashes": {
     "version": "4.4.9+1.21.11-fabric",
     "versionId": "C1S3kMbN",
@@ -350,6 +382,14 @@
     "url": "https://cdn.modrinth.com/data/QAGBst4M/versions/O1SlsQzW/PuzzlesLib-v21.11.11-mc1.21.11-Fabric.jar",
     "hash": "sha512-BV/rAvUO9GIllaVnC0xHfwrRy+QyQedil0alcy0WHULNCNc209Mm4HuQ/lZ1i9tEdysm2Z3G792BPn4O68xAhQ==",
     "filename": "PuzzlesLib-v21.11.11-mc1.21.11-Fabric.jar"
+  },
+  "ready-player-fun": {
+    "version": "1.21.11-3.1.0.2-FABRIC",
+    "versionId": "UytF2SJ4",
+    "projectId": "AwiAYDUq",
+    "url": "https://cdn.modrinth.com/data/AwiAYDUq/versions/UytF2SJ4/readyplayerfun-1.21.11-fabric-3.1.0.2-FABRIC.jar",
+    "hash": "sha512-JhZmuHs24ovM1kY6ngitXLk5kZnkaEVynFg+bbcMiiEbmU29iMYedpe0BcERTkkDD6KWmQR3M2wKndgxblpJuQ==",
+    "filename": "readyplayerfun-1.21.11-fabric-3.1.0.2-FABRIC.jar"
   },
   "rightclickharvest": {
     "version": "4.6.1+1.21.11",
@@ -391,6 +431,14 @@
     "hash": "sha512-yrRE6uyqEIsNAO6pqilBXE4mZLpk3j7tuj9jIoaGvC0zT33ga9oiNnJEz6Cksht3iOkkEI7vBL/gd7zv8cSzTg==",
     "filename": "threadtweak-fabric-0.1.8+mc1.21.11.jar"
   },
+  "toms-storage": {
+    "version": "1.21.11-2.8.0-fabric",
+    "versionId": "FydlCSUl",
+    "projectId": "XZNI4Cpy",
+    "url": "https://cdn.modrinth.com/data/XZNI4Cpy/versions/FydlCSUl/toms_storage_fabric-1.21.11-2.8.0.jar",
+    "hash": "sha512-fJyufuxk5w7fvhLNH/Vhm4zLHkmmZOxrKACMuGamWARc/BiWCrZXR0PLXOKvg3UJ2FH8NwKrHNmiqugih4mtaQ==",
+    "filename": "toms_storage_fabric-1.21.11-2.8.0.jar"
+  },
   "towns-and-towers": {
     "version": "1.13.8",
     "versionId": "vXLcy6ev",
@@ -406,6 +454,14 @@
     "url": "https://cdn.modrinth.com/data/rlloIFEV/versions/jDSDEMgY/travelersbackpack-fabric-1.21.11-10.11.5.jar",
     "hash": "sha512-Bs6QQHFYKTW/sgb9Bx/NIOlo7bcqFRq2d8Z2O4VJfBkyf/XSRXXOrsUQpRf7FPBb2mYM/fBs6j9da5/yj9mpAw==",
     "filename": "travelersbackpack-fabric-1.21.11-10.11.5.jar"
+  },
+  "trinkets-updated": {
+    "version": "3.11.0-beta.2+1.21.11",
+    "versionId": "DHE2OnLP",
+    "projectId": "XaT8sLP6",
+    "url": "https://cdn.modrinth.com/data/XaT8sLP6/versions/DHE2OnLP/trinkets-3.11.0-beta.2%2B1.21.11.jar",
+    "hash": "sha512-AritZyFPwyG0ohKZc8NOYK8xvi6we/ERdmjxf1ogvguzxi0aELZhoH5kpTbNhXPhXLsSTy3NhXJ8/DdH/xnqQQ==",
+    "filename": "trinkets-3.11.0-beta.2+1.21.11.jar"
   },
   "universal-graves": {
     "version": "3.10.2+1.21.11",
