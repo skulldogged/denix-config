@@ -51,7 +51,6 @@ delib.host {
       age.sshKeyPaths = ["/persist/root/.ssh/id_ed25519"];
 
       secrets = {
-        attic_writer_token = {};
         cifs = {};
         passwd = {};
         zipline_token = {
@@ -169,39 +168,9 @@ delib.host {
       script = "${pkgs.ntfs3g}/bin/ntfsfix -d /dev/disk/by-uuid/00AFAB5C797254C7";
     };
 
-    systemd.services.attic-watch-store = {
-      description = "Upload new Nix store paths to Attic";
-      wantedBy = ["multi-user.target"];
-      after = [
-        "network-online.target"
-        "sops-nix.service"
-      ];
-      wants = ["network-online.target"];
-
-      serviceConfig = {
-        Type = "simple";
-        Environment = "XDG_CONFIG_HOME=/etc";
-        ExecStart = "${pkgs.attic-client}/bin/attic watch-store -j 2 nix";
-        Restart = "always";
-        RestartSec = 15;
-      };
-    };
-
     environment.systemPackages = [
-      pkgs.attic-client
       pkgs.sbctl
     ];
-
-    environment.etc."attic/config.toml" = {
-      mode = "0600";
-      text = ''
-        default-server = "polaris"
-
-        [servers.polaris]
-        endpoint = "https://cache.skulldogged.dev/"
-        token-file = "${config.sops.secrets.attic_writer_token.path}"
-      '';
-    };
 
     boot = {
       lanzaboote = {

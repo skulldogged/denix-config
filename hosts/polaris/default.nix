@@ -25,13 +25,22 @@ delib.host {
 
     facter.reportPath = ./facter.json;
 
+    nix = {
+      nixPath = ["nixpkgs=${inputs.nixpkgs}"];
+
+      registry.nixpkgs.flake = inputs.nixpkgs;
+
+      settings = {
+        allowed-users = pkgs.lib.mkAfter ["spacebot"];
+        trusted-users = pkgs.lib.mkAfter ["spacebot"];
+      };
+    };
+
     sops = {
       defaultSopsFile = ../../secrets/polaris.yaml;
       age.sshKeyPaths = ["/root/.ssh/id_ed25519"];
 
       secrets = {
-        attic_jwt = {};
-        attic_writer_token = {};
         bsky_pds = {};
         cloudflare_token = {};
         forgejo_token = {};
@@ -64,13 +73,6 @@ delib.host {
               apiKey: ${config.sops.placeholder.slskd_api_key}
         '';
       };
-
-      templates."atticd.env" = {
-        mode = "0400";
-        content = ''
-          ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=${config.sops.placeholder.attic_jwt}
-        '';
-      };
     };
 
     fileSystems = {
@@ -94,28 +96,16 @@ delib.host {
     time.timeZone = "America/New_York";
 
     environment.systemPackages = with pkgs; [
-      attic-client
+      bento4
       codeium
-      graalvmPackages.graalvm-oracle_17
+      ffmpeg
       ghostty.terminfo
+      graalvmPackages.graalvm-oracle_17
       miniupnpc
       nodejs_20
-      uv
       opencode
+      uv
     ];
-
-    environment.etc."attic/config.toml" = {
-      mode = "0600";
-      text =
-        # toml
-        ''
-          default-server = "polaris"
-
-          [servers.polaris]
-          endpoint = "http://127.0.0.1:8080"
-          token-file = "${config.sops.secrets.attic_writer_token.path}"
-        '';
-    };
 
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
@@ -132,14 +122,21 @@ delib.host {
         eula = true;
         openFirewall = true;
 
-        servers.fabulously-optimized = {
+        servers.fabulously-optimized = let
+          fetchedMods = pkgs.fetchModrinthMods ./mc-server/mods.lock.json;
+          localMods = ./mc-server/mods;
+        in {
           enable = true;
           jvmOpts = "-Xms2G -Xmx16G";
           package = pkgs.fabricServers.fabric-1_21_11.override {
             jre_headless = pkgs.jdk25_headless;
           };
 
-          symlinks.mods = pkgs.fetchModrinthMods ./mc-server/mods.lock.json;
+          symlinks.mods = pkgs.runCommandNoCC "polaris-minecraft-mods" {} ''
+            mkdir -p "$out"
+            ln -s ${fetchedMods}/* "$out"/
+            ln -s ${localMods}/* "$out"/
+          '';
         };
       };
 
@@ -151,22 +148,6 @@ delib.host {
       tailscale.openFirewall = true;
       xe-guest-utilities.enable = true;
       vscode-server.enable = true;
-
-      atticd = {
-        enable = true;
-        environmentFile = config.sops.templates."atticd.env".path;
-        settings = {
-          listen = "127.0.0.1:8080";
-          allowed-hosts = [
-            "cache.skulldogged.dev"
-            "127.0.0.1"
-            "127.0.0.1:8080"
-            "localhost"
-            "localhost:8080"
-          ];
-          api-endpoint = "https://cache.skulldogged.dev/";
-        };
-      };
 
       bluesky-pds = {
         enable = true;
@@ -193,9 +174,6 @@ delib.host {
               "jellyfin.pupbrained.dev" = {
                 service = "http://localhost:8096";
               };
-              "navidrome.skulldogged.dev" = {
-                service = "http://localhost:4533";
-              };
               "zip.pupbrained.dev" = {
                 service = "http://localhost:3000";
               };
@@ -210,9 +188,6 @@ delib.host {
               };
               "glance.skulldogged.dev" = {
                 service = "http://localhost:5678";
-              };
-              "cache.skulldogged.dev" = {
-                service = "http://localhost:8080";
               };
               "mc.skulldogged.dev" = {
                 service = "tcp://localhost:25565";
@@ -312,6 +287,12 @@ delib.host {
         enable = true;
         settings = {
           ports.dns = 53;
+          customDNS = {
+            customTTL = "1h";
+            mapping = {
+              "voice.skulldogged.dev" = "192.168.1.82";
+            };
+          };
           upstream.default = [
             "9.9.9.9"
             "149.112.112.112"
@@ -362,12 +343,6 @@ delib.host {
             {
               name = "Jellyfin";
               url = "https://jellyfin.pupbrained.dev";
-              conditions = ["[STATUS] == 200"];
-              interval = "5m";
-            }
-            {
-              name = "Navidrome";
-              url = "https://navidrome.skulldogged.dev";
               conditions = ["[STATUS] == 200"];
               interval = "5m";
             }
@@ -471,11 +446,6 @@ delib.host {
                           icon = "si:jellyfin";
                         }
                         {
-                          title = "Navidrome";
-                          url = "https://navidrome.skulldogged.dev/";
-                          icon = "si:navidrome";
-                        }
-                        {
                           title = "Forgejo";
                           url = "https://git.pupbrained.dev/";
                           icon = "si:forgejo";
@@ -571,40 +541,6 @@ delib.host {
         dataDir = "/mnt/jellyfin";
       };
 
-      navidrome = {
-        enable = true;
-        package = pkgs.navidrome.overrideAttrs (old: rec {
-          version = "0.60.3";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "navidrome";
-            repo = "navidrome";
-            rev = "v${version}";
-            hash = "sha256-DwVmNJKjwEhTKIVPYFqaUR9SD4HpACkK4XJoFfQVRus=";
-          };
-
-          vendorHash = "sha256-StI4CfWN/OnbYFktRriTJWMHTuJkCinpYk9qgsxMGG8=";
-
-          npmDeps = pkgs.fetchNpmDeps {
-            inherit src;
-            sourceRoot = "${src.name}/ui";
-            hash = "sha256-EA2WM7xaqP7rS0pjx+yXwpjdauaduvDefmFH73eByxI=";
-          };
-
-          env =
-            (old.env or {})
-            // {
-              CGO_CFLAGS_ALLOW = ".*--define-prefix.*";
-            };
-        });
-        openFirewall = true;
-        settings = {
-          Address = "0.0.0.0";
-          Port = 4533;
-          MusicFolder = "/mnt/music";
-        };
-      };
-
       qbittorrent = {
         enable = false;
 
@@ -697,8 +633,11 @@ delib.host {
         bind = "0.0.0.0";
         masterKeyFile = config.sops.secrets.spacebot_master_key.path;
         openFirewall = true;
-        pathAppend = ["${pkgs.chromium}/bin"];
-        pathUser = config.myconfig.constants.username;
+        pathAppend = [
+          "/var/lib/spacebot/host-profile/bin"
+          "/var/lib/spacebot/host-local-state-nix/profile/bin"
+          "${pkgs.chromium}/bin"
+        ];
         port = 19898;
         variant = "slim";
       };
@@ -708,6 +647,19 @@ delib.host {
       bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
       zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
       aurelia-sidecar-daemon.environment.RUST_LOG = "debug";
+
+      renew-voicechat-upnp = {
+        description = "Renew UPnP mapping for Simple Voice Chat";
+        after = ["network-online.target"];
+        wants = ["network-online.target"];
+
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = ''
+            ${pkgs.miniupnpc}/bin/upnpc -u http://192.168.1.1:36163/rootDesc.xml -a 192.168.1.82 24454 24454 udp 3600
+          '';
+        };
+      };
 
       slskd = {
         serviceConfig = {
@@ -719,26 +671,22 @@ delib.host {
 
       spacebot = {
         after = ["sops-nix.service"];
+        serviceConfig.BindPaths = [
+          "/home/${config.myconfig.constants.username}/nix-config:/var/lib/spacebot/nix-config"
+          "/home/${config.myconfig.constants.username}/.nix-profile:/var/lib/spacebot/host-profile"
+          "/home/${config.myconfig.constants.username}/.local/state/nix:/var/lib/spacebot/host-local-state-nix"
+        ];
         wants = ["sops-nix.service"];
       };
+    };
 
-      attic-watch-store = {
-        description = "Upload new Nix store paths to Attic";
-        wantedBy = ["multi-user.target"];
-        after = [
-          "network-online.target"
-          "atticd.service"
-          "sops-nix.service"
-        ];
-        wants = ["network-online.target"];
-
-        serviceConfig = {
-          Type = "simple";
-          Environment = "XDG_CONFIG_HOME=/etc";
-          ExecStart = "${pkgs.attic-client}/bin/attic watch-store -j 2 nix";
-          Restart = "always";
-          RestartSec = 15;
-        };
+    systemd.timers.renew-voicechat-upnp = {
+      description = "Periodically renew UPnP mapping for Simple Voice Chat";
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnBootSec = "2m";
+        OnUnitActiveSec = "10m";
+        Unit = "renew-voicechat-upnp.service";
       };
     };
 
@@ -762,6 +710,9 @@ delib.host {
         ];
       };
 
+      users.spacebot.extraGroups = ["media"];
+      users.jellyfin.extraGroups = ["media"];
+
       groups.git = {};
     };
 
@@ -783,6 +734,9 @@ delib.host {
         6610 # forgejo
         6969 # bluesky-pds
       ];
+      firewall.allowedUDPPorts = [
+        24454 # simple voice chat
+      ];
       networkmanager.dns = "none";
       dhcpcd.extraConfig = "nohook resolv.conf";
       resolvconf.enable = false;
@@ -790,8 +744,9 @@ delib.host {
     };
 
     systemd.tmpfiles.rules = [
-      "d /mnt/music 2775 root media - -"
-      "A /mnt/music - - - - d:g:media:rwx,d:o::rx,d:m::rwx,g:media:rwX,o::rX,m::rwX"
+      "z /mnt 0755 root root - -"
+      "d /mnt/music 2775 slskd media - -"
+      "a /mnt/music - - - - g:media:rwx,d:g:media:rwx"
     ];
 
     security.pam.services.gdm.enableGnomeKeyring = true;
