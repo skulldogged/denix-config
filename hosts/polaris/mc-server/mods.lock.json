@@ -144,12 +144,12 @@
     "filename": "Clumps-fabric-1.21.11-29.0.0.1.jar"
   },
   "collective": {
-    "version": "1.21.11-8.17-fabric+forge+neo",
-    "versionId": "W6jhRGR1",
+    "version": "1.21.11-8.19-fabric+forge+neo",
+    "versionId": "TpanGjwZ",
     "projectId": "e0M1UDsY",
-    "url": "https://cdn.modrinth.com/data/e0M1UDsY/versions/W6jhRGR1/collective-1.21.11-8.17.jar",
-    "hash": "sha512-Sj6G85iN5udg7Sw8puX3kRbuzz/MIavk/BH6E9IlsVqIvjTXyTLdsrFtuY2U2jTJp5Q2QZkxGd/RewVtjXSITg==",
-    "filename": "collective-1.21.11-8.17.jar"
+    "url": "https://cdn.modrinth.com/data/e0M1UDsY/versions/TpanGjwZ/collective-1.21.11-8.19.jar",
+    "hash": "sha512-jCf57UrQOAbTiDgwybbsdcQmgJu6NtCoZcQdeMZ2HjH/XUTANupUg1+GUzMt1skUnOk7vhvqF0eCVBkCkR2bqw==",
+    "filename": "collective-1.21.11-8.19.jar"
   },
   "colorful-lanterns": {
     "version": "0.1.6+1.21.10",
@@ -488,12 +488,12 @@
     "filename": "moredelight-25.12.10-1.21.11-fabric.jar"
   },
   "more-frame-variants": {
-    "version": "1.2.5",
-    "versionId": "5qagFSPO",
+    "version": "1.2.6",
+    "versionId": "OCc1aXjT",
     "projectId": "vwp1lXf8",
-    "url": "https://cdn.modrinth.com/data/vwp1lXf8/versions/5qagFSPO/MoreFrameVariants-1.2.5%2B1.21.11-Fabric.jar",
-    "hash": "sha512-H2QQs2Iahz6W/XWSk2tUVCH0odxN0UgL/+rG6oyb9bwTxhsGzHOauRjVONDUTyMHpqjGI/ZUrCP8j1YB3d+GhQ==",
-    "filename": "MoreFrameVariants-1.2.5+1.21.11-Fabric.jar"
+    "url": "https://cdn.modrinth.com/data/vwp1lXf8/versions/OCc1aXjT/MoreFrameVariants-1.2.6%2B1.21.11-Fabric.jar",
+    "hash": "sha512-+LWHbkm+NCFRDLq/I6X21iGdxwvdf/n4RMaY3FDuOASQUrG1dsxMOxZqHkp3oe0x7sEnJIbq90rcxJ3CF/vfmg==",
+    "filename": "MoreFrameVariants-1.2.6+1.21.11-Fabric.jar"
   },
   "more-stick-variants": {
     "version": "1.4.14",
@@ -560,12 +560,12 @@
     "filename": "notenoughcrashes-fabric-4.4.9+1.21.11.jar"
   },
   "open-parties-and-claims": {
-    "version": "fabric-1.21.11-0.25.10",
-    "versionId": "gdvexMrA",
+    "version": "fabric-1.21.11-0.26.1",
+    "versionId": "GTv9Euzx",
     "projectId": "gF3BGWvG",
-    "url": "https://cdn.modrinth.com/data/gF3BGWvG/versions/gdvexMrA/open-parties-and-claims-fabric-1.21.11-0.25.10.jar",
-    "hash": "sha512-fBYnF343sEhUZkBU89ZvNZLW+aqscygTlBNON3WlZWER/6YAf4220ZOKhkf0Rd7yLJpAG4G85pcM9bsdKu2BuA==",
-    "filename": "open-parties-and-claims-fabric-1.21.11-0.25.10.jar"
+    "url": "https://cdn.modrinth.com/data/gF3BGWvG/versions/GTv9Euzx/open-parties-and-claims-fabric-1.21.11-0.26.1.jar",
+    "hash": "sha512-MOKU0KvCXFYh0LW11HTNeV+prDf/7Bz/yLgUS0aLBJeQDwQRvbJJMqYZfdjMiOOzt5KzPUTEUoysTvEHUa4yDg==",
+    "filename": "open-parties-and-claims-fabric-1.21.11-0.26.1.jar"
   },
   "personal-disc-player": {
     "version": "1.21.11-1.4.5",

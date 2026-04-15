@@ -643,75 +643,79 @@ delib.host {
       };
     };
 
-    systemd.services = {
-      bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
-      zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
-      aurelia-sidecar-daemon.environment.RUST_LOG = "debug";
+    systemd = {
+      services = {
+        bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
+        zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+        aurelia-sidecar-daemon.environment.RUST_LOG = "debug";
 
-      renew-voicechat-upnp = {
-        description = "Renew UPnP mapping for Simple Voice Chat";
-        after = ["network-online.target"];
-        wants = ["network-online.target"];
+        renew-voicechat-upnp = {
+          description = "Renew UPnP mapping for Simple Voice Chat";
+          after = ["network-online.target"];
+          wants = ["network-online.target"];
 
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = ''
-            ${pkgs.miniupnpc}/bin/upnpc -u http://192.168.1.1:36163/rootDesc.xml -a 192.168.1.82 24454 24454 udp 3600
-          '';
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = ''
+              ${pkgs.miniupnpc}/bin/upnpc -u http://192.168.1.1:36163/rootDesc.xml -a 192.168.1.82 24454 24454 udp 3600
+            '';
+          };
+        };
+
+        slskd = {
+          serviceConfig = {
+            ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
+            ReadOnlyPaths = pkgs.lib.mkForce [""];
+            RuntimeDirectory = "slskd";
+          };
+        };
+
+        spacebot = {
+          after = ["sops-nix.service"];
+          serviceConfig.BindPaths = [
+            "/home/${config.myconfig.constants.username}/nix-config:/var/lib/spacebot/nix-config"
+            "/home/${config.myconfig.constants.username}/.nix-profile:/var/lib/spacebot/host-profile"
+            "/home/${config.myconfig.constants.username}/.local/state/nix:/var/lib/spacebot/host-local-state-nix"
+          ];
+          wants = ["sops-nix.service"];
         };
       };
 
-      slskd = {
-        serviceConfig = {
-          ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
-          ReadOnlyPaths = pkgs.lib.mkForce [""];
-          RuntimeDirectory = "slskd";
+      timers.renew-voicechat-upnp = {
+        description = "Periodically renew UPnP mapping for Simple Voice Chat";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          OnBootSec = "2m";
+          OnUnitActiveSec = "10m";
+          Unit = "renew-voicechat-upnp.service";
         };
-      };
-
-      spacebot = {
-        after = ["sops-nix.service"];
-        serviceConfig.BindPaths = [
-          "/home/${config.myconfig.constants.username}/nix-config:/var/lib/spacebot/nix-config"
-          "/home/${config.myconfig.constants.username}/.nix-profile:/var/lib/spacebot/host-profile"
-          "/home/${config.myconfig.constants.username}/.local/state/nix:/var/lib/spacebot/host-local-state-nix"
-        ];
-        wants = ["sops-nix.service"];
-      };
-    };
-
-    systemd.timers.renew-voicechat-upnp = {
-      description = "Periodically renew UPnP mapping for Simple Voice Chat";
-      wantedBy = ["timers.target"];
-      timerConfig = {
-        OnBootSec = "2m";
-        OnUnitActiveSec = "10m";
-        Unit = "renew-voicechat-upnp.service";
       };
     };
 
     users = {
       groups.media = {};
 
-      users.git = {
-        isSystemUser = true;
-        useDefaultShell = true;
-        group = "git";
-        home = config.services.forgejo.stateDir;
-      };
+      users = {
+        jellyfin.extraGroups = ["media"];
+        spacebot.extraGroups = ["media"];
 
-      users.nix-builder = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsHqYKt58eFcZo7UdPX45CaEhLeGge+cE1Gdt74IHSv MacBook"
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHvxKReLJz5kHLWVtgZanjj8tjJeT6c8l94gFezebri spacebot-droplet-root-builder"
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFQ0g6AYRpX99etX1jJArhly75WwSSRMLrKc4Z+UKUsC spacebot-droplet-marshall-builder"
-        ];
-      };
+        git = {
+          isSystemUser = true;
+          useDefaultShell = true;
+          group = "git";
+          home = config.services.forgejo.stateDir;
+        };
 
-      users.spacebot.extraGroups = ["media"];
-      users.jellyfin.extraGroups = ["media"];
+        nix-builder = {
+          isNormalUser = true;
+          openssh.authorizedKeys.keys = [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsHqYKt58eFcZo7UdPX45CaEhLeGge+cE1Gdt74IHSv MacBook"
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHvxKReLJz5kHLWVtgZanjj8tjJeT6c8l94gFezebri spacebot-droplet-root-builder"
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFQ0g6AYRpX99etX1jJArhly75WwSSRMLrKc4Z+UKUsC spacebot-droplet-marshall-builder"
+          ];
+        };
+      };
 
       groups.git = {};
     };
