@@ -730,6 +730,8 @@ delib.host {
       };
     };
 
+    programs.mosh.enable = true;
+
     networking = {
       firewall.allowedTCPPorts = [
         22 # ssh
