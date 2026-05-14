@@ -20,7 +20,6 @@ delib.module {
     basePackages =
       (with pkgs; [
         alejandra
-        bun
         claude-code
         codex
         file

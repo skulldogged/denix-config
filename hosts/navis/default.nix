@@ -293,6 +293,7 @@ delib.host {
     };
 
     programs = {
+      bun.enable = true;
       cava.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;

@@ -144,6 +144,7 @@ delib.host {
       displayManager.sddm.enable = true;
 
       eternal-terminal.enable = true;
+      protonmail-bridge.enable = true;
       tailscale.enable = true;
       tailscale.openFirewall = true;
       xe-guest-utilities.enable = true;
@@ -737,6 +738,7 @@ delib.host {
         22 # ssh
         2022 # eternal-terminal
         3000 # zipline
+        4096 # opencode
         6610 # forgejo
         6969 # bluesky-pds
       ];
@@ -790,7 +792,8 @@ delib.host {
     };
 
     programs = {
-      draconisplusplus.enable = false;
+      bun.enable = true;
+      draconisplusplus.enable = true;
 
       git = {
         enable = true;

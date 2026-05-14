@@ -162,6 +162,8 @@ delib.host {
       shell.enable = true;
     };
 
+    programs.bun.enable = true;
+
     programs.git = {
       enable = true;
       credentialHelper = "libsecret";

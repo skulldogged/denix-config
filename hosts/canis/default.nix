@@ -94,6 +94,7 @@ delib.host {
     home.wezterm.enable = true;
 
     # Programs
+    programs.bun.enable = true;
     programs.git.enable = true;
     programs.git.credentialHelper = "osxkeychain";
     programs.git.signingKey = "54EAB4F200CE30C2";
