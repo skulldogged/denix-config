@@ -11,6 +11,13 @@ delib.host {
   type = "server";
 
   nixos = {
+    assertions = [
+      {
+        assertion = inputs.codex-desktop-linux.packages.${pkgs.stdenv.hostPlatform.system} ? codex-desktop-computer-use-ui-remote-mobile-control;
+        message = "codex-desktop-linux does not provide codex-desktop-computer-use-ui-remote-mobile-control for ${pkgs.stdenv.hostPlatform.system}";
+      }
+    ];
+
     imports = with inputs; [
       sops-nix.nixosModules.sops
       nix-minecraft.nixosModules.minecraft-servers
@@ -105,7 +112,10 @@ delib.host {
       nodejs_20
       opencode
       uv
+      inputs.codex-desktop-linux.packages.${pkgs.stdenv.hostPlatform.system}.codex-desktop-computer-use-ui-remote-mobile-control
     ];
+
+    environment.sessionVariables.BROWSER = "helium";
 
     boot = {
       binfmt.emulatedSystems = ["aarch64-linux"];
@@ -117,7 +127,7 @@ delib.host {
       resolved.enable = false;
 
       minecraft-servers = {
-        enable = true;
+        enable = false;
         dataDir = "/mnt/minecraft";
         eula = true;
         openFirewall = true;
@@ -198,6 +208,9 @@ delib.host {
               };
               "spacebot.skulldogged.dev" = {
                 service = "http://localhost:19898";
+              };
+              "identity.skulldogged.dev" = {
+                service = "http://localhost:8080";
               };
             };
             default = "http_status:404";
@@ -540,6 +553,44 @@ delib.host {
         enable = true;
         openFirewall = true;
         dataDir = "/mnt/jellyfin";
+        package = let
+          fetchNupkg = pkgs.callPackage (inputs.nixpkgs + "/pkgs/build-support/dotnet/fetch-nupkg") {
+            patchNupkgs = pkgs.dotnetCorePackages.patchNupkgs;
+            nugetPackageHook = pkgs.dotnetCorePackages.nugetPackageHook;
+          };
+          jellyfin-web = pkgs.jellyfin-web.overrideAttrs (old: {
+            version = "12.0.0";
+            src = inputs.jellyfin-web-src;
+            npmDeps = pkgs.fetchNpmDeps {
+              src = inputs.jellyfin-web-src;
+              name = "jellyfin-web-12.0.0-npm-deps";
+              hash = "sha256-JmxFiPfQLqJB5iO+pjt7eH0/ip8hSI9euzhl69yEU08=";
+            };
+            postPatch =
+              (old.postPatch or "")
+              + ''
+                substituteInPlace package.json \
+                  --replace-fail '"node": ">=24.0.0"' '"node": ">=22.0.0"' \
+                  --replace-fail '"npm": ">=11.0.0"' '"npm": ">=10.0.0"'
+              '';
+          });
+        in
+          (pkgs.jellyfin.override {
+            inherit jellyfin-web;
+            dotnetCorePackages =
+              pkgs.dotnetCorePackages
+              // {
+                sdk_9_0 = pkgs.dotnetCorePackages.sdk_10_0;
+                aspnetcore_9_0 = pkgs.dotnetCorePackages.aspnetcore_10_0;
+              };
+          }).overrideAttrs (old: {
+            version = "12.0.0";
+            src = inputs.jellyfin-src;
+            nugetDeps = ./jellyfin-nuget-deps.json;
+            buildInputs =
+              (old.buildInputs or [])
+              ++ (map fetchNupkg (pkgs.lib.importJSON ./jellyfin-nuget-deps.json));
+          });
       };
 
       qbittorrent = {
@@ -698,7 +749,7 @@ delib.host {
 
       users = {
         jellyfin.extraGroups = ["media"];
-        spacebot.extraGroups = ["media"];
+        spacebot.extraGroups = ["media" "wheel"];
 
         git = {
           isSystemUser = true;
@@ -758,6 +809,34 @@ delib.host {
     ];
 
     security.pam.services.gdm.enableGnomeKeyring = true;
+
+    security.sudo.extraRules = [
+      {
+        users = ["spacebot"];
+        commands = [
+          {
+            command = "/run/current-system/sw/bin/nixos-rebuild";
+            options = ["NOPASSWD"];
+          }
+          {
+            command = "/run/current-system/sw/bin/nh";
+            options = ["NOPASSWD"];
+          }
+          {
+            command = "/run/current-system/sw/bin/nix";
+            options = ["NOPASSWD"];
+          }
+          {
+            command = "/run/current-system/sw/bin/git";
+            options = ["NOPASSWD"];
+          }
+          {
+            command = "/run/current-system/sw/bin/nvfetcher";
+            options = ["NOPASSWD"];
+          }
+        ];
+      }
+    ];
   };
 
   myconfig = {
@@ -794,6 +873,7 @@ delib.host {
     programs = {
       bun.enable = true;
       draconisplusplus.enable = true;
+      helium.enable = true;
 
       git = {
         enable = true;

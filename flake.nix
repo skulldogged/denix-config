@@ -24,6 +24,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    codex-desktop-linux = {
+      url = "github:ilysenko/codex-desktop-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     denix = {
       url = "github:yunfachi/denix";
       inputs = {
@@ -61,6 +66,16 @@
     hyprland-plugins = {
       url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
+    };
+
+    jellyfin-src = {
+      url = "github:skulldogged/jellyfin";
+      flake = false;
+    };
+
+    jellyfin-web-src = {
+      url = "github:skulldogged/jellyfin-web";
+      flake = false;
     };
 
     lanzaboote = {
