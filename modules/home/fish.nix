@@ -1,5 +1,6 @@
 {
   delib,
+  inputs,
   pkgs,
   ...
 }:
@@ -10,15 +11,17 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {...}: let
-    mkFishPlugin = sources: {
-      inherit (sources) src;
-      name = sources.pname;
+  home.ifEnabled = _: let
+    mkFishPlugin = name: src: {
+      inherit name src;
     };
 
-    sources = import ../../_sources/generated.nix {inherit (pkgs) fetchFromGitHub;};
-
-    extraPlugins = pkgs.lib.attrsets.mapAttrsToList (_: mkFishPlugin) sources;
+    extraPlugins = [
+      (mkFishPlugin "bang-bang" inputs.bang-bang)
+      (mkFishPlugin "fish-git-abbr" inputs.fish-git-abbr)
+      (mkFishPlugin "license" inputs.license)
+      (mkFishPlugin "replay-fish" inputs.replay-fish)
+    ];
 
     mkFishPlugins = names:
       map (name: {

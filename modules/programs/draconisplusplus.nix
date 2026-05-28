@@ -16,8 +16,6 @@ delib.module {
     programs.draconisplusplus = {
       enable = true;
 
-      pluginsSrc = inputs.draconisplusplus-plugins;
-
       configFormat = "hpp";
 
       enableCaching = true;

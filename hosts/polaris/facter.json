@@ -382,7 +382,7 @@
         "power_management": [
           ""
         ],
-        "bogo": 3983,
+        "bogo": 3984,
         "cache": 12288,
         "units": 16,
         "page_size": 4096,
@@ -393,7 +393,6 @@
         "fpu_exception": false,
         "cpuid_level": 13,
         "write_protect": false,
-        "tlb_size": 29703,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -600,7 +599,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.0.7-xanmod1 uhci_hcd",
+          "name": "Linux 7.0.9-xanmod1 uhci_hcd",
           "value": 7531
         },
         "device": {
@@ -614,7 +613,7 @@
           "value": 0
         },
         "serial": "0000:00:01.2",
-        "model": "Linux 7.0.7-xanmod1 uhci_hcd UHCI Host Controller",
+        "model": "Linux 7.0.9-xanmod1 uhci_hcd UHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:01.2/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [

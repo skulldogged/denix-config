@@ -19,6 +19,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    bang-bang = {
+      url = "github:oh-my-fish/plugin-bang-bang";
+      flake = false;
+    };
+
     caelestia-shell = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -48,8 +53,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    draconisplusplus-plugins = {
-      url = "github:skulldogged/draconisplusplus-plugins";
+    fish-git-abbr = {
+      url = "github:pupbrained/fish-git-abbr/patch-1";
       flake = false;
     };
 
@@ -83,6 +88,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    license = {
+      url = "github:oh-my-fish/plugin-license";
+      flake = false;
+    };
+
     linux-wallpaperengine-src = {
       url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
       flake = false;
@@ -96,6 +106,11 @@
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    replay-fish = {
+      url = "github:jorgebucaran/replay.fish";
+      flake = false;
     };
 
     spacebot = {
@@ -164,7 +179,6 @@
             git
             lua-language-server
             nh
-            nvfetcher
             statix
 
             (writeScriptBin "build" ''
@@ -186,7 +200,7 @@
                 else "os"
               } switch
             '')
-            (writeScriptBin "up" "nix flake update && nvfetcher")
+            (writeScriptBin "up" "nix flake update")
           ];
         };
       }
