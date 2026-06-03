@@ -54,7 +54,6 @@ in
         nixos-facter-modules.nixosModules.facter
         aurelia.nixosModules.default
         vscode-server.nixosModules.default
-        spacebot.nixosModules.default
       ];
 
       nixpkgs.config.allowUnfree = true;
@@ -87,11 +86,6 @@ in
         nixPath = ["nixpkgs=${inputs.nixpkgs}"];
 
         registry.nixpkgs.flake = inputs.nixpkgs;
-
-        settings = {
-          allowed-users = pkgs.lib.mkAfter ["spacebot"];
-          trusted-users = pkgs.lib.mkAfter ["spacebot"];
-        };
       };
 
       programs.ssh.knownHosts."136.243.173.22".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICXAOhc4DEBP9U6zaj4IdObm3Oq6MFXWJjvnGWmSO0UG";
@@ -106,7 +100,6 @@ in
           forgejo_token = {};
           jellyfin_api_key = {};
           mailer_passwd = {};
-          spacebot_master_key = {};
           slskd_api_key = {};
           slskd_env = {};
           zipline_secret = {};
@@ -239,9 +232,6 @@ in
                 "jellyfin.pupbrained.dev" = {
                   service = "http://localhost:8096";
                 };
-                "seerr.pupbrained.dev" = {
-                  service = "http://localhost:5055";
-                };
                 "zip.pupbrained.dev" = {
                   service = "http://localhost:3000";
                 };
@@ -262,9 +252,6 @@ in
                 };
                 "lyrics.skulldogged.dev" = {
                   service = "http://localhost:8083";
-                };
-                "spacebot.skulldogged.dev" = {
-                  service = "http://localhost:19898";
                 };
                 "identity.skulldogged.dev" = {
                   service = "http://localhost:8080";
@@ -454,12 +441,6 @@ in
                 interval = "5m";
               }
               {
-                name = "Spacebot";
-                url = "http://127.0.0.1:19898/api/health";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
                 name = "Blocky DNS";
                 url = "udp://127.0.0.1:53";
                 conditions = ["[CONNECTED] == true"];
@@ -515,11 +496,6 @@ in
                             title = "Jellyfin";
                             url = "https://jellyfin.pupbrained.dev/";
                             icon = "si:jellyfin";
-                          }
-                          {
-                            title = "Seerr";
-                            url = "https://seerr.pupbrained.dev/";
-                            icon = "si:overseerr";
                           }
                           {
                             title = "Forgejo";
@@ -655,11 +631,6 @@ in
             });
         };
 
-        seerr = {
-          enable = true;
-          openFirewall = true;
-        };
-
         qbittorrent = {
           enable = false;
 
@@ -746,20 +717,6 @@ in
             CORE_CHUNKED_MAX_SIZE = "100MB";
           };
         };
-
-        spacebot = {
-          enable = true;
-          bind = "0.0.0.0";
-          masterKeyFile = config.sops.secrets.spacebot_master_key.path;
-          openFirewall = true;
-          pathAppend = [
-            "/var/lib/spacebot/host-profile/bin"
-            "/var/lib/spacebot/host-local-state-nix/profile/bin"
-            "${pkgs.chromium}/bin"
-          ];
-          port = 19898;
-          variant = "slim";
-        };
       };
 
       systemd = {
@@ -788,16 +745,6 @@ in
               RuntimeDirectory = "slskd";
             };
           };
-
-          spacebot = {
-            after = ["sops-nix.service"];
-            serviceConfig.BindPaths = [
-              "/home/${config.myconfig.constants.username}/nix-config:/var/lib/spacebot/nix-config"
-              "/home/${config.myconfig.constants.username}/.nix-profile:/var/lib/spacebot/host-profile"
-              "/home/${config.myconfig.constants.username}/.local/state/nix:/var/lib/spacebot/host-local-state-nix"
-            ];
-            wants = ["sops-nix.service"];
-          };
         };
 
         timers.renew-voicechat-upnp = {
@@ -816,7 +763,6 @@ in
 
         users = {
           jellyfin.extraGroups = ["media"];
-          spacebot.extraGroups = ["media" "wheel"];
 
           git = {
             isSystemUser = true;
@@ -830,8 +776,6 @@ in
             openssh.authorizedKeys.keys = [
               "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"
               "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsHqYKt58eFcZo7UdPX45CaEhLeGge+cE1Gdt74IHSv MacBook"
-              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHvxKReLJz5kHLWVtgZanjj8tjJeT6c8l94gFezebri spacebot-droplet-root-builder"
-              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFQ0g6AYRpX99etX1jJArhly75WwSSRMLrKc4Z+UKUsC spacebot-droplet-marshall-builder"
             ];
           };
         };
@@ -841,6 +785,7 @@ in
 
       virtualisation = {
         containers.enable = true;
+        docker.enable = false;
 
         podman = {
           enable = true;
@@ -879,22 +824,10 @@ in
 
       security.sudo.extraRules = [
         {
-          users = ["spacebot"];
+          users = [config.myconfig.constants.username];
           commands = [
             {
-              command = "/run/current-system/sw/bin/nixos-rebuild";
-              options = ["NOPASSWD"];
-            }
-            {
-              command = "/run/current-system/sw/bin/nh";
-              options = ["NOPASSWD"];
-            }
-            {
-              command = "/run/current-system/sw/bin/nix";
-              options = ["NOPASSWD"];
-            }
-            {
-              command = "/run/current-system/sw/bin/git";
+              command = "/run/current-system/sw/bin/podman";
               options = ["NOPASSWD"];
             }
           ];

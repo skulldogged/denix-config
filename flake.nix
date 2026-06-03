@@ -113,11 +113,6 @@
       flake = false;
     };
 
-    spacebot = {
-      url = "github:skulldogged/spacebot-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     vicinae = {
       url = "github:vicinaehq/vicinae";
       inputs.nixpkgs.follows = "nixpkgs";
