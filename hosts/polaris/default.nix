@@ -357,12 +357,12 @@ in
                 "voice.skulldogged.dev" = "192.168.1.82";
               };
             };
-            upstream.default = [
+            upstreams.groups.default = [
               "194.242.2.2"
               "2a07:e340::2"
             ];
             blocking = {
-              blackLists = {
+              denylists = {
                 ads = [
                   "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
                   "https://big.oisd.nl/"
