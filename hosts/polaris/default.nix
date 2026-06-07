@@ -100,6 +100,10 @@ in
           forgejo_token = {};
           jellyfin_api_key = {};
           mailer_passwd = {};
+          mullvad_private_key = {
+            owner = "root";
+            mode = "0400";
+          };
           slskd_api_key = {};
           slskd_env = {};
           zipline_secret = {};
@@ -203,7 +207,9 @@ in
         eternal-terminal.enable = true;
         protonmail-bridge.enable = true;
         tailscale.enable = true;
+        tailscale.extraSetFlags = ["--advertise-exit-node"];
         tailscale.openFirewall = true;
+        tailscale.useRoutingFeatures = "server";
         xe-guest-utilities.enable = true;
         vscode-server.enable = true;
 
@@ -797,6 +803,7 @@ in
       programs.mosh.enable = true;
 
       networking = {
+        firewall.checkReversePath = "loose";
         firewall.allowedTCPPorts = [
           22 # ssh
           2022 # eternal-terminal
@@ -812,6 +819,40 @@ in
         dhcpcd.extraConfig = "nohook resolv.conf";
         resolvconf.enable = false;
         nameservers = ["9.9.9.10" "9.9.9.9"];
+
+        wireguard.interfaces.wg-mullvad = {
+          ips = [
+            "10.65.182.233/32"
+            "fc00:bbbb:bbbb:bb01::2:b6e8/128"
+          ];
+          privateKeyFile = config.sops.secrets.mullvad_private_key.path;
+          table = "51820";
+
+          peers = [
+            {
+              publicKey = "IzqkjVCdJYC1AShILfzebchTlKCqVCt/SMEXolaS3Uc=";
+              allowedIPs = ["0.0.0.0/0" "::/0"];
+              endpoint = "143.244.47.65:51820";
+              persistentKeepalive = 25;
+            }
+          ];
+
+          postSetup = ''
+            ${pkgs.iproute2}/bin/ip rule add from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iproute2}/bin/ip -6 rule add from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iptables}/bin/iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE 2>/dev/null \
+              || ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE
+            ${pkgs.iptables}/bin/ip6tables -t nat -C POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE 2>/dev/null \
+              || ${pkgs.iptables}/bin/ip6tables -t nat -A POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE
+          '';
+
+          postShutdown = ''
+            ${pkgs.iproute2}/bin/ip rule del from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iproute2}/bin/ip -6 rule del from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE 2>/dev/null || true
+            ${pkgs.iptables}/bin/ip6tables -t nat -D POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE 2>/dev/null || true
+          '';
+        };
       };
 
       systemd.tmpfiles.rules = [
