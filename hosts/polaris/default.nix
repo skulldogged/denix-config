@@ -207,7 +207,7 @@ in
         eternal-terminal.enable = true;
         protonmail-bridge.enable = true;
         tailscale.enable = true;
-        tailscale.extraSetFlags = ["--advertise-exit-node"];
+        tailscale.extraSetFlags = ["--accept-dns=false" "--advertise-exit-node"];
         tailscale.openFirewall = true;
         tailscale.useRoutingFeatures = "server";
         xe-guest-utilities.enable = true;
