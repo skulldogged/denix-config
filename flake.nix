@@ -30,7 +30,7 @@
     };
 
     codex-desktop-linux = {
-      url = "github:ilysenko/codex-desktop-linux";
+      url = "path:/home/marshall/src/codex-desktop-linux-patched";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
