@@ -816,7 +816,7 @@ in
         networkmanager.dns = "none";
         dhcpcd.extraConfig = "nohook resolv.conf";
         resolvconf.enable = false;
-        nameservers = ["9.9.9.10" "9.9.9.9"];
+        nameservers = ["127.0.0.1" "::1"];
 
         wireguard.interfaces.wg-mullvad = {
           ips = [
