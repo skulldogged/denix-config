@@ -114,7 +114,7 @@ in
             server_url = "https://${headscaleDomain}";
             dns = {
               base_domain = "tail.skulldogged.dev";
-              nameservers.global = ["100.64.0.2"];
+              nameservers.global = ["10.100.0.53"];
             };
           };
         };

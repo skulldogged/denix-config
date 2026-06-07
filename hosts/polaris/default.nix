@@ -207,7 +207,7 @@ in
         eternal-terminal.enable = true;
         protonmail-bridge.enable = true;
         tailscale.enable = true;
-        tailscale.extraSetFlags = ["--accept-dns=false" "--advertise-exit-node"];
+        tailscale.extraSetFlags = ["--accept-dns=false" "--advertise-exit-node" "--advertise-routes=10.100.0.53/32"];
         tailscale.openFirewall = true;
         tailscale.useRoutingFeatures = "server";
         xe-guest-utilities.enable = true;
@@ -802,6 +802,10 @@ in
 
       networking = {
         firewall.checkReversePath = "loose";
+        firewall.interfaces.tailscale0 = {
+          allowedTCPPorts = [53];
+          allowedUDPPorts = [53];
+        };
         firewall.allowedTCPPorts = [
           22 # ssh
           2022 # eternal-terminal
@@ -851,6 +855,22 @@ in
             ${pkgs.iptables}/bin/ip6tables -t nat -D POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE 2>/dev/null || true
           '';
         };
+      };
+
+      systemd.services.polaris-blocky-service-ip = {
+        wantedBy = ["multi-user.target"];
+        before = ["tailscaled-set.service"];
+        after = ["network.target"];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          ${pkgs.iproute2}/bin/ip address add 10.100.0.53/32 dev lo 2>/dev/null || true
+        '';
+        postStop = ''
+          ${pkgs.iproute2}/bin/ip address del 10.100.0.53/32 dev lo 2>/dev/null || true
+        '';
       };
 
       systemd.services.polaris-local-resolvconf = {
