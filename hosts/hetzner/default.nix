@@ -115,7 +115,7 @@ delib.host {
           server_url = "https://${headscaleDomain}";
           dns = {
             base_domain = "tail.skulldogged.dev";
-            nameservers.global = ["1.1.1.1" "1.0.0.1"];
+            nameservers.global = ["194.242.2.2" "2a07:e340::2"];
           };
         };
       };
