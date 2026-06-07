@@ -152,7 +152,10 @@ in
             };
           };
         };
-        tailscale.enable = true;
+        tailscale = {
+          enable = true;
+          extraSetFlags = ["--accept-dns=false"];
+        };
       };
       systemd.services.headplane.preStart = ''
         secret=/var/lib/headplane/cookie_secret
