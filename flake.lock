@@ -211,14 +211,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1780461843,
-        "narHash": "sha256-5hjQMEy0c58/X+TVJ5Tpnr0ZNmf8RZFraBVCqj9gXz0=",
-        "path": "/home/marshall/src/codex-desktop-linux-patched",
-        "type": "path"
+        "lastModified": 1780829664,
+        "narHash": "sha256-yfJD9q8qNNBHW5uofd/KGQ3/AQhoI8uEpY/51k/R8ZM=",
+        "owner": "ilysenko",
+        "repo": "codex-desktop-linux",
+        "rev": "43b38a6990d2f91a0d25fbe2bb8ccdc7857053ac",
+        "type": "github"
       },
       "original": {
-        "path": "/home/marshall/src/codex-desktop-linux-patched",
-        "type": "path"
+        "owner": "ilysenko",
+        "repo": "codex-desktop-linux",
+        "type": "github"
       }
     },
     "crane": {
