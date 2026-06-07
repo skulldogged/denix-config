@@ -853,6 +853,16 @@ in
         };
       };
 
+      systemd.services.polaris-local-resolvconf = {
+        wantedBy = ["multi-user.target"];
+        after = ["blocky.service" "tailscaled-set.service"];
+        requires = ["blocky.service"];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          printf 'nameserver 127.0.0.1\nnameserver ::1\n' > /etc/resolv.conf
+        '';
+      };
+
       systemd.tmpfiles.rules = [
         "z /mnt 0755 root root - -"
         "d /mnt/music 2775 slskd media - -"
