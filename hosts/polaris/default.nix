@@ -925,6 +925,8 @@ in
           ];
 
           postSetup = ''
+            ${pkgs.iproute2}/bin/ip rule add to 194.242.2.2/32 table 51820 priority 9999 2>/dev/null || true
+            ${pkgs.iproute2}/bin/ip -6 rule add to 2a07:e340::2/128 table 51820 priority 9999 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip rule add from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip -6 rule add from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iptables}/bin/iptables -t nat -C PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null \
@@ -942,6 +944,8 @@ in
           '';
 
           postShutdown = ''
+            ${pkgs.iproute2}/bin/ip rule del to 194.242.2.2/32 table 51820 priority 9999 2>/dev/null || true
+            ${pkgs.iproute2}/bin/ip -6 rule del to 2a07:e340::2/128 table 51820 priority 9999 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip rule del from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip -6 rule del from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iptables}/bin/iptables -t nat -D PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
