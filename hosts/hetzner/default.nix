@@ -113,7 +113,9 @@ in
           settings = {
             server_url = "https://${headscaleDomain}";
             dns = {
+              magic_dns = true;
               base_domain = "tail.skulldogged.dev";
+              override_local_dns = true;
               nameservers.global = ["10.100.0.53"];
             };
           };

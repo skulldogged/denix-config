@@ -21,7 +21,6 @@ delib.module {
       (with pkgs; [
         alejandra
         claude-code
-        codex
         file
         grc
       ])

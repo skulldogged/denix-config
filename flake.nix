@@ -11,6 +11,7 @@
     nixvim.url = "github:skulldogged/nixvim-new";
     opencode.url = "github:anomalyco/opencode/dev";
     sops-nix.url = "github:Mic92/sops-nix";
+    stump-src.url = "github:stumpapp/stump";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 

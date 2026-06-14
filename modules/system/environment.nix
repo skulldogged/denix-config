@@ -48,14 +48,12 @@ delib.module {
         ];
     };
 
-    systemd.user.extraConfig = ''
-      DefaultEnvironment="PATH=${lib.concatStringsSep ":" [
-        "/run/wrappers/bin"
-        "/etc/profiles/per-user/%u/bin"
-        "/nix/var/nix/profiles/default/bin"
-        "/run/current-system/sw/bin"
-      ]}"
-    '';
+    systemd.user.settings.Manager.DefaultEnvironment = "PATH=${lib.concatStringsSep ":" [
+      "/run/wrappers/bin"
+      "/etc/profiles/per-user/%u/bin"
+      "/nix/var/nix/profiles/default/bin"
+      "/run/current-system/sw/bin"
+    ]}";
 
     time = {
       hardwareClockInLocalTime = myconfig.host.isDesktop;

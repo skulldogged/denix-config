@@ -6,41 +6,8 @@
   ...
 }: let
   codexDesktop = inputs.codex-desktop-linux.packages.${pkgs.stdenv.hostPlatform.system}.codex-desktop-computer-use-ui-remote-mobile-control;
-  codexAuthSwitch = pkgs.writeShellScriptBin "codex-auth-switch" ''
-    set -euo pipefail
-
-    primary_account="admin@skulldogged.dev"
-    fallback_account="root@skulldogged.dev"
-
-    if [ "$#" -gt 0 ]; then
-      ${pkgs.bun}/bin/bunx --bun codex-auth switch "$@"
-    else
-      active_account="$(${pkgs.bun}/bin/bunx --bun codex-auth list --skip-api | ${pkgs.gawk}/bin/awk '$1 == "*" { print $3; exit }')"
-
-      case "$active_account" in
-        "$primary_account")
-          next_account="$fallback_account"
-          ;;
-        "$fallback_account")
-          next_account="$primary_account"
-          ;;
-        "")
-          echo "Could not detect the active Codex account." >&2
-          exit 1
-          ;;
-        *)
-          echo "Active Codex account '$active_account' is not one of the configured toggle accounts." >&2
-          exit 1
-          ;;
-      esac
-
-      echo "Switching Codex account: $active_account -> $next_account"
-      ${pkgs.bun}/bin/bunx --bun codex-auth switch "$next_account"
-    fi
-
-    ${pkgs.systemd}/bin/systemctl --user restart-or-try-reload codex-desktop.service || \
-      ${pkgs.systemd}/bin/systemctl --user start codex-desktop.service
-  '';
+  cobalt = pkgs.callPackage ../../pkgs/cobalt/package.nix {};
+  stumpVersion = (builtins.fromJSON (builtins.readFile "${inputs.stump-src}/package.json")).version;
 in
   delib.host {
     name = "polaris";
@@ -162,8 +129,8 @@ in
         nodejs_24
         opencode
         uv
-        codexDesktop
-        codexAuthSwitch
+        # codexDesktop
+        # codexAuthSwitch
       ];
 
       environment.sessionVariables.BROWSER = "helium";
@@ -261,6 +228,12 @@ in
                 };
                 "identity.skulldogged.dev" = {
                   service = "http://localhost:8080";
+                };
+                "cobalt.skulldogged.dev" = {
+                  service = "http://localhost:9001";
+                };
+                "stump.skulldogged.dev" = {
+                  service = "http://localhost:10801";
                 };
               };
               default = "http_status:404";
@@ -445,6 +418,12 @@ in
                 interval = "5m";
               }
               {
+                name = "Stump";
+                url = "http://127.0.0.1:10801";
+                conditions = ["[STATUS] == 200"];
+                interval = "5m";
+              }
+              {
                 name = "Blocky DNS";
                 url = "udp://127.0.0.1:53";
                 conditions = ["[CONNECTED] == true"];
@@ -510,6 +489,11 @@ in
                             title = "Vaultwarden";
                             url = "https://vault.pupbrained.dev/";
                             icon = "si:vaultwarden";
+                          }
+                          {
+                            title = "Stump";
+                            url = "https://stump.skulldogged.dev/";
+                            icon = "si:bookstack";
                           }
                         ];
                       }
@@ -762,6 +746,81 @@ in
         };
       };
 
+      services.caddy = {
+        enable = true;
+        globalConfig = ''
+          auto_https off
+          admin off
+        '';
+        extraConfig = ''
+          :9001 {
+            bind 127.0.0.1
+
+            @api path /api /api/*
+            handle @api {
+              uri strip_prefix /api
+              reverse_proxy 127.0.0.1:9000
+            }
+
+            handle /tunnel* {
+              reverse_proxy 127.0.0.1:9000
+            }
+
+            handle {
+              root * ${cobalt}/share/cobalt-web
+              try_files {path} /404.html
+              file_server
+            }
+          }
+        '';
+      };
+
+      systemd.services.caddy = {
+        after = ["cobalt-api.service"];
+        wants = ["cobalt-api.service"];
+      };
+
+      services.redis = {
+        package = pkgs.valkey;
+        servers.cobalt = {
+          enable = true;
+          bind = "127.0.0.1";
+          port = 6379;
+        };
+      };
+
+      systemd.services.cobalt-api = {
+        description = "cobalt API";
+        wantedBy = ["multi-user.target"];
+        after = ["network-online.target" "redis-cobalt.service"];
+        wants = ["network-online.target"];
+        requires = ["redis-cobalt.service"];
+
+        environment = {
+          API_URL = "https://cobalt.skulldogged.dev/";
+          API_PORT = "9000";
+          API_LISTEN_ADDRESS = "127.0.0.1";
+          API_REDIS_URL = "redis://127.0.0.1:6379";
+          CUSTOM_INNERTUBE_CLIENT = "TV_SIMPLY";
+          YOUTUBE_GENERATE_PO_TOKENS = "1";
+          YOUTUBE_USE_ONESIE = "1";
+        };
+
+        serviceConfig = {
+          ExecStart = "${cobalt}/bin/cobalt-api";
+          DynamicUser = true;
+          Restart = "on-failure";
+          RestartSec = 10;
+          NoNewPrivileges = true;
+          PrivateTmp = true;
+          ProtectHome = true;
+          ProtectSystem = "strict";
+          ReadWritePaths = ["/var/lib/private/cobalt-api"];
+          StateDirectory = "cobalt-api";
+          WorkingDirectory = "/var/lib/private/cobalt-api";
+        };
+      };
+
       users = {
         groups.media = {};
 
@@ -790,6 +849,32 @@ in
       virtualisation = {
         containers.enable = true;
         docker.enable = false;
+
+        oci-containers.containers.stump = {
+          image = "docker.io/aaronleopold/stump@sha256:66983fd05f1bc25f0179fcbce753296094016c65829fe38582897eb2a58d0c3c";
+          extraOptions = ["--network=host"];
+          volumes = [
+            "/mnt/stump/config:/config"
+            "/mnt/books:/data"
+          ];
+          environment = {
+            API_VERSION = "v1";
+            PGID = "972";
+            PUID = "1000";
+            STUMP_ALLOWED_ORIGINS = "https://stump.skulldogged.dev";
+            STUMP_CLIENT_DIR = "/app/client";
+            STUMP_CONFIG_DIR = "/config";
+            STUMP_IN_DOCKER = "true";
+            STUMP_PORT = "10801";
+            STUMP_PROFILE = "release";
+            STUMP_TRUST_PROXY_HEADERS = "true";
+          };
+          labels = {
+            "org.opencontainers.image.source" = "https://github.com/stumpapp/stump";
+            "dev.skulldogged.nix-flake-rev" = inputs.stump-src.rev or inputs.stump-src.shortRev or "dirty";
+            "dev.skulldogged.stump-version" = stumpVersion;
+          };
+        };
 
         podman = {
           enable = true;
@@ -842,6 +927,14 @@ in
           postSetup = ''
             ${pkgs.iproute2}/bin/ip rule add from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip -6 rule add from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iptables}/bin/iptables -t nat -C PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null \
+              || ${pkgs.iptables}/bin/iptables -t nat -A PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53
+            ${pkgs.iptables}/bin/iptables -t nat -C PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null \
+              || ${pkgs.iptables}/bin/iptables -t nat -A PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53
+            ${pkgs.iptables}/bin/ip6tables -t nat -C PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null \
+              || ${pkgs.iptables}/bin/ip6tables -t nat -A PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53
+            ${pkgs.iptables}/bin/ip6tables -t nat -C PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null \
+              || ${pkgs.iptables}/bin/ip6tables -t nat -A PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53
             ${pkgs.iptables}/bin/iptables -t nat -C POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE 2>/dev/null \
               || ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE
             ${pkgs.iptables}/bin/ip6tables -t nat -C POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE 2>/dev/null \
@@ -851,6 +944,10 @@ in
           postShutdown = ''
             ${pkgs.iproute2}/bin/ip rule del from 100.64.0.0/10 table 51820 priority 10000 2>/dev/null || true
             ${pkgs.iproute2}/bin/ip -6 rule del from fd7a:115c:a1e0::/48 table 51820 priority 10000 2>/dev/null || true
+            ${pkgs.iptables}/bin/iptables -t nat -D PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+            ${pkgs.iptables}/bin/iptables -t nat -D PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+            ${pkgs.iptables}/bin/ip6tables -t nat -D PREROUTING -i tailscale0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+            ${pkgs.iptables}/bin/ip6tables -t nat -D PREROUTING -i tailscale0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
             ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 100.64.0.0/10 -o wg-mullvad -j MASQUERADE 2>/dev/null || true
             ${pkgs.iptables}/bin/ip6tables -t nat -D POSTROUTING -s fd7a:115c:a1e0::/48 -o wg-mullvad -j MASQUERADE 2>/dev/null || true
           '';
@@ -885,8 +982,13 @@ in
 
       systemd.tmpfiles.rules = [
         "z /mnt 0755 root root - -"
+        "d /mnt/books 2775 marshall media - -"
         "d /mnt/music 2775 slskd media - -"
+        "d /mnt/stump 0755 root root - -"
+        "d /mnt/stump/config 2775 marshall media - -"
+        "a /mnt/books - - - - g:media:rwx,d:g:media:rwx"
         "a /mnt/music - - - - g:media:rwx,d:g:media:rwx"
+        "a /mnt/stump/config - - - - g:media:rwx,d:g:media:rwx"
       ];
 
       security.pam.services.gdm.enableGnomeKeyring = true;
