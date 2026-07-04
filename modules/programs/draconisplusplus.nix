@@ -34,8 +34,9 @@ delib.module {
             };
           };
         })
+        inputs.draconisplusplus-plugin-lab.packages.${pkgs.system}.all
       ];
-      staticPlugins = ["now_playing" "weather"];
+      staticPlugins = ["now_playing" "weather" "vpn_info"];
       username = "Mars";
 
       layout = [
@@ -76,6 +77,7 @@ delib.module {
           rows = [
             {key = "de";}
             {key = "wm";}
+            {key = "plugin.vpn_info";}
             {key = "playing";}
           ];
         }
