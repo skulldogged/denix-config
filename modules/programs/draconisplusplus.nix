@@ -36,7 +36,14 @@ delib.module {
         })
         inputs.draconisplusplus-plugin-lab.packages.${pkgs.system}.all
       ];
-      staticPlugins = ["now_playing" "weather" "vpn_info"];
+      staticPlugins = [
+        "json_format"
+        "markdown_format"
+        "now_playing"
+        "vpn_info"
+        "weather"
+        "yaml_format"
+      ];
       username = "Mars";
 
       layout = [
