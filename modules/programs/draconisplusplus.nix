@@ -1,6 +1,7 @@
 {
   delib,
   inputs,
+  pkgs,
   ...
 }:
 delib.module {
@@ -10,7 +11,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {pkgs, ...}: {
+  home.ifEnabled = {...}: {
     imports = [inputs.draconisplusplus.homeModules.default];
 
     programs.draconisplusplus = {
