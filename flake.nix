@@ -54,6 +54,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    draconisplusplus-plugins = {
+      url = "github:skulldogged/draconisplusplus-plugins";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.utils.follows = "draconisplusplus/utils";
+    };
+
     fish-git-abbr = {
       url = "github:pupbrained/fish-git-abbr/patch-1";
       flake = false;

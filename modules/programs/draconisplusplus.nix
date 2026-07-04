@@ -10,18 +10,21 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {...}: {
+  home.ifEnabled = {pkgs, ...}: {
     imports = [inputs.draconisplusplus.homeModules.default];
 
     programs.draconisplusplus = {
       enable = true;
 
-      configFormat = "hpp";
+      configFormat = "toml";
 
       enableCaching = true;
       enablePackageCount = true;
       enablePlugins = true;
       packageManagers = ["nix"];
+      pluginPackages = [
+        inputs.draconisplusplus-plugins.packages.${pkgs.system}.all
+      ];
       staticPlugins = ["now_playing" "weather"];
       username = "Mars";
 
