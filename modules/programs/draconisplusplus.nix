@@ -17,14 +17,23 @@ delib.module {
     programs.draconisplusplus = {
       enable = true;
 
-      configFormat = "toml";
+      configFormat = "hpp";
 
       enableCaching = true;
       enablePackageCount = true;
       enablePlugins = true;
       packageManagers = ["nix"];
       pluginPackages = [
-        inputs.draconisplusplus-plugins.packages.${pkgs.system}.all
+        (inputs.draconisplusplus-plugins.lib.${pkgs.system}.mkPluginRoot {
+          weather = {
+            provider = "openmeteo";
+            units = "imperial";
+            coords = {
+              lat = 39.953388;
+              lon = -74.198151;
+            };
+          };
+        })
       ];
       staticPlugins = ["now_playing" "weather"];
       username = "Mars";
@@ -87,18 +96,6 @@ delib.module {
         protocol = "iterm2";
         width = 200;
         height = 200;
-      };
-
-      pluginConfigs = {
-        weather = {
-          enabled = true;
-          provider = "openmeteo";
-          units = "imperial";
-          coords = {
-            lat = 39.953388;
-            lon = -74.198151;
-          };
-        };
       };
     };
   };
