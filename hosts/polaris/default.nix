@@ -23,7 +23,12 @@ in
         vscode-server.nixosModules.default
       ];
 
-      nixpkgs.config.allowUnfree = true;
+      nixpkgs.config = {
+        allowUnfree = true;
+        permittedInsecurePackages = [
+          "pnpm-9.15.9"
+        ];
+      };
       nixpkgs.overlays = [inputs.nix-minecraft.overlay];
 
       facter.reportPath = ./facter.json;
@@ -700,9 +705,9 @@ in
             CORE_HOSTNAME = "127.0.0.1";
             CORE_PORT = 3000;
             DATASOURCE_LOCAL_DIRECTORY = "/mnt/zipline";
-            UPLOADER_MAX_SIZE = "100MB";
-            CORE_MAX_SIZE = "100MB";
-            CORE_CHUNKED_MAX_SIZE = "100MB";
+            UPLOADER_MAX_SIZE = "1GB";
+            CORE_MAX_SIZE = "1GB";
+            CORE_CHUNKED_MAX_SIZE = "1GB";
           };
         };
       };
@@ -917,9 +922,10 @@ in
 
           peers = [
             {
-              publicKey = "IzqkjVCdJYC1AShILfzebchTlKCqVCt/SMEXolaS3Uc=";
+              # Mullvad us-uyk-wg-202, Secaucus NJ.
+              publicKey = "8Rh2Qc+vXTREhJb/RfCcpXS13U9xSqy4Pnw4+Wwt7iE=";
               allowedIPs = ["0.0.0.0/0" "::/0"];
-              endpoint = "143.244.47.65:51820";
+              endpoint = "104.36.50.33:51820";
               persistentKeepalive = 25;
             }
           ];

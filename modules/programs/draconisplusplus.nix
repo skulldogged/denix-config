@@ -37,6 +37,7 @@ delib.module {
         inputs.draconisplusplus-plugin-lab.packages.${pkgs.system}.all
       ];
       staticPlugins = [
+        "container_info"
         "json_format"
         "markdown_format"
         "now_playing"
@@ -85,7 +86,7 @@ delib.module {
             {key = "de";}
             {key = "wm";}
             {key = "plugin.vpn_info";}
-            {key = "playing";}
+            {key = "plugin.container_info";}
           ];
         }
         {
