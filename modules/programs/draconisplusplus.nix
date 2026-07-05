@@ -34,7 +34,9 @@ delib.module {
             };
           };
         })
-        inputs.draconisplusplus-plugin-lab.packages.${pkgs.system}.all
+        (inputs.draconisplusplus-plugin-lab.lib.${pkgs.system}.mkPluginRoot {
+          containerInfo.backends = ["podman"];
+        })
       ];
       staticPlugins = [
         "container_info"
