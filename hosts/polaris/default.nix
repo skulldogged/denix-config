@@ -5,7 +5,6 @@
   config,
   ...
 }: let
-  codexDesktop = inputs.codex-desktop-linux.packages.${pkgs.stdenv.hostPlatform.system}.codex-desktop-computer-use-ui-remote-mobile-control;
   cobalt = pkgs.callPackage ../../pkgs/cobalt/package.nix {};
   stumpVersion = (builtins.fromJSON (builtins.readFile "${inputs.stump-src}/package.json")).version;
 in
@@ -16,6 +15,7 @@ in
 
     nixos = {
       imports = with inputs; [
+        ../../integrations/sengled-home.nix
         sops-nix.nixosModules.sops
         nix-minecraft.nixosModules.minecraft-servers
         nixos-facter-modules.nixosModules.facter
@@ -134,7 +134,6 @@ in
         nodejs_24
         opencode
         uv
-        # codexDesktop
         # codexAuthSwitch
       ];
 
@@ -233,6 +232,9 @@ in
                 };
                 "identity.skulldogged.dev" = {
                   service = "http://localhost:8080";
+                };
+                "home.skulldogged.dev" = {
+                  service = "http://127.0.0.1:8123";
                 };
                 "cobalt.skulldogged.dev" = {
                   service = "http://localhost:9001";
@@ -369,81 +371,6 @@ in
           };
         };
 
-        gatus = {
-          enable = true;
-          openFirewall = true;
-          settings = {
-            web = {
-              port = 8082;
-            };
-            storage = {
-              type = "memory";
-            };
-            endpoints = [
-              {
-                name = "Jellyfin";
-                url = "https://jellyfin.pupbrained.dev";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Forgejo";
-                url = "https://git.pupbrained.dev";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Bluesky PDS";
-                url = "https://sky.skulldogged.dev";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Glance";
-                url = "http://127.0.0.1:5678";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Zipline";
-                url = "http://127.0.0.1:3000";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "slskd";
-                url = "http://127.0.0.1:5030";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Aurelia";
-                url = "http://127.0.0.1:8083";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Stump";
-                url = "http://127.0.0.1:10801";
-                conditions = ["[STATUS] == 200"];
-                interval = "5m";
-              }
-              {
-                name = "Blocky DNS";
-                url = "udp://127.0.0.1:53";
-                conditions = ["[CONNECTED] == true"];
-                interval = "1m";
-              }
-              {
-                name = "Tailscale";
-                url = "udp://100.92.239.38:41641";
-                conditions = ["[CONNECTED] == true"];
-                interval = "1m";
-              }
-            ];
-          };
-        };
-
         glance = {
           enable = true;
           openFirewall = true;
@@ -494,11 +421,6 @@ in
                             title = "Vaultwarden";
                             url = "https://vault.pupbrained.dev/";
                             icon = "si:vaultwarden";
-                          }
-                          {
-                            title = "Stump";
-                            url = "https://stump.skulldogged.dev/";
-                            icon = "si:bookstack";
                           }
                         ];
                       }
@@ -585,25 +507,36 @@ in
           openFirewall = true;
           dataDir = "/mnt/jellyfin";
           package = let
-            fetchNupkg = pkgs.callPackage (inputs.nixpkgs + "/pkgs/build-support/dotnet/fetch-nupkg") {
-              patchNupkgs = pkgs.dotnetCorePackages.patchNupkgs;
-              nugetPackageHook = pkgs.dotnetCorePackages.nugetPackageHook;
-            };
-            jellyfin-web = pkgs.jellyfin-web.overrideAttrs (old: {
+            fetchNupkg = pkgs.callPackage (inputs.nixpkgs + "/pkgs/build-support/dotnet/fetch-nupkg") {inherit (pkgs.dotnetCorePackages) patchNupkgs nugetPackageHook;};
+            jellyfin-web = (pkgs.jellyfin-web.override {nodejs_22 = pkgs.nodejs_24;}).overrideAttrs (old: {
               version = "12.0.0";
               src = inputs.jellyfin-web-src;
-              npmDeps = pkgs.fetchNpmDeps {
-                src = inputs.jellyfin-web-src;
-                name = "jellyfin-web-12.0.0-npm-deps";
-                hash = "sha256-JmxFiPfQLqJB5iO+pjt7eH0/ip8hSI9euzhl69yEU08=";
-              };
-              postPatch =
-                (old.postPatch or "")
-                + ''
-                  substituteInPlace package.json \
-                    --replace-fail '"node": ">=24.0.0"' '"node": ">=22.0.0"' \
-                    --replace-fail '"npm": ">=11.0.0"' '"npm": ">=10.0.0"'
-                '';
+              npmDeps = let
+                packageLock = builtins.fromJSON (builtins.readFile (inputs.jellyfin-web-src + "/package-lock.json"));
+                pdfjsPath = "node_modules/pdfjs-dist";
+                pdfjs = packageLock.packages.${pdfjsPath} or null;
+              in
+                pkgs.importNpmLock {
+                  npmRoot = inputs.jellyfin-web-src;
+                  packageLock =
+                    packageLock
+                    // {
+                      packages =
+                        builtins.removeAttrs packageLock.packages ["node_modules/pdfjs-dist/node_modules/canvas"]
+                        // pkgs.lib.optionalAttrs (pdfjs != null) {
+                          ${pdfjsPath} =
+                            pdfjs
+                            // {
+                              optionalDependencies = builtins.removeAttrs (pdfjs.optionalDependencies or {}) ["canvas"];
+                            };
+                        };
+                    };
+                };
+              nativeBuildInputs =
+                builtins.filter
+                (input: (input.pname or "") != "npm-config-hook")
+                (old.nativeBuildInputs or [])
+                ++ [pkgs.importNpmLock.npmConfigHook];
             });
           in
             (pkgs.jellyfin.override {
@@ -1014,23 +947,6 @@ in
           ];
         }
       ];
-    };
-
-    home.systemd.user.services.codex-desktop = {
-      Unit = {
-        Description = "Codex Desktop";
-        After = ["graphical-session.target"];
-        PartOf = ["graphical-session.target"];
-      };
-
-      Service = {
-        Type = "simple";
-        ExecStart = "${codexDesktop}/bin/codex-desktop";
-        Restart = "on-failure";
-        RestartSec = 5;
-      };
-
-      Install.WantedBy = ["graphical-session.target"];
     };
 
     myconfig = {

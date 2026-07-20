@@ -3,6 +3,7 @@
   buildNpmPackage,
   fetchFromGitHub,
   fetchPnpmDeps,
+  ffmpeg-headless,
   node-gyp,
   nodejs,
   pnpmConfigHook,
@@ -14,13 +15,13 @@
 in
   buildNpmPackage rec {
     pname = "cobalt-api";
-    version = "11.7.1-unstable-2026-05-15";
+    version = "11.7.1-unstable-2026-07-07";
 
     src = fetchFromGitHub {
       owner = "zImPatrick";
       repo = "cobalt";
-      rev = "1e2a1799c14f749129d87c65ba2c0cbf01e778ce";
-      hash = "sha256-rnb5ML49vg6tyx2q6kqcNbsj116JDAgg9ebJP3GV2ZE=";
+      rev = "56258ad6d1a71ca079a19340d17255e7576f7019";
+      hash = "sha256-wUBGYPY2Mm9Ts094r+C9ITODIZWJMlBrHJu5KNaI/tQ=";
     };
 
     nativeBuildInputs = [
@@ -32,11 +33,14 @@ in
 
     postPatch = ''
       cat > packages/version-info/index.js <<'EOF'
-      export const getCommit = async () => "1e2a1799c14f749129d87c65ba2c0cbf01e778ce";
+      export const getCommit = async () => "56258ad6d1a71ca079a19340d17255e7576f7019";
       export const getBranch = async () => "meowing.de";
       export const getRemote = async () => "zImPatrick/cobalt";
       export const getVersion = async () => "11.7.1";
       EOF
+
+      substituteInPlace api/src/stream/ffmpeg.js \
+        --replace-fail 'import ffmpeg from "ffmpeg-static";' 'const ffmpeg = "${lib.getExe ffmpeg-headless}";'
 
       substituteInPlace web/src/lib/api/api-url.ts \
         --replace-fail "return new URL(customInstanceURL).origin;" "return new URL(customInstanceURL).href.replace(/\/$/, \"\");" \

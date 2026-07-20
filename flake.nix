@@ -92,7 +92,7 @@
     };
 
     jellyfin-web-src = {
-      url = "github:skulldogged/jellyfin-web";
+      url = "github:jellyfin/jellyfin-web";
       flake = false;
     };
 
