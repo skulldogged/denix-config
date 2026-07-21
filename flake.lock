@@ -350,11 +350,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1784674190,
-        "narHash": "sha256-PWmnx1soDpWc7TLZ778TzJYIpeHOIhrrd74NyPKYQLk=",
+        "lastModified": 1784675650,
+        "narHash": "sha256-ZiFAPZuJjRn+keOa0yn4YH3YvSmL5U7FfI3OPvCBGyg=",
         "owner": "skulldogged",
         "repo": "draconisplusplus-monorepo",
-        "rev": "e4be361775cf3c8ad057e79f8304a5e5e212f888",
+        "rev": "032246ed1e484090315d7379aed94b457c669fc9",
         "type": "github"
       },
       "original": {
@@ -377,11 +377,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784674350,
-        "narHash": "sha256-ZdQ9EIgoAx0T4a+kaTmEqIcZASeYX38BJpxGzvomAiA=",
+        "lastModified": 1784675674,
+        "narHash": "sha256-QmehazvngjC89RAHqgowrxtSVhWVNLUL1X+Hh+Mock4=",
         "owner": "skulldogged",
         "repo": "draconisplusplus-plugin-lab",
-        "rev": "ccaf2f7dfadae89986c4cc91ad6adcbfbade6dc4",
+        "rev": "e2e6043fae24a2fbd3b535886017b80d292df59e",
         "type": "github"
       },
       "original": {
@@ -404,11 +404,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784674349,
-        "narHash": "sha256-C4P1LmYxBZB4JKB4q1d1Mk29AonjrLU79AsTfa7dzNw=",
+        "lastModified": 1784675671,
+        "narHash": "sha256-ZZmf8GvE8sXxogCgf8Exdvpf5vOp+IbPARAtb50ekvc=",
         "owner": "skulldogged",
         "repo": "draconisplusplus-plugins",
-        "rev": "c986cc31555585904c8f6d204b5f2fc049fc70ab",
+        "rev": "b5c4ab952af0a23656843b2f20e542b8bed511c4",
         "type": "github"
       },
       "original": {
