@@ -1,6 +1,7 @@
 {
   delib,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -13,6 +14,11 @@ delib.module {
 
   home.ifEnabled = let
     inherit (pkgs.stdenv.hostPlatform) system;
+
+    caelestiaChatgpt = pkgs.writeScriptBin "caelestia-chatgpt" ''
+      #!${pkgs.python3}/bin/python3
+      ${builtins.readFile ./caelestia-chatgpt.py}
+    '';
 
     caelestiaCli = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default.overrideAttrs (old: {
       propagatedBuildInputs = (old.propagatedBuildInputs or []) ++ [pkgs.ffmpeg];
@@ -52,10 +58,60 @@ delib.module {
             substituteInPlace modules/background/Visualiser.qml \
               --replace-fail "primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)" "primaryColor: Qt.alpha(Colours.palette.m3onSurface, 0.7)" \
               --replace-fail "secondaryColor: Qt.alpha(Colours.palette.m3inversePrimary, 0.7)" "secondaryColor: Qt.alpha(Colours.palette.m3onSurfaceVariant, 0.7)"
+
+            substituteInPlace modules/sidebar/AiAssistant.qml \
+              --replace-fail "Ollama tags request failed" "ChatGPT model request failed" \
+              --replace-fail "Ollama request failed" "ChatGPT request failed"
           '';
       });
-  in {
+  in rec {
     imports = [inputs.caelestia-shell.homeManagerModules.default];
+
+    home.packages = [caelestiaChatgpt];
+
+    # Caelestia persists settings and AI state by rewriting shell.json. The
+    # upstream Home Manager module normally makes it an immutable store symlink,
+    # so seed a regular user-owned file instead. Existing runtime choices win
+    # over defaults, while newly declared settings are added on activation.
+    xdg.configFile."caelestia/shell.json".enable = lib.mkForce false;
+
+    home.activation.caelestiaMutableConfig = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
+      configDir="''${XDG_CONFIG_HOME:-$HOME/.config}/caelestia"
+      configPath="$configDir/shell.json"
+      seedPath=${lib.escapeShellArg (pkgs.writeText "caelestia-shell-defaults.json" (builtins.toJSON programs.caelestia.settings))}
+
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$configDir"
+      tempPath="$(${pkgs.coreutils}/bin/mktemp "$configDir/.shell.json.XXXXXX")"
+      trap '${pkgs.coreutils}/bin/rm -f "$tempPath"' EXIT
+
+      if [[ -L "$configPath" || ! -e "$configPath" ]]; then
+        ${pkgs.coreutils}/bin/cp "$seedPath" "$tempPath"
+      elif [[ -f "$configPath" ]]; then
+        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$seedPath" "$configPath" > "$tempPath"
+      else
+        errorEcho "Caelestia config is not a regular file: $configPath"
+        exit 1
+      fi
+
+      ${pkgs.coreutils}/bin/chmod 0600 "$tempPath"
+      if [[ -L "$configPath" ]] || ! ${pkgs.diffutils}/bin/cmp -s "$tempPath" "$configPath"; then
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$configPath"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tempPath" "$configPath"
+      fi
+    '';
+
+    systemd.user.services.caelestia-chatgpt = {
+      Unit = {
+        Description = "ChatGPT OAuth provider for Caelestia Shell";
+        Before = ["caelestia.service"];
+      };
+      Service = {
+        ExecStart = "${caelestiaChatgpt}/bin/caelestia-chatgpt serve";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = ["hyprland-session.target"];
+    };
 
     xdg.stateFile."caelestia/scheme.json".text = builtins.toJSON {
       name = "catppuccin";
@@ -150,6 +206,14 @@ delib.module {
       };
 
       settings = {
+        ai = {
+          ollamaUrl = "http://127.0.0.1:11435";
+          ollamaModel = "gpt-5.4";
+          defaultOllamaModel = "gpt-5.4";
+          defaultProvider = "ollama";
+          enableOllama = true;
+        };
+
         appearance = {
           font = {
             headline.family = "Rubik";

@@ -23,6 +23,7 @@ delib.module {
       enable = true;
       userDirs = {
         enable = true;
+        setSessionVariables = true;
         music = lib.mkIf myconfig.host.isDesktop "/mnt/music";
       };
     };

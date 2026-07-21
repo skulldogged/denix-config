@@ -171,7 +171,11 @@ delib.module {
           }
           {
             name = "logitech-g502-x-plus";
-            sensitivity = -0.75;
+            sensitivity = -0.65;
+          }
+          {
+            name = "logitech-g502-x-plus-1";
+            sensitivity = -0.65;
           }
         ];
 
@@ -179,11 +183,13 @@ delib.module {
           {
             match.class = "equibop";
             float = true;
+            size = "1920 1080";
             workspace = "special:discord";
           }
           {
             match.class = "org.telegram.desktop";
             float = true;
+            size = "1920 1080";
             workspace = "special:telegram";
           }
         ];

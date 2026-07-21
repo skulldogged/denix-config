@@ -10,6 +10,7 @@ delib.rice {
     imports = [inputs.catppuccin.nixosModules.catppuccin];
 
     catppuccin = {
+      autoEnable = true;
       enable = true;
       cache.enable = true;
       flavor = "mocha";
@@ -24,6 +25,7 @@ delib.rice {
     ];
 
     catppuccin = {
+      autoEnable = true;
       enable = true;
       flavor = "mocha";
       accent = "green";
@@ -32,6 +34,8 @@ delib.rice {
     };
 
     colorScheme = inputs.nix-colors.colorSchemes.catppuccin-mocha;
+
+    home.pointerCursor.enable = true;
 
     gtk.enable = true;
 

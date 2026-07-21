@@ -25,15 +25,16 @@ delib.host {
       distributedBuilds = true;
       buildMachines = [
         {
-          hostName = "polaris";
+          hostName = "builder";
           protocol = "ssh-ng";
           sshUser = "nix-builder";
           sshKey = "/persist/root/.ssh/id_ed25519";
-          publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU9tTitBZGZTSW03L1pla3dzV0IvYytpZFBZRnJ2QlVqZEhTMWkzUDRPRSsgcm9vdEBwb2xhcmlzLW5peAo=";
+          publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUVlOHJ0eTl4L0sxS1kvU2srOHQyQ1FTeE41amVLa3p0SW9USUt6dG5OSHogcm9vdEBidWlsZGVyCg==";
           systems = ["x86_64-linux"];
           maxJobs = 8;
-          speedFactor = 10;
+          speedFactor = 20;
           supportedFeatures = [
+            "benchmark"
             "nixos-test"
             "kvm"
             "recursive-nix"
@@ -43,6 +44,8 @@ delib.host {
         }
       ];
     };
+
+    networking.hosts."37.27.111.236" = ["builder"];
 
     facter.reportPath = ./facter.json;
 
@@ -296,7 +299,7 @@ delib.host {
       bun.enable = true;
       cava.enable = true;
       codex-desktop.enable = true;
-      draconisplusplus.enable = false;
+      draconisplusplus.enable = true;
       helium.enable = true;
       mpv.enable = true;
       mpd.enable = true;

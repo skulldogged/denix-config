@@ -42,6 +42,7 @@ delib.module {
 
       fzf = {
         enable = true;
+        historyWidget.fish.command = "";
         colors = with lib; {
           bg = mkForce "-1";
           "bg+" = mkForce "-1";

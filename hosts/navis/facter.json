@@ -1052,6 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
+        "tlb_size": 30105,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -1932,7 +1933,7 @@
           "/dev/input/by-id/usb-Keychron_Keychron_Link-if02-event-kbd",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.2:1.2-event-kbd",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.2:1.2-event-kbd",
-          "/dev/input/event8"
+          "/dev/input/event9"
         ],
         "resources": [
           {
@@ -2230,7 +2231,7 @@
           "/dev/input/by-id/usb-Keychron_Keychron_Link-event-if01",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.2:1.1-event",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.2:1.1-event",
-          "/dev/input/event5"
+          "/dev/input/event7"
         ],
         "resources": [
           {
@@ -2607,7 +2608,7 @@
         "unix_device_names": [
           "/dev/input/mice"
         ],
-        "unix_device_name2": "/dev/input/mouse1",
+        "unix_device_name2": "/dev/input/mouse2",
         "resources": [
           {
             "type": "baud",
@@ -2692,9 +2693,9 @@
           "hex": "307a",
           "value": 12410
         },
-        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.000C/input/input32",
+        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.000C/input/input31",
         "unix_device_names": [
-          "/dev/input/event23",
+          "/dev/input/event18",
           "/dev/input/ + handler"
         ]
       }
@@ -4632,7 +4633,7 @@
           "/dev/input/by-id/usb-3142_fifine_Microphone-event-if03",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.3-event",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.3-event",
-          "/dev/input/event9"
+          "/dev/input/event10"
         ],
         "resources": [
           {
@@ -4729,7 +4730,7 @@
           "/dev/input/by-id/usb-SteelSeries_Arctis_Nova_Pro_Wireless-event-if03",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.1:1.3-event",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.1:1.3-event",
-          "/dev/input/event19"
+          "/dev/input/event23"
         ],
         "resources": [
           {
