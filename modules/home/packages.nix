@@ -15,8 +15,6 @@ delib.module {
   home.ifEnabled = {myconfig, ...}: let
     inherit (pkgs.stdenv.hostPlatform) system;
 
-    equibopPackage = pkgs.callPackage ../../pkgs/equibop/package.nix {};
-
     basePackages =
       (with pkgs; [
         alejandra
@@ -34,6 +32,7 @@ delib.module {
     desktopPackages =
       (with pkgs; [
         duf
+        equibop
         glow
         jellyfin-tui
         killall
@@ -52,8 +51,7 @@ delib.module {
         tlrc
         translate-shell
         uv
-      ])
-      ++ [equibopPackage];
+      ]);
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 
