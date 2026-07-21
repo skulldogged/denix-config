@@ -36,9 +36,22 @@ delib.module {
     cfg = myconfig.programs.linux-wallpaperengine;
 
     # Override linux-wallpaperengine to use latest source from flake input
-    linux-wallpaperengine = pkgs.linux-wallpaperengine.overrideAttrs (_old: {
+    linux-wallpaperengine = pkgs.linux-wallpaperengine.overrideAttrs (old: {
       version = "0-unstable-${inputs.linux-wallpaperengine-src.lastModifiedDate or "latest"}";
+
       src = inputs.linux-wallpaperengine-src;
+
+      nativeBuildInputs =
+        (old.nativeBuildInputs or [])
+        ++ [
+          pkgs.pkg-config
+        ];
+
+      buildInputs =
+        (old.buildInputs or [])
+        ++ [
+          pkgs.dbus
+        ];
     });
 
     extraArgsStr = lib.concatStringsSep " " cfg.extraArgs;

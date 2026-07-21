@@ -32,7 +32,7 @@ delib.module {
         ];
 
         nvidia = {
-          package = config.boot.kernelPackages.nvidiaPackages.beta;
+          package = config.boot.kernelPackages.nvidiaPackages.bleeding_edge;
           modesetting.enable = true;
           powerManagement.enable = false;
           open = true;

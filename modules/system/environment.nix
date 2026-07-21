@@ -43,7 +43,6 @@ delib.module {
           sound-theme-freedesktop
           tpm2-tss
           uutils-coreutils-noprefix
-          wineWowPackages.waylandFull
           xclip
         ];
     };

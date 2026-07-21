@@ -26,7 +26,7 @@
     };
 
     caelestia-shell = {
-      url = "github:caelestia-dots/shell";
+      url = "github:dim-ghub/caelestia-shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

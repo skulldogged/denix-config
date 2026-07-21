@@ -31,6 +31,7 @@ delib.module {
       enable = true;
       package = null;
       portalPackage = null;
+      configType = "lua";
       systemd.variables = ["--all"];
 
       settings = let
@@ -40,27 +41,27 @@ delib.module {
           ddcutil --sn "$display_serial_num" setvcp 10 $@
         '';
 
-        hyprscreensharefix = pkgs.writeShellScript "hyprscreensharefix" ''
-          dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=hyprland
-          systemctl --user stop pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland
-          systemctl --user start pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland
-        '';
+        scratchpad = let
+          hyprctl = "${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl";
+          jq = lib.getExe pkgs.jq;
+        in
+          pkgs.writeShellScript "hyprscratchpad" ''
+            command=$1
+            class=$2
+            workspace=$3
 
-        scratchpad = pkgs.writeShellScript "hyprscratchpad" ''
-          COMMAND=$1
-          CLASS=$2
-          WORKSPACE=$3
+            if ${hyprctl} -j clients | ${jq} -e --arg class "$class" \
+              'any(.[]; .class == $class or .initialClass == $class)' >/dev/null; then
+              exec ${hyprctl} dispatch "hl.dsp.workspace.toggle_special('$workspace')"
+            fi
 
-          if [[ $(hyprctl clients | grep -v '"title":' | grep "class: $CLASS") ]];then
-            hyprctl dispatch togglespecialworkspace $WORKSPACE
-          else
-            hyprctl dispatch togglespecialworkspace $WORKSPACE && hyprctl dispatch exec "$COMMAND"
-          fi
-        '';
+            ${hyprctl} dispatch "hl.dsp.workspace.toggle_special('$workspace')"
+            exec ${hyprctl} dispatch "hl.dsp.exec_cmd('$command')"
+          '';
 
         mod = "SUPER";
-        modC = "SUPER CTRL";
-        modS = "SUPER SHIFT";
+        modC = "SUPER + CTRL";
+        modS = "SUPER + SHIFT";
 
         browser = "helium";
         fileManager = "nautilus";
@@ -114,22 +115,52 @@ delib.module {
         '';
 
         screenshot = mode: "${zipline-screenshot} ${mode}";
-      in {
-        decoration.rounding = 16;
-        dwindle.preserve_split = true;
-        debug.disable_logs = false;
 
-        cursor = {
-          no_hardware_cursors = false;
-          use_cpu_buffer = true;
+        lua = lib.generators.mkLuaInline;
+        toLua = lib.generators.toLua {};
+        exec = command: lua "hl.dsp.exec_cmd(${toLua command})";
+        mkBind = key: dispatcher: {
+          _args = [key dispatcher];
         };
+        mkBindWith = key: dispatcher: options: {
+          _args = [key dispatcher options];
+        };
+      in {
+        config = {
+          animations.enabled = true;
+          decoration.rounding = 16;
+          dwindle.preserve_split = true;
+          debug.disable_logs = false;
 
-        input = {
-          kb_options = "compose:ralt";
+          cursor = {
+            no_hardware_cursors = false;
+            use_cpu_buffer = true;
+          };
 
-          touchpad = {
-            clickfinger_behavior = true;
-            natural_scroll = true;
+          input = {
+            kb_options = "compose:ralt";
+
+            touchpad = {
+              clickfinger_behavior = true;
+              natural_scroll = true;
+            };
+          };
+
+          general = {
+            border_size = 2;
+            gaps_in = 10;
+            resize_on_border = true;
+
+            col = {
+              active_border = "rgba(cba6f7ee)";
+              inactive_border = "rgba(595959aa)";
+            };
+          };
+
+          misc = {
+            force_default_wallpaper = 0;
+            disable_hyprland_logo = true;
+            vrr = 3;
           };
         };
 
@@ -144,131 +175,212 @@ delib.module {
           }
         ];
 
-        windowrule = [
-          "match:class equibop, float true"
-          "match:class org.telegram.desktop, float true"
+        window_rule = [
+          {
+            match.class = "equibop";
+            float = true;
+            workspace = "special:discord";
+          }
+          {
+            match.class = "org.telegram.desktop";
+            float = true;
+            workspace = "special:telegram";
+          }
         ];
 
-        layerrule = [
-          "match:namespace selection, no_anim true"
+        layer_rule = [
+          {
+            match.namespace = "selection";
+            no_anim = true;
+          }
         ];
 
-        animations = {
-          enabled = true;
-
-          bezier = [
-            "decel, 0.05, 0.7, 0.1, 1"
-            "accel, 0.3, 0, 0.8, 0.15"
-            "linear, 0, 0, 1, 1"
-          ];
-
-          animation = [
-            "windows, 1, 3, decel, popin"
-            "fade, 1, 4, decel"
-            "fadeIn, 1, 4, decel"
-            "fadeOut, 1, 3, accel"
-            "fadeDim, 1, 4, decel"
-            "border, 1, 10, default"
-            "borderangle, 1, 100, linear, loop"
-            "workspaces, 1, 4.5, decel, slide"
-            "specialWorkspace, 1, 3, decel, slidevert"
-            "layers, 1, 4, decel, fade"
-          ];
-        };
-
-        general = {
-          border_size = 2;
-          gaps_in = 10;
-          resize_on_border = true;
-
-          "col.active_border" = "rgba(cba6f7ee)";
-          "col.inactive_border" = "rgba(595959aa)";
-        };
-
-        exec-once = [
-          "${hyprscreensharefix}"
+        curve = [
+          {
+            _args = [
+              "decel"
+              {
+                type = "bezier";
+                points = [
+                  [0.05 0.7]
+                  [0.1 1]
+                ];
+              }
+            ];
+          }
+          {
+            _args = [
+              "accel"
+              {
+                type = "bezier";
+                points = [
+                  [0.3 0]
+                  [0.8 0.15]
+                ];
+              }
+            ];
+          }
+          {
+            _args = [
+              "linear"
+              {
+                type = "bezier";
+                points = [
+                  [0 0]
+                  [1 1]
+                ];
+              }
+            ];
+          }
         ];
 
-        misc = {
-          force_default_wallpaper = 0;
-          disable_hyprland_logo = true;
-          vrr = 3;
-        };
+        animation = [
+          {
+            leaf = "windows";
+            enabled = true;
+            speed = 3;
+            bezier = "decel";
+            style = "popin";
+          }
+          {
+            leaf = "fade";
+            enabled = true;
+            speed = 4;
+            bezier = "decel";
+          }
+          {
+            leaf = "fadeIn";
+            enabled = true;
+            speed = 4;
+            bezier = "decel";
+          }
+          {
+            leaf = "fadeOut";
+            enabled = true;
+            speed = 3;
+            bezier = "accel";
+          }
+          {
+            leaf = "fadeDim";
+            enabled = true;
+            speed = 4;
+            bezier = "decel";
+          }
+          {
+            leaf = "border";
+            enabled = true;
+            speed = 10;
+            bezier = "default";
+          }
+          {
+            leaf = "borderangle";
+            enabled = true;
+            speed = 100;
+            bezier = "linear";
+            style = "loop";
+          }
+          {
+            leaf = "workspaces";
+            enabled = true;
+            speed = 4.5;
+            bezier = "decel";
+            style = "slide";
+          }
+          {
+            leaf = "specialWorkspace";
+            enabled = true;
+            speed = 3;
+            bezier = "decel";
+            style = "slidevert";
+          }
+          {
+            leaf = "layers";
+            enabled = true;
+            speed = 4;
+            bezier = "decel";
+            style = "fade";
+          }
+        ];
 
-        monitor = ["DP-1, highrr, auto, auto, bitdepth, 10"];
+        monitor = {
+          output = "DP-1";
+          mode = "highrr";
+          position = "auto";
+          scale = "auto";
+          bitdepth = 10;
+        };
 
         env = [
-          "__GLX_VENDOR_LIBRARY_NAME, nvidia"
-          "LIBVA_DRIVER_NAME,         nvidia"
-          "NVD_BACKEND,               direct"
-          "HYPRCURSOR_SIZE, 24"
-          "XCURSOR_SIZE, 24"
-        ];
-
-        bindm = [
-          "${mod},  mouse:272, movewindow"
-          "${mod},  mouse:273, resizewindow"
+          {_args = ["__GLX_VENDOR_LIBRARY_NAME" "nvidia"];}
+          {_args = ["LIBVA_DRIVER_NAME" "nvidia"];}
+          {_args = ["NVD_BACKEND" "direct"];}
+          {_args = ["HYPRCURSOR_SIZE" "24"];}
+          {_args = ["XCURSOR_SIZE" "24"];}
         ];
 
         bind =
           [
-            "${mod},         e, exec, ${fileManager}"
-            "${mod},         r, global, caelestia:launcher"
-            "${mod},         w, exec, ${browser}"
-            "${mod},    Return, exec, ${terminal}"
+            (mkBindWith "${mod} + mouse:272" (lua "hl.dsp.window.drag()") {mouse = true;})
+            (mkBindWith "${mod} + mouse:273" (lua "hl.dsp.window.resize()") {mouse = true;})
 
-            "${mod}, d, exec, ${scratchpad} equibop equibop discord"
-            "${mod}, t, exec, ${scratchpad} Telegram org.telegram.desktop telegram"
+            (mkBind "${mod} + E" (exec fileManager))
+            (mkBind "${mod} + R" (lua ''hl.dsp.global("caelestia:launcher")''))
+            (mkBind "${mod} + W" (exec browser))
+            (mkBind "${mod} + RETURN" (exec terminal))
 
-            "${modS}, s, exec, ${screenshot "window"}"
-            "CTRL,    3, exec, ${screenshot "output -m active"}"
-            "CTRL,    4, exec, ${screenshot "region -C 0,0"}"
+            (mkBind "${mod} + D" (exec "${scratchpad} equibop equibop discord"))
+            (mkBind "${mod} + T" (exec "${scratchpad} Telegram org.telegram.desktop telegram"))
 
-            "${mod}, mouse_down, workspace, e-1"
-            "${mod},   mouse_up, workspace, e+1"
+            (mkBind "${modS} + S" (exec (screenshot "window")))
+            (mkBind "CTRL + 3" (exec (screenshot "output -m active")))
+            (mkBind "CTRL + 4" (exec (screenshot "region -C 0,0")))
 
-            "${mod},  q, killactive"
-            "${modS}, q, exec, hyprexit"
+            (mkBind "${mod} + mouse_down" (lua ''hl.dsp.focus({ workspace = "e-1" })''))
+            (mkBind "${mod} + mouse_up" (lua ''hl.dsp.focus({ workspace = "e+1" })''))
 
-            "${mod}, Space, togglefloating"
-            "${mod}, f, fullscreen"
+            (mkBind "${mod} + Q" (lua "hl.dsp.window.close()"))
+            (mkBind "${modS} + Q" (exec "hyprexit"))
 
-            "${mod}, h, movefocus, l"
-            "${mod}, j, movefocus, d"
-            "${mod}, k, movefocus, u"
-            "${mod}, l, movefocus, r"
+            (mkBind "${mod} + SPACE" (lua ''hl.dsp.window.float({ action = "toggle" })''))
+            (mkBind "${mod} + F" (lua "hl.dsp.window.fullscreen()"))
 
-            "${modS}, h, movewindow, l"
-            "${modS}, j, movewindow, d"
-            "${modS}, k, movewindow, u"
-            "${modS}, l, movewindow, r"
+            (mkBind "${mod} + H" (lua ''hl.dsp.focus({ direction = "left" })''))
+            (mkBind "${mod} + J" (lua ''hl.dsp.focus({ direction = "down" })''))
+            (mkBind "${mod} + K" (lua ''hl.dsp.focus({ direction = "up" })''))
+            (mkBind "${mod} + L" (lua ''hl.dsp.focus({ direction = "right" })''))
 
-            "${modC}, h, resizeactive, -30  0"
-            "${modC}, j, resizeactive, 0   30"
-            "${modC}, k, resizeactive, 0  -30"
-            "${modC}, l, resizeactive, 30   0"
+            (mkBind "${modS} + H" (lua ''hl.dsp.window.move({ direction = "left" })''))
+            (mkBind "${modS} + J" (lua ''hl.dsp.window.move({ direction = "down" })''))
+            (mkBind "${modS} + K" (lua ''hl.dsp.window.move({ direction = "up" })''))
+            (mkBind "${modS} + L" (lua ''hl.dsp.window.move({ direction = "right" })''))
 
-            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+            (mkBind "${modC} + H" (lua "hl.dsp.window.resize({ x = -30, y = 0, relative = true })"))
+            (mkBind "${modC} + J" (lua "hl.dsp.window.resize({ x = 0, y = 30, relative = true })"))
+            (mkBind "${modC} + K" (lua "hl.dsp.window.resize({ x = 0, y = -30, relative = true })"))
+            (mkBind "${modC} + L" (lua "hl.dsp.window.resize({ x = 30, y = 0, relative = true })"))
 
-            ", XF86AudioPlay, exec, playerctl play-pause"
-            ", XF86AudioNext, exec, playerctl next"
-            ", XF86AudioPrev, exec, playerctl previous"
+            (mkBind "XF86AudioRaiseVolume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
+            (mkBind "XF86AudioLowerVolume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+            (mkBind "XF86AudioMute" (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 
-            ", XF86MonBrightnessUp, exec, ${ddc-brightness} + 5"
-            ", XF86MonBrightnessDown, exec, ${ddc-brightness} - 5"
+            (mkBind "XF86AudioPlay" (exec "playerctl play-pause"))
+            (mkBind "XF86AudioNext" (exec "playerctl next"))
+            (mkBind "XF86AudioPrev" (exec "playerctl previous"))
+
+            (mkBind "XF86MonBrightnessUp" (exec "${ddc-brightness} + 5"))
+            (mkBind "XF86MonBrightnessDown" (exec "${ddc-brightness} - 5"))
           ]
           ++ (
             builtins.concatLists (builtins.genList (
                 x: let
+                  workspace = toString (x + 1);
                   ws = let
                     c = (x + 1) / 10;
                   in
-                    builtins.toString (x + 1 - (c * 10));
+                    toString (x + 1 - (c * 10));
                 in [
-                  "${mod},  ${ws}, workspace,       ${builtins.toString (x + 1)}"
-                  "${modS}, ${ws}, movetoworkspace, ${builtins.toString (x + 1)}"
+                  (mkBind "${mod} + ${ws}" (lua "hl.dsp.focus({ workspace = ${toLua workspace} })"))
+                  (mkBind "${modS} + ${ws}" (lua "hl.dsp.window.move({ workspace = ${toLua workspace} })"))
                 ]
               )
               10)

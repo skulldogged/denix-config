@@ -295,7 +295,8 @@ delib.host {
     programs = {
       bun.enable = true;
       cava.enable = true;
-      draconisplusplus.enable = true;
+      codex-desktop.enable = true;
+      draconisplusplus.enable = false;
       helium.enable = true;
       mpv.enable = true;
       mpd.enable = true;
@@ -309,7 +310,7 @@ delib.host {
       };
 
       linux-wallpaperengine = {
-        enable = true;
+        enable = false;
         assetsDir = "/mnt/games/SteamLibrary/steamapps/common/wallpaper_engine/assets";
         wallpaperPath = "/mnt/games/SteamLibrary/steamapps/workshop/content/431960/2847826034";
         screen = "DP-1";

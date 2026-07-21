@@ -33,8 +33,6 @@ delib.module {
 
     desktopPackages =
       (with pkgs; [
-        bitwarden-cli
-        bitwarden-desktop
         duf
         glow
         jellyfin-tui

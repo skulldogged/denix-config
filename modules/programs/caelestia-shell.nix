@@ -1,6 +1,7 @@
 {
   delib,
   inputs,
+  pkgs,
   ...
 }:
 delib.module {
@@ -10,13 +11,57 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {
+  home.ifEnabled = let
+    inherit (pkgs.stdenv.hostPlatform) system;
+
+    caelestiaCli = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default.overrideAttrs (old: {
+      propagatedBuildInputs = (old.propagatedBuildInputs or []) ++ [pkgs.ffmpeg];
+
+      patchPhase =
+        (old.patchPhase or "")
+        + ''
+          substituteInPlace src/caelestia/subcommands/update.py \
+            --replace-fail "from caelestia.utils.shell import shell_managed_externally" "from caelestia.utils.shell import detect_shell_management_source" \
+            --replace-fail "if shell_managed_externally(installer):" 'if detect_shell_management_source(installer) in ("shell", "manual"):'
+        '';
+    });
+
+    caelestiaShell =
+      (inputs.caelestia-shell.packages.${system}.default.override {
+        caelestia-cli = caelestiaCli;
+        withCli = true;
+      }).overrideAttrs (old: {
+        buildInputs = (old.buildInputs or []) ++ [pkgs.qt6.qtmultimedia];
+
+        postPatch =
+          (old.postPatch or "")
+          + ''
+            substituteInPlace modules/background/DesktopClock.qml \
+              --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
+              --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
+              --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant"
+
+            substituteInPlace modules/background/DesktopLyrics.qml \
+              --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
+              --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
+              --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant" \
+              --replace-fail "color: Colours.palette.m3primaryContainer" "color: Colours.palette.m3surfaceContainerHighest" \
+              --replace-fail "color: Colours.palette.m3primary" "color: Colours.palette.m3onSurface" \
+              --replace-fail "shadowColor: Colours.palette.m3primary" "shadowColor: Colours.palette.m3onSurface"
+
+            substituteInPlace modules/background/Visualiser.qml \
+              --replace-fail "primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)" "primaryColor: Qt.alpha(Colours.palette.m3onSurface, 0.7)" \
+              --replace-fail "secondaryColor: Qt.alpha(Colours.palette.m3inversePrimary, 0.7)" "secondaryColor: Qt.alpha(Colours.palette.m3onSurfaceVariant, 0.7)"
+          '';
+      });
+  in {
     imports = [inputs.caelestia-shell.homeManagerModules.default];
 
     xdg.stateFile."caelestia/scheme.json".text = builtins.toJSON {
-      name = "Catppuccin";
-      flavour = "Mocha";
+      name = "catppuccin";
+      flavour = "mocha";
       mode = "dark";
+      variant = "tonalspot";
       colours = {
         primary_paletteKeyColor = "a6e3a1";
         secondary_paletteKeyColor = "76758e";
@@ -97,21 +142,98 @@ delib.module {
 
     programs.caelestia = {
       enable = true;
-      cli.enable = true;
+      package = caelestiaShell;
+
+      cli = {
+        enable = true;
+        package = caelestiaCli;
+      };
 
       settings = {
-        background.enabled = false;
+        appearance = {
+          font = {
+            headline.family = "Rubik";
+            title.family = "Rubik";
+            body.family = "Rubik";
+            label.family = "Rubik";
+            mono.family = "Maple Mono NF";
+            clock = "Rubik";
+            workspaces = "Rubik";
+          };
 
-        appearance.font.family = {
-          sans = "Rubik";
-          mono = "Maple Mono NF";
+          transparency.enabled = true;
+        };
+
+        background = {
+          enabled = true;
+          desktopClock.enabled = true;
+          desktopLyrics.enabled = true;
+          visualiser.enabled = true;
         };
 
         bar = {
+          clock = {
+            background = true;
+            showDate = true;
+          };
+
+          entries = [
+            {
+              id = "logo";
+              enabled = true;
+            }
+            {
+              id = "workspaces";
+              enabled = true;
+            }
+            {
+              id = "github";
+              enabled = true;
+            }
+            {
+              id = "spacer";
+              enabled = true;
+            }
+            {
+              id = "dock";
+              enabled = true;
+            }
+            {
+              id = "spacer";
+              enabled = true;
+            }
+            {
+              id = "tray";
+              enabled = true;
+            }
+            {
+              id = "clock";
+              enabled = true;
+            }
+            {
+              id = "statusIcons";
+              enabled = true;
+            }
+            {
+              id = "power";
+              enabled = true;
+            }
+          ];
+
           status.showBattery = false;
-          workspaces.showWindows = false;
-          tray.compact = true;
+          workspaces.showWindows = true;
+          tray = {
+            background = true;
+            compact = true;
+          };
         };
+
+        dashboard.profilePicShape = 20; # Cookie 12-Sided
+        lock.profilePicShape = 20; # Cookie 12-Sided
+
+        shimeji.enabled = false;
+
+        sidebar.showNews = false;
 
         general = {
           apps = {
@@ -195,9 +317,10 @@ delib.module {
         services = {
           weatherLocation = "39.953388,-74.198151";
           useFahrenheit = true;
-          defaultPlayer = "Jellyfin";
           smartScheme = false;
         };
+
+        utilities.toasts.transparency = true;
       };
 
       systemd = {
