@@ -56,12 +56,14 @@
 
     draconisplusplus-plugins = {
       url = "github:skulldogged/draconisplusplus-plugins";
+      inputs.draconisplusplus.follows = "draconisplusplus";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.utils.follows = "draconisplusplus/utils";
     };
 
     draconisplusplus-plugin-lab = {
       url = "github:skulldogged/draconisplusplus-plugin-lab";
+      inputs.draconisplusplus.follows = "draconisplusplus";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.utils.follows = "draconisplusplus/utils";
     };

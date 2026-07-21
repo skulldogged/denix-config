@@ -11,43 +11,52 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {...}: {
+  home.ifEnabled = {myconfig, ...}: let
+    system = pkgs.stdenv.hostPlatform.system;
+  in {
     imports = [inputs.draconisplusplus.homeModules.default];
 
     programs.draconisplusplus = {
       enable = true;
 
       configFormat = "hpp";
-
       enableCaching = true;
       enablePackageCount = true;
       enablePlugins = true;
       packageManagers = ["nix"];
+      pluginMode = "static";
+      username = "Mars";
+
       pluginPackages = [
-        (inputs.draconisplusplus-plugins.lib.${pkgs.system}.mkPluginRoot {
-          weather = {
-            provider = "openmeteo";
-            units = "imperial";
-            coords = {
-              lat = 39.953388;
-              lon = -74.198151;
+        (inputs.draconisplusplus-plugins.lib.${system}.mkPluginRoot {
+          plugins = {
+            json_format = true;
+            markdown_format = true;
+            now_playing = true;
+            weather = {
+              enable = true;
+              settings = {
+                provider = "openmeteo";
+                units = "imperial";
+                coords = {
+                  lat = 39.953388;
+                  lon = -74.198151;
+                };
+              };
+            };
+            yaml_format = true;
+          };
+        })
+        (inputs.draconisplusplus-plugin-lab.lib.${system}.mkPluginRoot {
+          plugins = {
+            vpn_info = true;
+            container_info = {
+              enable = myconfig.host.isServer;
+              settings.backends = ["podman"];
             };
           };
         })
-        (inputs.draconisplusplus-plugin-lab.lib.${pkgs.system}.mkPluginRoot {
-          containerInfo.backends = ["podman"];
-        })
       ];
-      staticPlugins = [
-        "container_info"
-        "json_format"
-        "markdown_format"
-        "now_playing"
-        "vpn_info"
-        "weather"
-        "yaml_format"
-      ];
-      username = "Mars";
 
       layout = [
         {
@@ -84,12 +93,13 @@ delib.module {
         }
         {
           name = "session";
-          rows = [
-            {key = "de";}
-            {key = "wm";}
-            {key = "plugin.vpn_info";}
-            {key = "plugin.container_info";}
-          ];
+          rows =
+            [
+              {key = "de";}
+              {key = "wm";}
+              {key = "plugin.vpn_info";}
+            ]
+            ++ pkgs.lib.optional myconfig.host.isServer {key = "plugin.container_info";};
         }
         {
           name = "nowplaying";
