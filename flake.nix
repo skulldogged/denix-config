@@ -2,27 +2,38 @@
   description = "Modular configuration of NixOS, Home Manager, and Nix-Darwin with Denix";
 
   inputs = {
-    catppuccin.url = "github:catppuccin/nix";
-    impermanence.url = "github:nix-community/impermanence";
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    impermanence = {
+      url = "github:nix-community/impermanence";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-colors.url = "github:Misterio77/nix-colors";
-    nix-minecraft.url = "github:skulldogged/nix-minecraft";
+
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
     nixvim.url = "github:skulldogged/nixvim-new";
-    opencode.url = "github:anomalyco/opencode/dev";
-    sops-nix.url = "github:Mic92/sops-nix";
-    stump-src.url = "github:stumpapp/stump";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     twemoji-src = {
       url = "github:jdecked/twemoji";
       flake = false;
-    };
-
-    aurelia = {
-      url = "git+ssh://git@github.com/skulldogged/aurelia";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     bang-bang = {
@@ -88,11 +99,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-    };
-
     jellyfin-src = {
       url = "github:skulldogged/jellyfin";
       flake = false;
@@ -140,6 +146,9 @@
   };
 
   outputs = {denix, ...} @ inputs: let
+    systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
+    forAllSystems = inputs.nixpkgs.lib.genAttrs systems;
+
     mkConfigurations = moduleSystem:
       denix.lib.configurations {
         inherit moduleSystem;
@@ -163,11 +172,15 @@
         };
       };
   in {
-    nixosConfigurations = mkConfigurations "nixos";
-    homeConfigurations = mkConfigurations "home";
-    darwinConfigurations = mkConfigurations "darwin";
+    nixosConfigurations =
+      inputs.nixpkgs.lib.getAttrs ["navis" "polaris"]
+      (mkConfigurations "nixos");
 
-    formatter = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux" "aarch64-darwin"] (
+    darwinConfigurations =
+      inputs.nixpkgs.lib.getAttrs ["canis"]
+      (mkConfigurations "darwin");
+
+    formatter = forAllSystems (
       system: let
         pkgs = import inputs.nixpkgs {inherit system;};
       in
@@ -184,7 +197,7 @@
         }
     );
 
-    devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux" "aarch64-darwin"] (
+    devShells = forAllSystems (
       system: let
         pkgs = import inputs.nixpkgs {inherit system;};
       in {

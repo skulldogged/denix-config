@@ -6,20 +6,18 @@
   ...
 }: let
   cobalt = pkgs.callPackage ../../pkgs/cobalt/package.nix {};
-  stumpVersion = (builtins.fromJSON (builtins.readFile "${inputs.stump-src}/package.json")).version;
 in
   delib.host {
     name = "polaris";
 
+    system = "x86_64-linux";
     type = "server";
 
     nixos = {
       imports = with inputs; [
         ../../integrations/sengled-home.nix
         sops-nix.nixosModules.sops
-        nix-minecraft.nixosModules.minecraft-servers
         nixos-facter-modules.nixosModules.facter
-        aurelia.nixosModules.default
         vscode-server.nixosModules.default
       ];
 
@@ -29,8 +27,6 @@ in
           "pnpm-9.15.9"
         ];
       };
-      nixpkgs.overlays = [inputs.nix-minecraft.overlay];
-
       facter.reportPath = ./facter.json;
 
       nix = {
@@ -72,7 +68,6 @@ in
           bsky_pds = {};
           cloudflare_token = {};
           forgejo_token = {};
-          jellyfin_api_key = {};
           mailer_passwd = {};
           mullvad_private_key = {
             owner = "root";
@@ -132,7 +127,6 @@ in
         ffmpeg
         ghostty.terminfo
         graalvmPackages.graalvm-oracle_17
-        miniupnpc
         nodejs_24
         opencode
         uv
@@ -148,30 +142,6 @@ in
 
       services = {
         resolved.enable = false;
-
-        minecraft-servers = {
-          enable = false;
-          dataDir = "/mnt/minecraft";
-          eula = true;
-          openFirewall = true;
-
-          servers.fabulously-optimized = let
-            fetchedMods = pkgs.fetchModrinthMods ./mc-server/mods.lock.json;
-            localMods = ./mc-server/mods;
-          in {
-            enable = true;
-            jvmOpts = "-Xms2G -Xmx16G";
-            package = pkgs.fabricServers.fabric-1_21_11.override {
-              jre_headless = pkgs.jdk25_headless;
-            };
-
-            symlinks.mods = pkgs.runCommandNoCC "polaris-minecraft-mods" {} ''
-              mkdir -p "$out"
-              ln -s ${fetchedMods}/* "$out"/
-              ln -s ${localMods}/* "$out"/
-            '';
-          };
-        };
 
         desktopManager.plasma6.enable = true;
         displayManager.sddm.enable = true;
@@ -225,12 +195,6 @@ in
                 "glance.skulldogged.dev" = {
                   service = "http://localhost:5678";
                 };
-                "mc.skulldogged.dev" = {
-                  service = "tcp://localhost:25565";
-                };
-                "lyrics.skulldogged.dev" = {
-                  service = "http://localhost:8083";
-                };
                 "identity.skulldogged.dev" = {
                   service = "http://localhost:8080";
                 };
@@ -239,9 +203,6 @@ in
                 };
                 "cobalt.skulldogged.dev" = {
                   service = "http://localhost:9001";
-                };
-                "stump.skulldogged.dev" = {
-                  service = "http://localhost:10801";
                 };
               };
               default = "http_status:404";
@@ -490,19 +451,6 @@ in
           };
         };
 
-        aurelia-sidecar-daemon = {
-          enable = true;
-          package = inputs.aurelia.packages.${pkgs.stdenv.hostPlatform.system}.aurelia-sidecar-daemon;
-          environmentFile = config.sops.secrets.jellyfin_api_key.path;
-          openFirewall = true;
-          settings = {
-            bind = "0.0.0.0";
-            jellyfin_url = "http://localhost:8096";
-            music_paths = ["/mnt/music"];
-            port = 8083;
-          };
-        };
-
         jellyfin = {
           enable = true;
           openFirewall = true;
@@ -650,20 +598,6 @@ in
         services = {
           bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
           zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
-          aurelia-sidecar-daemon.environment.RUST_LOG = "debug";
-
-          renew-voicechat-upnp = {
-            description = "Renew UPnP mapping for Simple Voice Chat";
-            after = ["network-online.target"];
-            wants = ["network-online.target"];
-
-            serviceConfig = {
-              Type = "oneshot";
-              ExecStart = ''
-                ${pkgs.miniupnpc}/bin/upnpc -u http://192.168.1.1:36163/rootDesc.xml -a 192.168.1.82 24454 24454 udp 3600
-              '';
-            };
-          };
 
           slskd = {
             serviceConfig = {
@@ -671,16 +605,6 @@ in
               ReadOnlyPaths = pkgs.lib.mkForce [""];
               RuntimeDirectory = "slskd";
             };
-          };
-        };
-
-        timers.renew-voicechat-upnp = {
-          description = "Periodically renew UPnP mapping for Simple Voice Chat";
-          wantedBy = ["timers.target"];
-          timerConfig = {
-            OnBootSec = "2m";
-            OnUnitActiveSec = "10m";
-            Unit = "renew-voicechat-upnp.service";
           };
         };
       };
@@ -789,32 +713,6 @@ in
         containers.enable = true;
         docker.enable = false;
 
-        oci-containers.containers.stump = {
-          image = "docker.io/aaronleopold/stump@sha256:66983fd05f1bc25f0179fcbce753296094016c65829fe38582897eb2a58d0c3c";
-          extraOptions = ["--network=host"];
-          volumes = [
-            "/mnt/stump/config:/config"
-            "/mnt/books:/data"
-          ];
-          environment = {
-            API_VERSION = "v1";
-            PGID = "972";
-            PUID = "1000";
-            STUMP_ALLOWED_ORIGINS = "https://stump.skulldogged.dev";
-            STUMP_CLIENT_DIR = "/app/client";
-            STUMP_CONFIG_DIR = "/config";
-            STUMP_IN_DOCKER = "true";
-            STUMP_PORT = "10801";
-            STUMP_PROFILE = "release";
-            STUMP_TRUST_PROXY_HEADERS = "true";
-          };
-          labels = {
-            "org.opencontainers.image.source" = "https://github.com/stumpapp/stump";
-            "dev.skulldogged.nix-flake-rev" = inputs.stump-src.rev or inputs.stump-src.shortRev or "dirty";
-            "dev.skulldogged.stump-version" = stumpVersion;
-          };
-        };
-
         podman = {
           enable = true;
           dockerCompat = true;
@@ -841,10 +739,6 @@ in
             4096 # opencode
             6610 # forgejo
             6969 # bluesky-pds
-          ];
-
-          allowedUDPPorts = [
-            24454 # simple voice chat
           ];
 
           interfaces.tailscale0 = {
@@ -933,13 +827,8 @@ in
 
       systemd.tmpfiles.rules = [
         "z /mnt 0755 root root - -"
-        "d /mnt/books 2775 marshall media - -"
         "d /mnt/music 2775 slskd media - -"
-        "d /mnt/stump 0755 root root - -"
-        "d /mnt/stump/config 2775 marshall media - -"
-        "a /mnt/books - - - - g:media:rwx,d:g:media:rwx"
         "a /mnt/music - - - - g:media:rwx,d:g:media:rwx"
-        "a /mnt/stump/config - - - - g:media:rwx,d:g:media:rwx"
       ];
 
       security.pam.services.gdm.enableGnomeKeyring = true;

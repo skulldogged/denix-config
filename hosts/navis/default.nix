@@ -9,6 +9,7 @@ delib.host {
   name = "navis";
 
   rice = "catppuccin-mocha";
+  system = "x86_64-linux";
   type = "desktop";
 
   nixos = {

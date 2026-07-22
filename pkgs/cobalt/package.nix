@@ -11,7 +11,7 @@
   python3,
   runtimeShell,
 }: let
-  pnpm = pnpm_10.override {inherit nodejs;};
+  pnpm = pnpm_10.override {nodejs-slim = nodejs;};
 in
   buildNpmPackage rec {
     pname = "cobalt-api";

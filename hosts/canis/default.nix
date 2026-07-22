@@ -6,13 +6,12 @@
 delib.host {
   name = "canis";
 
+  system = "aarch64-darwin";
   type = "laptop";
 
   darwin = {
     # Allow unfree packages
     nixpkgs.config.allowUnfree = true;
-    nixpkgs.hostPlatform = "aarch64-darwin";
-
     # macOS-specific settings
     ids.gids.nixbld = 30000;
 
