@@ -1,5 +1,6 @@
 {
   delib,
+  inputs,
   pkgs,
   lib,
   ...
@@ -32,27 +33,18 @@ delib.module {
             proggyfonts
             rubik
 
-            # is this stupid? probably. does it work? yes!
-            (twemoji-color-font.overrideAttrs {
-              version = "17.0.2";
-              src = ../../files/TwitterColorEmoji-SVGinOT-Linux-17.0.2.tar.gz; # source: https://github.com/RyeMutt/twemoji-color-font
-            })
-
-            (twitter-color-emoji.overrideAttrs (old: {
-              version = "17.0.2";
+            (twitter-color-emoji.overrideAttrs {
+              version = (builtins.fromJSON (builtins.readFile "${inputs.twemoji-src}/package.json")).version;
               __intentionallyOverridingVersion = true;
 
               srcs = [
                 noto-fonts-color-emoji.src
-                ../../files/twemoji-17.0.2.tar.gz # source: https://github.com/jdecked/twemoji
+                (builtins.path {
+                  path = inputs.twemoji-src;
+                  name = "twemoji-src";
+                })
               ];
-
-              postUnpack =
-                ''
-                  mv twemoji-17.0.2 twemoji-src
-                ''
-                + (old.postUnpack or "");
-            }))
+            })
           ]
           ++ (with nerd-fonts; [
             iosevka

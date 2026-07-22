@@ -1875,6 +1875,7 @@
         "sops-nix": "sops-nix",
         "stump-src": "stump-src",
         "treefmt-nix": "treefmt-nix_3",
+        "twemoji-src": "twemoji-src",
         "vicinae": "vicinae",
         "vscode-server": "vscode-server"
       }
@@ -2210,6 +2211,22 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "twemoji-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1780352164,
+        "narHash": "sha256-qgdguv5/EhjLlKxIvvQF7+s+AkY7KnFhaKRziOR1hhY=",
+        "owner": "jdecked",
+        "repo": "twemoji",
+        "rev": "b6b55fef1e8636b540a6d016a4729ca8cdf2e60b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jdecked",
+        "repo": "twemoji",
         "type": "github"
       }
     },

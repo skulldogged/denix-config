@@ -15,6 +15,11 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
+    twemoji-src = {
+      url = "github:jdecked/twemoji";
+      flake = false;
+    };
+
     aurelia = {
       url = "git+ssh://git@github.com/skulldogged/aurelia";
       inputs.nixpkgs.follows = "nixpkgs";
