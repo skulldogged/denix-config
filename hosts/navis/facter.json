@@ -1052,7 +1052,7 @@
         "fpu_exception": false,
         "cpuid_level": 27,
         "write_protect": false,
-        "tlb_size": 30105,
+        "tlb_size": 31644,
         "clflush_size": 64,
         "cache_alignment": 64,
         "address_sizes": {
@@ -1064,87 +1064,6 @@
     "disk": [
       {
         "index": 42,
-        "attached_to": 16,
-        "class_list": [
-          "disk",
-          "block_device",
-          "nvme"
-        ],
-        "bus_type": {
-          "hex": "0096",
-          "name": "NVME",
-          "value": 150
-        },
-        "slot": {
-          "bus": 0,
-          "number": 0
-        },
-        "base_class": {
-          "hex": "0106",
-          "name": "Mass Storage Device",
-          "value": 262
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Disk",
-          "value": 0
-        },
-        "vendor": {
-          "hex": "144d",
-          "value": 5197
-        },
-        "sub_vendor": {
-          "hex": "144d",
-          "value": 5197
-        },
-        "device": {
-          "hex": "a808",
-          "name": "Samsung SSD 970 EVO Plus 1TB",
-          "value": 43016
-        },
-        "sub_device": {
-          "hex": "a801",
-          "value": 43009
-        },
-        "serial": "S6S1NG0RA02239Z",
-        "model": "Samsung SSD 970 EVO Plus 1TB",
-        "sysfs_id": "/class/block/nvme0n1",
-        "sysfs_bus_id": "nvme0",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme0",
-        "unix_device_names": [
-          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z",
-          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z_1",
-          "/dev/disk/by-id/nvme-eui.0025385a1150c740",
-          "/dev/disk/by-path/pci-0000:03:00.0-nvme-1",
-          "/dev/nvme0n1"
-        ],
-        "resources": [
-          {
-            "type": "disk_geo",
-            "cylinders": 953869,
-            "heads": 64,
-            "sectors": 32,
-            "size": "0x0",
-            "geo_type": "logical"
-          },
-          {
-            "type": "size",
-            "unit": "sectors",
-            "value_1": 1953525168,
-            "value_2": 512
-          }
-        ],
-        "driver": "nvme",
-        "driver_module": "nvme",
-        "drivers": [
-          "nvme"
-        ],
-        "driver_modules": [
-          "nvme"
-        ]
-      },
-      {
-        "index": 43,
         "attached_to": 21,
         "class_list": [
           "disk",
@@ -1158,7 +1077,7 @@
         },
         "slot": {
           "bus": 0,
-          "number": 1
+          "number": 0
         },
         "base_class": {
           "hex": "0106",
@@ -1189,15 +1108,15 @@
         },
         "serial": "FYA7N020713207841",
         "model": "HFM512GD3JX013N",
-        "sysfs_id": "/class/block/nvme1n1",
-        "sysfs_bus_id": "nvme1",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme1",
+        "sysfs_id": "/class/block/nvme0n1",
+        "sysfs_bus_id": "nvme0",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:06.0/0000:02:00.0/nvme/nvme0",
         "unix_device_names": [
           "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841",
           "/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841_1",
           "/dev/disk/by-id/nvme-nvme.1c5c-465941374e303230373133323037383431-48464d3531324744334a583031334e-00000001",
           "/dev/disk/by-path/pci-0000:02:00.0-nvme-1",
-          "/dev/nvme1n1"
+          "/dev/nvme0n1"
         ],
         "resources": [
           {
@@ -1212,6 +1131,87 @@
             "type": "size",
             "unit": "sectors",
             "value_1": 1000215216,
+            "value_2": 512
+          }
+        ],
+        "driver": "nvme",
+        "driver_module": "nvme",
+        "drivers": [
+          "nvme"
+        ],
+        "driver_modules": [
+          "nvme"
+        ]
+      },
+      {
+        "index": 43,
+        "attached_to": 16,
+        "class_list": [
+          "disk",
+          "block_device",
+          "nvme"
+        ],
+        "bus_type": {
+          "hex": "0096",
+          "name": "NVME",
+          "value": 150
+        },
+        "slot": {
+          "bus": 0,
+          "number": 1
+        },
+        "base_class": {
+          "hex": "0106",
+          "name": "Mass Storage Device",
+          "value": 262
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Disk",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "144d",
+          "value": 5197
+        },
+        "sub_vendor": {
+          "hex": "144d",
+          "value": 5197
+        },
+        "device": {
+          "hex": "a808",
+          "name": "Samsung SSD 970 EVO Plus 1TB",
+          "value": 43016
+        },
+        "sub_device": {
+          "hex": "a801",
+          "value": 43009
+        },
+        "serial": "S6S1NG0RA02239Z",
+        "model": "Samsung SSD 970 EVO Plus 1TB",
+        "sysfs_id": "/class/block/nvme1n1",
+        "sysfs_bus_id": "nvme1",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:1b.0/0000:03:00.0/nvme/nvme1",
+        "unix_device_names": [
+          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z",
+          "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NG0RA02239Z_1",
+          "/dev/disk/by-id/nvme-eui.0025385a1150c740",
+          "/dev/disk/by-path/pci-0000:03:00.0-nvme-1",
+          "/dev/nvme1n1"
+        ],
+        "resources": [
+          {
+            "type": "disk_geo",
+            "cylinders": 953869,
+            "heads": 64,
+            "sectors": 32,
+            "size": "0x0",
+            "geo_type": "logical"
+          },
+          {
+            "type": "size",
+            "unit": "sectors",
+            "value_1": 1953525168,
             "value_2": 512
           }
         ],
@@ -1933,7 +1933,7 @@
           "/dev/input/by-id/usb-Keychron_Keychron_Link-if02-event-kbd",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.2:1.2-event-kbd",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.2:1.2-event-kbd",
-          "/dev/input/event9"
+          "/dev/input/event10"
         ],
         "resources": [
           {
@@ -2228,10 +2228,10 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:14.0/usb3/3-3/3-3.2/3-3.2.2/3-3.2.2:1.1",
         "sysfs_bus_id": "3-3.2.2:1.1",
         "unix_device_names": [
-          "/dev/input/by-id/usb-Keychron_Keychron_Link-event-if01",
-          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.2:1.1-event",
-          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.2:1.1-event",
-          "/dev/input/event7"
+          "/dev/input/by-id/usb-Keychron_Keychron_Link-if01-event-joystick",
+          "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.2:1.1-event-joystick",
+          "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.2:1.1-event-joystick",
+          "/dev/input/event9"
         ],
         "resources": [
           {
@@ -2608,7 +2608,7 @@
         "unix_device_names": [
           "/dev/input/mice"
         ],
-        "unix_device_name2": "/dev/input/mouse2",
+        "unix_device_name2": "/dev/input/mouse1",
         "resources": [
           {
             "type": "baud",
@@ -2693,9 +2693,9 @@
           "hex": "307a",
           "value": 12410
         },
-        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN1203:00/0018:04F3:307A.000C/input/input31",
+        "sysfs_id": "/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN1203:00/0018:04F3:307A.000E/input/input31",
         "unix_device_names": [
-          "/dev/input/event18",
+          "/dev/input/event20",
           "/dev/input/ + handler"
         ]
       }
@@ -4633,7 +4633,7 @@
           "/dev/input/by-id/usb-3142_fifine_Microphone-event-if03",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.3-event",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.2.4:1.3-event",
-          "/dev/input/event10"
+          "/dev/input/event11"
         ],
         "resources": [
           {
@@ -4730,7 +4730,7 @@
           "/dev/input/by-id/usb-SteelSeries_Arctis_Nova_Pro_Wireless-event-if03",
           "/dev/input/by-path/pci-0000:00:14.0-usb-0:3.1:1.3-event",
           "/dev/input/by-path/pci-0000:00:14.0-usbv2-0:3.1:1.3-event",
-          "/dev/input/event23"
+          "/dev/input/event4"
         ],
         "resources": [
           {

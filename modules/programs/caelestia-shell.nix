@@ -22,14 +22,6 @@ delib.module {
 
     caelestiaCli = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default.overrideAttrs (old: {
       propagatedBuildInputs = (old.propagatedBuildInputs or []) ++ [pkgs.ffmpeg];
-
-      patchPhase =
-        (old.patchPhase or "")
-        + ''
-          substituteInPlace src/caelestia/subcommands/update.py \
-            --replace-fail "from caelestia.utils.shell import shell_managed_externally" "from caelestia.utils.shell import detect_shell_management_source" \
-            --replace-fail "if shell_managed_externally(installer):" 'if detect_shell_management_source(installer) in ("shell", "manual"):'
-        '';
     });
 
     caelestiaShell =

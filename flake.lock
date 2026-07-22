@@ -151,11 +151,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784572186,
-        "narHash": "sha256-zFix5QkNtoT+8h0FSqut0QC2Nba2JkG29xlOZnyqBlc=",
+        "lastModified": 1784690668,
+        "narHash": "sha256-8jZCbzF8GFjkGUZNFfFDdKqcRx9BvmAZyVanHoLi62M=",
         "owner": "dim-ghub",
         "repo": "caelestia-cli",
-        "rev": "bbf206260d189c5e1ce3149c03a2d16ea43a099a",
+        "rev": "57eb4dfc8c380cbcfd477511ab7300126a9cc541",
         "type": "github"
       },
       "original": {
@@ -174,11 +174,11 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1784598836,
-        "narHash": "sha256-Scmi/TJmG7fCjr3ZlvfDSCaaEWwbxVrDR0BoeAWzGB0=",
+        "lastModified": 1784681939,
+        "narHash": "sha256-Bq8h/vPlAoLhv7cnmD0lMtU4APBUq17BTNyPwgHpTPo=",
         "owner": "dim-ghub",
         "repo": "caelestia-shell",
-        "rev": "6b02d3320fe6c60d5bf713a3fbb990872d1743c7",
+        "rev": "9bce2a9ca5be97e44937456b55e5a677ba3749d8",
         "type": "github"
       },
       "original": {
@@ -232,11 +232,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784573661,
-        "narHash": "sha256-eeCCsCAUnM34EzFUwZ1EZBNoyKfvl1q80z0zjSOM8FQ=",
+        "lastModified": 1784659912,
+        "narHash": "sha256-OhdIvgX/LjGvCMbZ5ZbZYY9+akQbbbLKLm0dV+S2vgE=",
         "owner": "ilysenko",
         "repo": "codex-desktop-linux",
-        "rev": "0e51086c0ab06c31276dc9cc31a6990a5d87ae1f",
+        "rev": "db60ae2c31aad4c2efdc3767136918f705b66423",
         "type": "github"
       },
       "original": {
@@ -290,11 +290,11 @@
         "pre-commit-hooks": "pre-commit-hooks"
       },
       "locked": {
-        "lastModified": 1770444703,
-        "narHash": "sha256-7hb/H1wGnq9O6+FTzSQFRdHnRbx6tENXj0hakmJwOOs=",
+        "lastModified": 1784653206,
+        "narHash": "sha256-WcQJkU630mgDjtSrnx5ni1nNKOUOaKmcVk6gOToJCuY=",
         "owner": "yunfachi",
         "repo": "denix",
-        "rev": "5aa95a9ab7cb641d9d8456b7c2a391dbb9b35e7a",
+        "rev": "271d76816ca215d80e6736ab24d8d22417b24773",
         "type": "github"
       },
       "original": {
@@ -675,11 +675,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784588016,
-        "narHash": "sha256-ouZe80aWEhMLVMkqICFDN+JUw+0FJtCr/bh+hHtRtMg=",
+        "lastModified": 1784690067,
+        "narHash": "sha256-t86pRs7IPs3RTMPueWvvdcxyTFrctHAv2Jl7jnjsSf8=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "deeb6b7eb7e0c44ae1819c051ce175bd92a85100",
+        "rev": "6d8d61567802997f9ec3086b2a837e3ef31fac16",
         "type": "github"
       },
       "original": {
@@ -787,11 +787,11 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1784574265,
-        "narHash": "sha256-3YP21xUS7i/FOZRNh3SqXAw7Icw8biu3BWN+YWqLMkI=",
+        "lastModified": 1784641930,
+        "narHash": "sha256-j1c/65skFvp1WPbHBlAfVWaeCz0Bgwr/WPwIg0H+Ncg=",
         "owner": "hyprwm",
         "repo": "Hyprland",
-        "rev": "2174f26a142d32823ceb8d7039e39eef52dbd050",
+        "rev": "1a3606234c59842340ad9a42baeeffe44a9d6cda",
         "type": "github"
       },
       "original": {
@@ -1099,11 +1099,11 @@
     "jellyfin-web-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1784584138,
-        "narHash": "sha256-hvCGmaibii2u+ltKRHCrBn2bS5lLVD8owdaqxRMr+2w=",
+        "lastModified": 1784663007,
+        "narHash": "sha256-+alntfbQo/UckHJlARlJD0DvTdmHNwfAFZtFjbHJ4uE=",
         "owner": "jellyfin",
         "repo": "jellyfin-web",
-        "rev": "33517440d87c7bfb5e5733a7fd99f5e616ae14e9",
+        "rev": "4983aec1e8cd85adaa2b8024a8c30bd31ca78d7f",
         "type": "github"
       },
       "original": {
@@ -1726,11 +1726,11 @@
         "nixpkgs": "nixpkgs_12"
       },
       "locked": {
-        "lastModified": 1784575213,
-        "narHash": "sha256-qKtsb/Hgy72F7mxnQ9taOpjQzpOPvqkoBnXjt92ZSD4=",
+        "lastModified": 1784684862,
+        "narHash": "sha256-yPEgC/kJ0fA8awPCAZfwxInRyzJHCo9Z5mQESH5yOt0=",
         "owner": "anomalyco",
         "repo": "opencode",
-        "rev": "849c2598abc7d2b40261e74b5826bc74ffc78308",
+        "rev": "c9db6e9a1fe181fad2259689ef4ad9a5e89fbd5b",
         "type": "github"
       },
       "original": {
