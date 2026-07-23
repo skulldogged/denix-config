@@ -1,0 +1,13 @@
+{
+  delib,
+  inputs,
+  ...
+}:
+delib.module {
+  name = "system.external-modules";
+
+  nixos.always.imports = [
+    inputs.sops-nix.nixosModules.sops
+    inputs.nixos-facter-modules.nixosModules.facter
+  ];
+}

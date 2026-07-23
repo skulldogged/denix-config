@@ -29,8 +29,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    vscode-server.url = "github:nix-community/nixos-vscode-server";
-
     twemoji-src = {
       url = "github:jdecked/twemoji";
       flake = false;
@@ -156,6 +154,7 @@
 
         paths = [
           ./hosts
+          ./integrations
           ./modules
           ./rices
         ];

@@ -1,78 +1,87 @@
-{config, ...}: {
-  sops.secrets.mqtt_gateway_password = {
-    owner = "marshall";
-    mode = "0400";
-  };
+{
+  config,
+  delib,
+  ...
+}:
+delib.module {
+  name = "polaris";
 
-  sops.secrets.google_assistant_service_account = {
-    owner = "hass";
-    group = "hass";
-    mode = "0400";
-    restartUnits = ["home-assistant.service"];
-  };
+  nixos.ifEnabled = {
+    sops.secrets.mqtt_gateway_password = {
+      owner = "marshall";
+      mode = "0400";
+    };
 
-  services.mosquitto = {
-    enable = true;
-    persistence = true;
+    sops.secrets.google_assistant_service_account = {
+      owner = "hass";
+      group = "hass";
+      mode = "0400";
+      restartUnits = ["home-assistant.service"];
+    };
 
-    listeners = [
-      {
-        address = "192.168.1.82";
-        port = 1883;
-        users.sengled_gateway = {
-          passwordFile = config.sops.secrets.mqtt_gateway_password.path;
+    services.mosquitto = {
+      enable = true;
+      persistence = true;
+
+      listeners = [
+        {
+          address = "192.168.1.82";
+          port = 1883;
+          users.sengled_gateway = {
+            passwordFile = config.sops.secrets.mqtt_gateway_password.path;
+            acl = [
+              "readwrite sengled/#"
+              "write homeassistant/#"
+            ];
+          };
+        }
+        {
+          address = "127.0.0.1";
+          port = 1883;
+          omitPasswordAuth = true;
+          settings.allow_anonymous = true;
           acl = [
-            "readwrite sengled/#"
-            "write homeassistant/#"
+            "pattern readwrite sengled/#"
+            "pattern read homeassistant/#"
           ];
-        };
-      }
-      {
-        address = "127.0.0.1";
-        port = 1883;
-        omitPasswordAuth = true;
-        settings.allow_anonymous = true;
-        acl = [
-          "pattern readwrite sengled/#"
-          "pattern read homeassistant/#"
-        ];
-      }
-    ];
-  };
+        }
+      ];
+    };
 
-  services.home-assistant = {
-    enable = true;
-    openFirewall = true;
-    extraComponents = [
-      "google_assistant"
-      "mqtt"
-    ];
-    config = {
-      "automation ui" = "!include automations.yaml";
-      default_config = {};
-      google_assistant = {
-        project_id = "home-assistant-skulldogged";
-        service_account = "!include ${config.sops.secrets.google_assistant_service_account.path}";
-        report_state = true;
-        expose_by_default = false;
-        entity_config = {
-          "light.sengled_local_gateway_sengled_bulb_1".expose = true;
-          "light.sengled_local_gateway_sengled_bulb_2".expose = true;
+    services.home-assistant = {
+      enable = true;
+      openFirewall = true;
+      extraComponents = [
+        "google_assistant"
+        "mqtt"
+      ];
+      config = {
+        "automation ui" = "!include automations.yaml";
+        default_config = {};
+        google_assistant = {
+          project_id = "home-assistant-skulldogged";
+          service_account = "!include ${config.sops.secrets.google_assistant_service_account.path}";
+          report_state = true;
+          expose_by_default = false;
+          entity_config = {
+            "light.sengled_local_gateway_sengled_bulb_1".expose = true;
+            "light.sengled_local_gateway_sengled_bulb_2".expose = true;
+          };
         };
-      };
-      homeassistant = {
-        external_url = "https://home.skulldogged.dev";
-        internal_url = "http://192.168.1.82:8123";
-      };
-      http = {
-        server_host = "0.0.0.0";
-        server_port = 8123;
-        use_x_forwarded_for = true;
-        trusted_proxies = ["127.0.0.1"];
+        homeassistant = {
+          external_url = "https://home.skulldogged.dev";
+          internal_url = "http://192.168.1.82:8123";
+        };
+        http = {
+          server_host = "0.0.0.0";
+          server_port = 8123;
+          use_x_forwarded_for = true;
+          trusted_proxies = ["127.0.0.1"];
+        };
       };
     };
-  };
 
-  # The MQTT socket itself is bound only to the LAN address above.
-  networking.firewall.allowedTCPPorts = [1883];
+    # The MQTT socket itself is bound only to the LAN address above.
+    networking.firewall.allowedTCPPorts = [1883];
+  };
 }

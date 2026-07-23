@@ -14,10 +14,8 @@ delib.host {
 
   nixos = {
     imports = [
-      inputs.sops-nix.nixosModules.sops
       inputs.impermanence.nixosModules.impermanence
       inputs.lanzaboote.nixosModules.lanzaboote
-      inputs.nixos-facter-modules.nixosModules.facter
     ];
 
     nixpkgs.config.allowUnfree = true;
