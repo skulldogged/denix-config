@@ -29,28 +29,30 @@ delib.module {
       ])
       ++ [inputs.nixvim.packages.${system}.default];
 
-    desktopPackages = with pkgs; [
-      duf
-      equibop
-      glow
-      jellyfin-tui
-      killall
-      libnotify
-      lm_sensors
-      loupe
-      meteor-git
-      moonlight-qt
-      nicotine-plus
-      nodejs
-      obsidian
-      playerctl
-      ryubing
-      statix
-      telegram-desktop
-      tlrc
-      translate-shell
-      uv
-    ];
+    desktopPackages =
+      (with pkgs; [
+        duf
+        equibop
+        glow
+        jellyfin-tui
+        killall
+        libnotify
+        lm_sensors
+        loupe
+        meteor-git
+        moonlight-qt
+        nicotine-plus
+        nodejs
+        obsidian
+        playerctl
+        ryubing
+        statix
+        telegram-desktop
+        tlrc
+        translate-shell
+        uv
+      ])
+      ++ [inputs.t3code-flake.packages.${system}.t3-code-nightly];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 

@@ -20,9 +20,105 @@ delib.module {
       ${builtins.readFile ./caelestia-chatgpt.py}
     '';
 
+    caelestiaCliStaticSchemePatch = pkgs.writeText "caelestia-cli-preserve-static-scheme.patch" ''
+      diff --git a/src/caelestia/utils/wallpaper.py b/src/caelestia/utils/wallpaper.py
+      --- a/src/caelestia/utils/wallpaper.py
+      +++ b/src/caelestia/utils/wallpaper.py
+      @@ -213,8 +213,10 @@ def set_wallpaper(wall: Path, no_smart: bool) -> None:
+              scheme.mode = smart_opts["mode"]
+              scheme.variant = smart_opts["variant"]
+
+      -    # Update colours
+      -    scheme.update_colours()
+      +    # Only dynamic schemes follow the wallpaper. Named schemes keep the
+      +    # colours already configured in scheme.json.
+      +    if scheme.name == "dynamic":
+      +        scheme.update_colours()
+           apply_colours(scheme.colours, scheme.mode)
+
+           # Run custom post-hook if configured
+    '';
+
     caelestiaCli = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default.overrideAttrs (old: {
       propagatedBuildInputs = (old.propagatedBuildInputs or []) ++ [pkgs.ffmpeg];
+
+      # A wallpaper change should only regenerate colours for the dynamic
+      # scheme. Upstream also reloads named schemes here, which discards a
+      # custom declarative Catppuccin palette from scheme.json.
+      patchPhase =
+        (old.patchPhase or "")
+        + ''
+          ${pkgs.patch}/bin/patch -p1 < ${caelestiaCliStaticSchemePatch}
+        '';
     });
+
+    caelestiaVideoWallpaperPatch = pkgs.writeText "caelestia-video-wallpaper-single-decoder.patch" ''
+      diff --git a/modules/background/Wallpaper.qml b/modules/background/Wallpaper.qml
+      --- a/modules/background/Wallpaper.qml
+      +++ b/modules/background/Wallpaper.qml
+      @@ -22,6 +22,16 @@ Item {
+           property bool weActive: false
+           property string weDir: ""
+
+      +    // The two Img instances provide the wallpaper transition. Once the new
+      +    // one becomes current, release the old video decoder instead of leaving
+      +    // both MediaPlayers running indefinitely.
+      +    onCurrentChanged: {
+      +        if (completed && current) {
+      +            const inactive = current === one ? two : one;
+      +            inactive.videoPath = "";
+      +        }
+      +    }
+      +
+           function checkWE(path: string): void {
+               if (!path) {
+                   weActive = false;
+      @@ -46,9 +56,14 @@ Item {
+           }
+
+           onSourceChanged: {
+               checkWE(source);
+      +        if (!isVideo(source)) {
+      +            one.videoPath = "";
+      +            two.videoPath = "";
+      +        }
+      +
+               if (!source)
+                   current = null;
+               else if (current === one) {
+                   two.screen = screen;
+                   two.update();
+      @@ -59,14 +74,26 @@ Item {
+           }
+
+           Component.onCompleted: {
+      -        if (source) {
+      -            checkWE(source);
+      +        if (!source) {
+      +            completed = true;
+      +            return;
+      +        }
+      +
+      +        checkWE(source);
+      +
+      +        // onSourceChanged can populate one of the transition buffers before
+      +        // Component.onCompleted runs. Do not initialise the other buffer with
+      +        // the same video as well.
+      +        const alreadyInitialised = one.imagePath !== "" || one.videoPath !== ""
+      +            || two.imagePath !== "" || two.videoPath !== "";
+      +        if (!alreadyInitialised) {
+                   Qt.callLater(() => {
+                       one.screen = screen;
+                       Qt.callLater(() => one.update());
+      -                completed = true;
+                   });
+               }
+      +
+      +        completed = true;
+           }
+
+           Loader {
+    '';
 
     caelestiaShell =
       (inputs.caelestia-shell.packages.${system}.default.override {
@@ -30,6 +126,10 @@ delib.module {
         withCli = true;
       }).overrideAttrs (old: {
         buildInputs = (old.buildInputs or []) ++ [pkgs.qt6.qtmultimedia];
+
+        patches =
+          (old.patches or [])
+          ++ [caelestiaVideoWallpaperPatch];
 
         postPatch =
           (old.postPatch or "")
@@ -105,6 +205,11 @@ delib.module {
       Install.WantedBy = ["hyprland-session.target"];
     };
 
+    # Both files are atomically replaced by the Caelestia CLI when it applies a
+    # scheme. Keep them mutable instead of allowing Home Manager to create store
+    # symlinks, which causes the next activation to fail its collision check.
+    xdg.configFile."cava/config".enable = lib.mkForce false;
+    xdg.stateFile."caelestia/scheme.json".enable = lib.mkForce false;
     xdg.stateFile."caelestia/scheme.json".text = builtins.toJSON {
       name = "catppuccin";
       flavour = "mocha";
@@ -181,12 +286,65 @@ delib.module {
         term13 = "cba6f7";
         term14 = "94e2d5";
         term15 = "cdd6f4";
+        rosewater = "f5e0dc";
+        flamingo = "f2cdcd";
+        pink = "f5c2e7";
+        mauve = "cba6f7";
+        red = "f38ba8";
+        maroon = "eba0ac";
+        peach = "fab387";
+        yellow = "f9e2af";
+        green = "a6e3a1";
+        teal = "94e2d5";
+        sky = "89dceb";
+        sapphire = "74c7ec";
+        blue = "89b4fa";
+        lavender = "b4befe";
+        klink = "89b4fa";
+        klinkSelection = "89b4fa";
+        kvisited = "cba6f7";
+        kvisitedSelection = "cba6f7";
+        knegative = "f38ba8";
+        knegativeSelection = "f38ba8";
+        kneutral = "f9e2af";
+        kneutralSelection = "f9e2af";
+        kpositive = "a6e3a1";
+        kpositiveSelection = "a6e3a1";
+        text = "cdd6f4";
+        subtext1 = "bac2de";
+        subtext0 = "a6adc8";
+        overlay2 = "9399b2";
+        overlay1 = "7f849c";
+        overlay0 = "6c7086";
+        surface2 = "585b70";
+        surface1 = "45475a";
+        surface0 = "313244";
+        base = "1e1e2e";
+        mantle = "181825";
+        crust = "11111b";
         success = "a6e3a1";
         onSuccess = "1e3a1c";
         successContainer = "2d5a2a";
         onSuccessContainer = "d4f7d2";
       };
     };
+
+    home.activation.caelestiaMutableScheme = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
+      stateDir="''${XDG_STATE_HOME:-$HOME/.local/state}/caelestia"
+      schemePath="$stateDir/scheme.json"
+      seedPath=${lib.escapeShellArg (pkgs.writeText "caelestia-scheme.json" xdg.stateFile."caelestia/scheme.json".text)}
+
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$stateDir"
+      tempPath="$(${pkgs.coreutils}/bin/mktemp "$stateDir/.scheme.json.XXXXXX")"
+      trap '${pkgs.coreutils}/bin/rm -f "$tempPath"' EXIT
+
+      ${pkgs.coreutils}/bin/cp "$seedPath" "$tempPath"
+      ${pkgs.coreutils}/bin/chmod 0600 "$tempPath"
+      if [[ -L "$schemePath" ]] || ! ${pkgs.diffutils}/bin/cmp -s "$tempPath" "$schemePath"; then
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$schemePath"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tempPath" "$schemePath"
+      fi
+    '';
 
     programs.caelestia = {
       enable = true;
@@ -223,8 +381,6 @@ delib.module {
         background = {
           enabled = true;
           desktopClock.enabled = true;
-          desktopLyrics.enabled = true;
-          visualiser.enabled = true;
         };
 
         bar = {
@@ -382,6 +538,7 @@ delib.module {
       systemd = {
         enable = true;
         target = "hyprland-session.target";
+        environment = ["QT_FFMPEG_DECODING_HW_DEVICE_TYPES=cuda"];
       };
     };
   };
