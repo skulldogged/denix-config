@@ -40,8 +40,6 @@ delib.module {
     '';
 
     caelestiaCli = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default.overrideAttrs (old: {
-      propagatedBuildInputs = (old.propagatedBuildInputs or []) ++ [pkgs.ffmpeg];
-
       # A wallpaper change should only regenerate colours for the dynamic
       # scheme. Upstream also reloads named schemes here, which discards a
       # custom declarative Catppuccin palette from scheme.json.
@@ -52,110 +50,236 @@ delib.module {
         '';
     });
 
-    caelestiaVideoWallpaperPatch = pkgs.writeText "caelestia-video-wallpaper-single-decoder.patch" ''
-      diff --git a/modules/background/Wallpaper.qml b/modules/background/Wallpaper.qml
-      --- a/modules/background/Wallpaper.qml
-      +++ b/modules/background/Wallpaper.qml
-      @@ -22,6 +22,16 @@ Item {
-           property bool weActive: false
-           property string weDir: ""
+    caelestiaScopedAppLaunchPatch = pkgs.writeText "caelestia-scoped-app-launch.patch" ''
+      diff --git a/modules/launcher/services/Apps.qml b/modules/launcher/services/Apps.qml
+      --- a/modules/launcher/services/Apps.qml
+      +++ b/modules/launcher/services/Apps.qml
+      @@ -11,11 +11,11 @@ Searcher {
+           function launch(entry: DesktopEntry): void {
+               appDb.incrementFrequency(entry.id);
 
-      +    // The two Img instances provide the wallpaper transition. Once the new
-      +    // one becomes current, release the old video decoder instead of leaving
-      +    // both MediaPlayers running indefinitely.
-      +    onCurrentChanged: {
-      +        if (completed && current) {
-      +            const inactive = current === one ? two : one;
-      +            inactive.videoPath = "";
-      +        }
-      +    }
-      +
-           function checkWE(path: string): void {
-               if (!path) {
-                   weActive = false;
-      @@ -46,9 +56,14 @@ Item {
+      -        if (entry.runInTerminal)
+      -            Quickshell.execDetached({
+      -                command: [...GlobalConfig.general.apps.terminal, `''${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
+      -                workingDirectory: entry.workingDirectory
+      -            });
+      -        else
+      -            entry.execute();
+      +        const command = entry.runInTerminal
+      +            ? [...GlobalConfig.general.apps.terminal, `''${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command]
+      +            : entry.command;
+      +        Quickshell.execDetached({
+      +            command: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--", ...command],
+      +            workingDirectory: entry.workingDirectory
+      +        });
            }
 
-           onSourceChanged: {
-               checkWE(source);
-      +        if (!isVideo(source)) {
-      +            one.videoPath = "";
-      +            two.videoPath = "";
-      +        }
-      +
-               if (!source)
-                   current = null;
-               else if (current === one) {
-                   two.screen = screen;
-                   two.update();
-      @@ -59,14 +74,26 @@ Item {
-           }
-
-           Component.onCompleted: {
-      -        if (source) {
-      -            checkWE(source);
-      +        if (!source) {
-      +            completed = true;
-      +            return;
-      +        }
-      +
-      +        checkWE(source);
-      +
-      +        // onSourceChanged can populate one of the transition buffers before
-      +        // Component.onCompleted runs. Do not initialise the other buffer with
-      +        // the same video as well.
-      +        const alreadyInitialised = one.imagePath !== "" || one.videoPath !== ""
-      +            || two.imagePath !== "" || two.videoPath !== "";
-      +        if (!alreadyInitialised) {
-                   Qt.callLater(() => {
-                       one.screen = screen;
-                       Qt.callLater(() => one.update());
-      -                completed = true;
-                   });
-               }
-      +
-      +        completed = true;
-           }
-
-           Loader {
+           function search(search: string): var {
+      diff --git a/modules/bar/components/Dock.qml b/modules/bar/components/Dock.qml
+      --- a/modules/bar/components/Dock.qml
+      +++ b/modules/bar/components/Dock.qml
+      @@ -242 +242 @@ Item {
+      -                                        command: subCmd,
+      +                                        command: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--", ...subCmd],
+      diff --git a/modules/bar/popouts/DockContext.qml b/modules/bar/popouts/DockContext.qml
+      --- a/modules/bar/popouts/DockContext.qml
+      +++ b/modules/bar/popouts/DockContext.qml
+      @@ -122 +122 @@ StyledRect {
+      -                                command: subCmd,
+      +                                command: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--", ...subCmd],
     '';
 
-    caelestiaShell =
-      (inputs.caelestia-shell.packages.${system}.default.override {
-        caelestia-cli = caelestiaCli;
-        withCli = true;
-      }).overrideAttrs (old: {
-        buildInputs = (old.buildInputs or []) ++ [pkgs.qt6.qtmultimedia];
+    caelestiaLauncherExtrasPatch = pkgs.writeText "caelestia-launcher-extras.patch" ''
+      diff --git a/modules/launcher/services/Clipboard.qml b/modules/launcher/services/Clipboard.qml
+      --- a/modules/launcher/services/Clipboard.qml
+      +++ b/modules/launcher/services/Clipboard.qml
+      @@ -14,15 +14,28 @@
 
-        patches =
-          (old.patches or [])
-          ++ [caelestiaVideoWallpaperPatch];
+           readonly property string imageCacheDir: "/tmp/caelestia-clipboard"
 
-        postPatch =
-          (old.postPatch or "")
-          + ''
-            substituteInPlace modules/background/DesktopClock.qml \
-              --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
-              --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
-              --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant"
+      -    property Component waitTimer: Component {
+      -        Timer {
+      +    property Component imageDecoder: Component {
+      +        Process {
+      +            property int clipId
+                   property string imgPath
+                   property var callback
 
-            substituteInPlace modules/background/DesktopLyrics.qml \
-              --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
-              --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
-              --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant" \
-              --replace-fail "color: Colours.palette.m3primaryContainer" "color: Colours.palette.m3surfaceContainerHighest" \
-              --replace-fail "color: Colours.palette.m3primary" "color: Colours.palette.m3onSurface" \
-              --replace-fail "shadowColor: Colours.palette.m3primary" "shadowColor: Colours.palette.m3onSurface"
+      -            interval: 1000
+      -            repeat: false
+      -
+      -            onTriggered: callback(imgPath)
+      +            command: [
+      +                "sh",
+      +                "-c",
+      +                "if [ -s \"$2\" ]; then exit 0; fi; mkdir -p \"$1\"; tmp=\"$2.tmp.$$\"; trap 'rm -f \"$tmp\"' EXIT; cliphist decode \"$3\" > \"$tmp\" && mv -f \"$tmp\" \"$2\"",
+      +                "sh",
+      +                root.imageCacheDir,
+      +                imgPath,
+      +                String(clipId)
+      +            ]
+      +            running: true
+      +
+      +            onExited: exitCode => {
+      +                if (exitCode === 0 && callback)
+      +                    callback(imgPath);
+      +                destroy();
+      +            }
+               }
+           }
 
-            substituteInPlace modules/background/Visualiser.qml \
-              --replace-fail "primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)" "primaryColor: Qt.alpha(Colours.palette.m3onSurface, 0.7)" \
-              --replace-fail "secondaryColor: Qt.alpha(Colours.palette.m3inversePrimary, 0.7)" "secondaryColor: Qt.alpha(Colours.palette.m3onSurfaceVariant, 0.7)"
+      @@ -46,12 +59,11 @@
+                           result.push({
+                               id: parseInt(match[1]),
+                               preview: match[2],
+      -                        isImage: /^\[\[ binary data \d+ KiB png \d+x\d+ \]\]/.test(match[2])
+      +                        isImage: /^\[\[ binary data \d+(?:\.\d+)? (?:B|KiB|MiB) (?:png|jpe?g|bmp|webp) \d+x\d+ \]\]/i.test(match[2])
+                           });
+                       }
 
-            substituteInPlace modules/sidebar/AiAssistant.qml \
-              --replace-fail "Ollama tags request failed" "ChatGPT model request failed" \
-              --replace-fail "Ollama request failed" "ChatGPT request failed"
-          '';
-      });
+                       root.items = result;
+      -                preloadImages();
+                   }
+               }
+           }
+      @@ -60,15 +72,6 @@
+               fetcher.running = true;
+           }
+
+      -    function preloadImages(): void {
+      -        for (const item of items) {
+      -            if (item.isImage && item.id) {
+      -                const imgPath = getImagePath(item.id);
+      -                Quickshell.execDetached(["sh", "-c", "mkdir -p " + imageCacheDir + " && cliphist decode " + item.id + " > " + imgPath + " 2>&1"]);
+      -            }
+      -        }
+      -    }
+      -
+           function getSortedItems(): var {
+               if (!items.length)
+                   return [];
+      @@ -91,8 +94,8 @@
+
+           function ensureImageCached(id: int, onReady: var): void {
+               const imgPath = getImagePath(id);
+      -        Quickshell.execDetached(["sh", "-c", "mkdir -p " + imageCacheDir + " && cliphist decode " + id + " > " + imgPath + " 2>&1"]);
+      -        const timer = waitTimer.createObject(root, {
+      +        imageDecoder.createObject(root, {
+      +            clipId: id,
+                   imgPath: imgPath,
+                   callback: onReady
+               });
+      diff --git a/modules/launcher/items/ClipItem.qml b/modules/launcher/items/ClipItem.qml
+      --- a/modules/launcher/items/ClipItem.qml
+      +++ b/modules/launcher/items/ClipItem.qml
+      @@ -25,7 +25,9 @@
+
+           Component.onCompleted: {
+               if (root.modelData?.isImage) {
+      -            Clipboard.ensureImageCached(root.modelData.id);
+      +            Clipboard.ensureImageCached(root.modelData.id, path => {
+      +                imagePreview.imagePath = path;
+      +            });
+               }
+           }
+
+      @@ -58,7 +60,7 @@
+               Item {
+                   id: imagePreview
+
+      -            property string imagePath: (root.modelData?.isImage ?? false) ? "/tmp/caelestia-clipboard/" + (root.modelData?.id ?? "") + ".png" : ""
+      +            property string imagePath: ""
+
+                   width: (root.modelData?.isImage ?? false) ? 120 : 0
+                   height: (root.modelData?.isImage ?? false) ? 80 : 0
+      @@ -70,6 +72,7 @@
+                   Image {
+                       anchors.fill: parent
+                       asynchronous: true
+      +                cache: false
+                       fillMode: Image.PreserveAspectCrop
+                       source: imagePreview.imagePath.length > 0 ? "file://" + imagePreview.imagePath : ""
+                   }
+      diff --git a/modules/launcher/KeybindsList.qml b/modules/launcher/KeybindsList.qml
+      --- a/modules/launcher/KeybindsList.qml
+      +++ b/modules/launcher/KeybindsList.qml
+      @@ -13,7 +13,7 @@
+       StyledListView {
+           id: root
+
+      -    required property StyledTextField search
+      +    required property SearchBar search
+           required property ScreenState screenState
+
+           readonly property string searchQuery: (search.text.slice((GlobalConfig.launcher.actionPrefix + "keybinds ").length)).toLowerCase()
+    '';
+
+    caelestiaShellBase = inputs.caelestia-shell.packages.${system}.default.override {
+      caelestia-cli = caelestiaCli;
+      extraRuntimeDeps = [pkgs.cliphist];
+      hyprland = inputs.hyprland.packages.${system}.hyprland;
+      withCli = true;
+    };
+
+    # Quick Share uses generated protobuf sources, but the upstream plugin
+    # derivation does not yet provide either protoc or libprotobuf.
+    caelestiaPlugin = caelestiaShellBase.plugin.overrideAttrs (old: {
+      nativeBuildInputs = (old.nativeBuildInputs or []) ++ [pkgs.protobuf];
+      buildInputs = (old.buildInputs or []) ++ [pkgs.protobuf];
+    });
+
+    caelestiaShell = caelestiaShellBase.overrideAttrs (old: {
+      # Caelestia's audio service imports QtMultimedia even when its
+      # background and video wallpaper support are disabled.
+      buildInputs =
+        map (
+          input:
+            if input == caelestiaShellBase.plugin
+            then caelestiaPlugin
+            else input
+        )
+        (old.buildInputs or [])
+        ++ [pkgs.qt6.qtmultimedia];
+
+      patches =
+        (old.patches or [])
+        ++ [
+          caelestiaScopedAppLaunchPatch
+          caelestiaLauncherExtrasPatch
+        ];
+
+      passthru = (old.passthru or {}) // {plugin = caelestiaPlugin;};
+
+      postPatch =
+        (old.postPatch or "")
+        + ''
+          substituteInPlace modules/background/DesktopClock.qml \
+            --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
+            --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
+            --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant"
+
+          substituteInPlace modules/background/DesktopLyrics.qml \
+            --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
+            --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
+            --replace-fail "readonly property color safeTertiary: useLightSet ? Colours.palette.m3tertiaryContainer : Colours.palette.m3tertiary" "readonly property color safeTertiary: Colours.palette.m3onSurfaceVariant" \
+            --replace-fail "color: Colours.palette.m3primaryContainer" "color: Colours.palette.m3surfaceContainerHighest" \
+            --replace-fail "color: Colours.palette.m3primary" "color: Colours.palette.m3onSurface" \
+            --replace-fail "shadowColor: Colours.palette.m3primary" "shadowColor: Colours.palette.m3onSurface"
+
+          substituteInPlace modules/background/Visualiser.qml \
+            --replace-fail "primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)" "primaryColor: Qt.alpha(Colours.palette.m3onSurface, 0.7)" \
+            --replace-fail "secondaryColor: Qt.alpha(Colours.palette.m3inversePrimary, 0.7)" "secondaryColor: Qt.alpha(Colours.palette.m3onSurfaceVariant, 0.7)"
+
+          substituteInPlace modules/sidebar/AiAssistant.qml \
+            --replace-fail "Ollama tags request failed" "ChatGPT model request failed" \
+            --replace-fail "Ollama request failed" "ChatGPT request failed"
+
+          substituteInPlace modules/launcher/services/Emojis.qml \
+            --replace-fail 'command: ["cat", "/usr/lib/python3.14/site-packages/caelestia/data/emojis.txt"]' \
+                           'command: ["${caelestiaCli}/bin/caelestia", "emoji", "--print"]' \
+            --replace-fail 'import Caelestia.Config' $'import Caelestia.Config\nimport qs.utils'
+        '';
+    });
   in rec {
     imports = [inputs.caelestia-shell.homeManagerModules.default];
 
@@ -179,7 +303,22 @@ delib.module {
       if [[ -L "$configPath" || ! -e "$configPath" ]]; then
         ${pkgs.coreutils}/bin/cp "$seedPath" "$tempPath"
       elif [[ -f "$configPath" ]]; then
-        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$seedPath" "$configPath" > "$tempPath"
+        ${pkgs.jq}/bin/jq -s '
+          .[0] as $defaults
+          | .[1] as $runtime
+          | ($defaults * $runtime)
+          | .launcher.actions = reduce (
+              (($defaults.launcher.actions // []) + ($runtime.launcher.actions // []))[]
+            ) as $action (
+              [];
+              if any(.[]; .name == $action.name) then
+                map(if .name == $action.name then $action else . end)
+              else
+                . + [$action]
+              end
+            )
+          | .background.enabled = false
+        ' "$seedPath" "$configPath" > "$tempPath"
       else
         errorEcho "Caelestia config is not a regular file: $configPath"
         exit 1
@@ -204,6 +343,12 @@ delib.module {
       };
       Install.WantedBy = ["hyprland-session.target"];
     };
+
+    # Launcher and dock applications are moved into their own scopes by the
+    # package patch above. Cleaning the whole Caelestia cgroup is therefore
+    # safe and prevents internal helpers such as `nmcli monitor` accumulating
+    # across shell reloads.
+    systemd.user.services.caelestia.Service.KillMode = lib.mkForce "control-group";
 
     # Both files are atomically replaced by the Caelestia CLI when it applies a
     # scheme. Keep them mutable instead of allowing Home Manager to create store
@@ -378,10 +523,7 @@ delib.module {
           transparency.enabled = true;
         };
 
-        background = {
-          enabled = true;
-          desktopClock.enabled = true;
-        };
+        background.enabled = false;
 
         bar = {
           clock = {
@@ -485,6 +627,30 @@ delib.module {
             dangerous = false;
           }
           {
+            name = "Clipboard";
+            icon = "content_paste";
+            description = "Browse clipboard history";
+            command = ["autocomplete" "clipboard"];
+            enabled = true;
+            dangerous = false;
+          }
+          {
+            name = "Emoji";
+            icon = "emoji_emotions";
+            description = "Pick an emoji to copy";
+            command = ["autocomplete" "emoji"];
+            enabled = true;
+            dangerous = false;
+          }
+          {
+            name = "Keybinds";
+            icon = "keyboard";
+            description = "View all keyboard shortcuts";
+            command = ["autocomplete" "keybinds"];
+            enabled = true;
+            dangerous = false;
+          }
+          {
             name = "Shutdown";
             icon = "power_settings_new";
             description = "Shutdown the system";
@@ -538,7 +704,6 @@ delib.module {
       systemd = {
         enable = true;
         target = "hyprland-session.target";
-        environment = ["QT_FFMPEG_DECODING_HW_DEVICE_TYPES=cuda"];
       };
     };
   };

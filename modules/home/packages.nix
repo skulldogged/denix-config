@@ -15,6 +15,20 @@ delib.module {
   home.ifEnabled = {myconfig, ...}: let
     inherit (pkgs.stdenv.hostPlatform) system;
 
+    t3CodeNightly = let
+      package = inputs.t3code-flake.packages.${system}.t3-code-nightly;
+    in
+      pkgs.symlinkJoin {
+        name = "${package.name}-gnome-libsecret";
+        paths = [package];
+        nativeBuildInputs = [pkgs.makeWrapper];
+        postBuild = ''
+          rm "$out/bin/t3-code-nightly"
+          makeWrapper "${lib.getExe package}" "$out/bin/t3-code-nightly" \
+            --add-flags "--password-store=gnome-libsecret"
+        '';
+      };
+
     basePackages =
       (with pkgs; [
         alejandra
@@ -52,7 +66,7 @@ delib.module {
         translate-shell
         uv
       ])
-      ++ [inputs.t3code-flake.packages.${system}.t3-code-nightly];
+      ++ [t3CodeNightly];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 

@@ -107,6 +107,22 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    gloview = {
+      url = "github:fedsfarm/gloview";
+      inputs.hyprland.follows = "hyprland";
+    };
+
+    hypr-dynamic-cursors = {
+      url = "github:VirtCode/hypr-dynamic-cursors";
+      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprglass = {
+      url = "github:hyprnux/hyprglass";
+      flake = false;
+    };
+
     jellyfin-src = {
       url = "github:skulldogged/jellyfin";
       flake = false;

@@ -13,26 +13,44 @@ delib.module {
   };
 
   home.ifEnabled = {myconfig, ...}: {
-    home.packages = with pkgs; [
-      ddcutil
-      hyprpicker
-      hyprshot
-      libqalculate
-      wl-clipboard
-      (pkgs.writeShellScriptBin "hyprexit" ''
-        ${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl dispatch exit
-        ${pkgs.systemd}/bin/loginctl terminate-user ${myconfig.constants.username}
-      '')
-    ];
+    wayland.windowManager.hyprland = let
+      system = pkgs.stdenv.hostPlatform.system;
+      hyprland = inputs.hyprland.packages.${system}.hyprland;
+      hyprlandPlugins = pkgs.hyprlandPlugins.override {inherit hyprland;};
+      enableHyprglass = false;
 
-    services.cliphist.enable = true;
+      hyprglass = hyprlandPlugins.mkHyprlandPlugin {
+        pluginName = "hyprglass";
+        version = "0.7.0";
+        src = inputs.hyprglass;
 
-    wayland.windowManager.hyprland = {
+        installPhase = ''
+          runHook preInstall
+
+          install -Dm755 hyprglass.so "$out/lib/libhyprglass.so"
+
+          runHook postInstall
+        '';
+
+        meta = {
+          description = "Liquid Glass window decoration effect for Hyprland";
+          homepage = "https://github.com/hyprnux/hyprglass";
+          license = lib.licenses.bsd3;
+        };
+      };
+    in {
       enable = true;
       package = null;
       portalPackage = null;
       configType = "lua";
       systemd.variables = ["--all"];
+
+      plugins =
+        [
+          inputs.gloview.packages.${system}.gloview
+          inputs.hypr-dynamic-cursors.packages.${system}.hypr-dynamic-cursors
+        ]
+        ++ lib.optional enableHyprglass hyprglass;
 
       settings = let
         ddc-brightness = pkgs.writeShellScript "ddc-brightness" ''
@@ -42,7 +60,7 @@ delib.module {
         '';
 
         scratchpad = let
-          hyprctl = "${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl";
+          hyprctl = "${hyprland}/bin/hyprctl";
           jq = lib.getExe pkgs.jq;
         in
           pkgs.writeShellScript "hyprscratchpad" ''
@@ -85,9 +103,9 @@ delib.module {
           # Wait for file stability
           while [ "$(stat -c%s "$TMPFILE" 2>/dev/null)" != "$(sleep 0.05; stat -c%s "$TMPFILE" 2>/dev/null)" ]; do :; done
 
-          # Check if file exists and has content
+          # Hyprshot exits successfully but leaves the file empty when its selector is cancelled.
           if [ ! -s "$TMPFILE" ]; then
-            notify_error "Screenshot file is empty"
+            exit 0
           fi
 
           # Get token
@@ -107,11 +125,22 @@ delib.module {
             notify_error "Upload failed: invalid response from server"
           fi
 
-          echo -n "$URL" | ${pkgs.wl-clipboard}/bin/wl-copy || notify_error "Failed to copy URL to clipboard"
-          ${lib.getExe pkgs.libnotify} -i "$TMPFILE" "Screenshot uploaded" "$URL"
+          ${pkgs.wl-clipboard}/bin/wl-copy --type image/png < "$TMPFILE" || notify_error "Failed to copy screenshot to clipboard"
 
           trap - EXIT
-          (sleep 1 && rm "$TMPFILE") &
+          (
+            ACTION=$(${lib.getExe pkgs.libnotify} \
+              -i "$TMPFILE" \
+              --action="open=Open uploaded URL" \
+              "Screenshot uploaded" \
+              "Image copied to clipboard" || true)
+
+            if [ "$ACTION" = "open" ]; then
+              ${pkgs.xdg-utils}/bin/xdg-open "$URL" >/dev/null 2>&1 || true
+            fi
+
+            rm -f "$TMPFILE"
+          ) &
         '';
 
         screenshot = mode: "${zipline-screenshot} ${mode}";
@@ -119,11 +148,13 @@ delib.module {
         lua = lib.generators.mkLuaInline;
         toLua = lib.generators.toLua {};
         exec = command: lua "hl.dsp.exec_cmd(${toLua command})";
-        mkBind = key: dispatcher: {
-          _args = [key dispatcher];
-        };
-        mkBindWith = key: dispatcher: options: {
-          _args = [key dispatcher options];
+        mkBind = key: description: dispatcher: mkBindWith key description dispatcher {};
+        mkBindWith = key: description: dispatcher: options: {
+          _args = [
+            key
+            dispatcher
+            (options // {inherit description;})
+          ];
         };
       in {
         config = {
@@ -149,6 +180,7 @@ delib.module {
           general = {
             border_size = 2;
             gaps_in = 10;
+            layout = "scrolling";
             resize_on_border = true;
 
             col = {
@@ -158,9 +190,24 @@ delib.module {
           };
 
           misc = {
+            disable_autoreload = true;
             force_default_wallpaper = 0;
             disable_hyprland_logo = true;
             vrr = 3;
+          };
+
+          plugin = {
+            dynamic_cursors = {
+              enabled = true;
+              mode = "none";
+
+              shake.enabled = true;
+              hyprcursor.enabled = true;
+            };
+
+            gloview = {
+              layout = "rows";
+            };
           };
         };
 
@@ -290,7 +337,7 @@ delib.module {
             enabled = true;
             speed = 4.5;
             bezier = "decel";
-            style = "slide";
+            style = "slidevert";
           }
           {
             leaf = "specialWorkspace";
@@ -326,55 +373,61 @@ delib.module {
 
         bind =
           [
-            (mkBindWith "${mod} + mouse:272" (lua "hl.dsp.window.drag()") {mouse = true;})
-            (mkBindWith "${mod} + mouse:273" (lua "hl.dsp.window.resize()") {mouse = true;})
+            (mkBindWith "${mod} + mouse:272" "Move window with mouse" (lua "hl.dsp.window.drag()") {mouse = true;})
+            (mkBindWith "${mod} + mouse:273" "Resize window with mouse" (lua "hl.dsp.window.resize()") {mouse = true;})
 
-            (mkBind "${mod} + E" (exec fileManager))
-            (mkBind "${mod} + R" (lua ''hl.dsp.global("caelestia:launcher")''))
-            (mkBind "${mod} + W" (exec browser))
-            (mkBind "${mod} + RETURN" (exec terminal))
+            (mkBind "${mod} + TAB" "Open GloView overview" (lua "hl.plugin.gloview.toggle"))
 
-            (mkBind "${mod} + D" (exec "${scratchpad} equibop equibop discord"))
-            (mkBind "${mod} + T" (exec "${scratchpad} Telegram org.telegram.desktop telegram"))
+            (mkBind "${mod} + E" "Open file manager" (exec fileManager))
+            (mkBind "${mod} + R" "Open application launcher" (lua ''hl.dsp.global("caelestia:launcher")''))
+            (mkBind "${mod} + W" "Open web browser" (exec browser))
+            (mkBind "${mod} + RETURN" "Open terminal" (exec terminal))
 
-            (mkBind "${modS} + S" (exec (screenshot "window")))
-            (mkBind "CTRL + 3" (exec (screenshot "output -m active")))
-            (mkBind "CTRL + 4" (exec (screenshot "region -C 0,0")))
+            (mkBind "${mod} + V" "Open clipboard history" (lua ''hl.dsp.global("caelestia:clipboard")''))
+            (mkBind "${mod} + period" "Open emoji picker" (lua ''hl.dsp.global("caelestia:emoji")''))
+            (mkBind "${mod} + slash" "Open keybind viewer" (lua ''hl.dsp.global("caelestia:keybinds")''))
 
-            (mkBind "${mod} + mouse_down" (lua ''hl.dsp.focus({ workspace = "e-1" })''))
-            (mkBind "${mod} + mouse_up" (lua ''hl.dsp.focus({ workspace = "e+1" })''))
+            (mkBind "${mod} + D" "Open Discord scratchpad" (exec "${scratchpad} equibop equibop discord"))
+            (mkBind "${mod} + T" "Open Telegram scratchpad" (exec "${scratchpad} Telegram org.telegram.desktop telegram"))
 
-            (mkBind "${mod} + Q" (lua "hl.dsp.window.close()"))
-            (mkBind "${modS} + Q" (exec "hyprexit"))
+            (mkBind "${modS} + S" "Capture window screenshot" (exec (screenshot "window")))
+            (mkBind "CTRL + 3" "Capture active monitor screenshot" (exec (screenshot "output -m active")))
+            (mkBind "CTRL + 4" "Capture region screenshot" (exec (screenshot "region -C 0,0")))
 
-            (mkBind "${mod} + SPACE" (lua ''hl.dsp.window.float({ action = "toggle" })''))
-            (mkBind "${mod} + F" (lua "hl.dsp.window.fullscreen()"))
+            (mkBind "${mod} + mouse_down" "Previous workspace" (lua ''hl.dsp.focus({ workspace = "e-1" })''))
+            (mkBind "${mod} + mouse_up" "Next workspace" (lua ''hl.dsp.focus({ workspace = "e+1" })''))
 
-            (mkBind "${mod} + H" (lua ''hl.dsp.focus({ direction = "left" })''))
-            (mkBind "${mod} + J" (lua ''hl.dsp.focus({ direction = "down" })''))
-            (mkBind "${mod} + K" (lua ''hl.dsp.focus({ direction = "up" })''))
-            (mkBind "${mod} + L" (lua ''hl.dsp.focus({ direction = "right" })''))
+            (mkBind "${mod} + Q" "Close window" (lua "hl.dsp.window.close()"))
+            (mkBind "${modS} + Q" "Log out" (exec "hyprexit"))
 
-            (mkBind "${modS} + H" (lua ''hl.dsp.window.move({ direction = "left" })''))
-            (mkBind "${modS} + J" (lua ''hl.dsp.window.move({ direction = "down" })''))
-            (mkBind "${modS} + K" (lua ''hl.dsp.window.move({ direction = "up" })''))
-            (mkBind "${modS} + L" (lua ''hl.dsp.window.move({ direction = "right" })''))
+            (mkBind "${mod} + SPACE" "Toggle floating window" (lua ''hl.dsp.window.float({ action = "toggle" })''))
+            (mkBind "${mod} + F" "Toggle fullscreen" (lua "hl.dsp.window.fullscreen()"))
 
-            (mkBind "${modC} + H" (lua "hl.dsp.window.resize({ x = -30, y = 0, relative = true })"))
-            (mkBind "${modC} + J" (lua "hl.dsp.window.resize({ x = 0, y = 30, relative = true })"))
-            (mkBind "${modC} + K" (lua "hl.dsp.window.resize({ x = 0, y = -30, relative = true })"))
-            (mkBind "${modC} + L" (lua "hl.dsp.window.resize({ x = 30, y = 0, relative = true })"))
+            (mkBind "${mod} + H" "Focus left" (lua ''hl.dsp.focus({ direction = "left" })''))
+            (mkBind "${mod} + J" "Focus down" (lua ''hl.dsp.focus({ direction = "down" })''))
+            (mkBind "${mod} + K" "Focus up" (lua ''hl.dsp.focus({ direction = "up" })''))
+            (mkBind "${mod} + L" "Focus right" (lua ''hl.dsp.focus({ direction = "right" })''))
 
-            (mkBind "XF86AudioRaiseVolume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
-            (mkBind "XF86AudioLowerVolume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
-            (mkBind "XF86AudioMute" (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+            (mkBind "${modS} + H" "Move window left" (lua ''hl.dsp.window.move({ direction = "left" })''))
+            (mkBind "${modS} + J" "Move window down" (lua ''hl.dsp.window.move({ direction = "down" })''))
+            (mkBind "${modS} + K" "Move window up" (lua ''hl.dsp.window.move({ direction = "up" })''))
+            (mkBind "${modS} + L" "Move window right" (lua ''hl.dsp.window.move({ direction = "right" })''))
 
-            (mkBind "XF86AudioPlay" (exec "playerctl play-pause"))
-            (mkBind "XF86AudioNext" (exec "playerctl next"))
-            (mkBind "XF86AudioPrev" (exec "playerctl previous"))
+            (mkBindWith "${modC} + H" "Shrink column width" (lua ''hl.dsp.layout("colresize -0.01")'') {repeating = true;})
+            (mkBind "${modC} + J" "Grow window height" (lua "hl.dsp.window.resize({ x = 0, y = 30, relative = true })"))
+            (mkBind "${modC} + K" "Shrink window height" (lua "hl.dsp.window.resize({ x = 0, y = -30, relative = true })"))
+            (mkBindWith "${modC} + L" "Grow column width" (lua ''hl.dsp.layout("colresize +0.01")'') {repeating = true;})
 
-            (mkBind "XF86MonBrightnessUp" (exec "${ddc-brightness} + 5"))
-            (mkBind "XF86MonBrightnessDown" (exec "${ddc-brightness} - 5"))
+            (mkBind "XF86AudioRaiseVolume" "Raise volume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
+            (mkBind "XF86AudioLowerVolume" "Lower volume" (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+            (mkBind "XF86AudioMute" "Toggle audio mute" (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+
+            (mkBind "XF86AudioPlay" "Play or pause media" (exec "playerctl play-pause"))
+            (mkBind "XF86AudioNext" "Next track" (exec "playerctl next"))
+            (mkBind "XF86AudioPrev" "Previous track" (exec "playerctl previous"))
+
+            (mkBind "XF86MonBrightnessUp" "Raise monitor brightness" (exec "${ddc-brightness} + 5"))
+            (mkBind "XF86MonBrightnessDown" "Lower monitor brightness" (exec "${ddc-brightness} - 5"))
           ]
           ++ (
             builtins.concatLists (builtins.genList (
@@ -385,13 +438,45 @@ delib.module {
                   in
                     toString (x + 1 - (c * 10));
                 in [
-                  (mkBind "${mod} + ${ws}" (lua "hl.dsp.focus({ workspace = ${toLua workspace} })"))
-                  (mkBind "${modS} + ${ws}" (lua "hl.dsp.window.move({ workspace = ${toLua workspace} })"))
+                  (mkBind "${mod} + ${ws}" "Switch to workspace ${workspace}" (lua "hl.dsp.focus({ workspace = ${toLua workspace} })"))
+                  (mkBind "${modS} + ${ws}" "Move window to workspace ${workspace}" (lua "hl.dsp.window.move({ workspace = ${toLua workspace} })"))
                 ]
               )
               10)
           );
       };
     };
+
+    # Hyprland plugins require an exact compositor ABI match. A NixOS switch
+    # updates the generated plugin paths without replacing the running
+    # compositor, so only reload when both sides use the same ABI.
+    xdg.configFile."hypr/hyprland.lua".onChange = let
+      hyprland = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+      sed = lib.getExe pkgs.gnused;
+    in ''
+      target_abi="$(${hyprland}/bin/Hyprland --version 2>/dev/null | ${sed} -n 's/^Version ABI string: //p')"
+      running_version="$(${hyprland}/bin/hyprctl version 2>/dev/null || true)"
+      running_abi="$(printf '%s\n' "$running_version" | ${sed} -n 's/^Version ABI string: //p')"
+
+      if [ -n "$running_abi" ] && [ "$running_abi" = "$target_abi" ]; then
+        ${hyprland}/bin/hyprctl reload >/dev/null 2>&1 || true
+      elif [ -n "$running_abi" ]; then
+        echo "Skipping Hyprland reload: running ABI $running_abi differs from configured ABI $target_abi"
+      fi
+    '';
+
+    home.packages = with pkgs; [
+      ddcutil
+      hyprpicker
+      hyprshot
+      libqalculate
+      wl-clipboard
+      (pkgs.writeShellScriptBin "hyprexit" ''
+        ${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl dispatch exit
+        ${pkgs.systemd}/bin/loginctl terminate-user ${myconfig.constants.username}
+      '')
+    ];
+
+    services.cliphist.enable = true;
   };
 }

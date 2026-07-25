@@ -49,6 +49,19 @@ delib.module {
     systemd = {
       tpm2.enable = myconfig.host.isDesktop;
       network.wait-online.enable = false;
+
+      # The 64-bit defaults allow systemd-coredump to process and store up to
+      # 32 GiB per crash. Electron's huge mapped address space can hit that
+      # ceiling and saturate memory and storage I/O even when the compressed
+      # dump is small.
+      coredump.settings.Coredump = {
+        Storage = "external";
+        Compress = true;
+        ProcessSizeMax = "512M";
+        ExternalSizeMax = "512M";
+        MaxUse = "1G";
+        KeepFree = "10G";
+      };
     };
   };
 }

@@ -45,6 +45,7 @@ delib.host {
     };
 
     networking.hosts."37.27.111.236" = ["builder"];
+    networking.networkmanager.wifi.powersave = false;
 
     facter.reportPath = ./facter.json;
 
@@ -76,6 +77,9 @@ delib.host {
           "/var/lib/nixos"
           "/var/lib/sbctl"
           "/var/lib/systemd/coredump"
+          "/var/lib/systemd/kdump"
+          "/var/lib/systemd/pstore"
+          "/var/lib/systemd/timers"
           "/var/lib/decky-loader"
           "/var/lib/libvirt"
           "/var/lib/tailscale"
@@ -170,11 +174,82 @@ delib.host {
       script = "${pkgs.ntfs3g}/bin/ntfsfix -d /dev/disk/by-uuid/00AFAB5C797254C7";
     };
 
+    systemd.targets.kdump-save = {
+      description = "Save kernel crash diagnostics";
+      requires = ["kdump-save.service"];
+      after = ["kdump-save.service"];
+    };
+
+    systemd.services.kdump-save = {
+      description = "Save kernel crash diagnostics";
+      before = ["kdump-save.target"];
+      onFailure = ["emergency.target"];
+      unitConfig = {
+        ConditionPathExists = "/proc/vmcore";
+        RequiresMountsFor = "/var/lib/systemd/kdump";
+        SuccessAction = "reboot-force";
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "10min";
+      };
+      path = [
+        pkgs.coreutils
+        pkgs.kexec-tools
+      ];
+      script = ''
+        set -euo pipefail
+        umask 077
+
+        output_dir=/var/lib/systemd/kdump
+        timestamp="$(date --utc +%Y%m%dT%H%M%SZ)"
+        dmesg_file="$output_dir/$timestamp.dmesg"
+        metadata_file="$output_dir/$timestamp.meta"
+
+        mkdir -p "$output_dir"
+
+        vmcore-dmesg /proc/vmcore > "$dmesg_file.tmp"
+        {
+          printf 'Captured: %s\n' "$timestamp"
+          printf 'VMCore bytes: '
+          stat --format=%s /proc/vmcore
+          printf 'Crash kernel: '
+          uname -a
+          printf 'Crash kernel command line: '
+          cat /proc/cmdline
+        } > "$metadata_file.tmp"
+
+        mv "$dmesg_file.tmp" "$dmesg_file"
+        mv "$metadata_file.tmp" "$metadata_file"
+        sync "$dmesg_file" "$metadata_file"
+      '';
+    };
+
     environment.systemPackages = [
       pkgs.sbctl
     ];
 
     boot = {
+      crashDump = {
+        enable = true;
+        reservedMemory = "512M";
+        kernelParams = [
+          "systemd.unit=kdump-save.target"
+          "boot.shell_on_fail"
+          "loglevel=7"
+        ];
+      };
+
+      extraModprobeConfig = ''
+        options iwlwifi power_save=0
+        options iwlmvm power_scheme=1
+      '';
+
+      kernelParams = [
+        "oops=panic"
+        "panic=30"
+      ];
+
       lanzaboote = {
         enable = true;
         pkiBundle = "/var/lib/sbctl";
@@ -249,6 +324,7 @@ delib.host {
       btrfs.autoScrub = {
         enable = true;
         fileSystems = ["/dev/mapper/enc"];
+        limit = "500M";
       };
 
       greetd = {
@@ -312,7 +388,7 @@ delib.host {
       };
 
       linux-wallpaperengine = {
-        enable = false;
+        enable = true;
         assetsDir = "/mnt/games/SteamLibrary/steamapps/common/wallpaper_engine/assets";
         wallpaperPath = "/mnt/games/SteamLibrary/steamapps/workshop/content/431960/2847826034";
         screen = "DP-1";
