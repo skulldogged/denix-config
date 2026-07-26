@@ -46,10 +46,7 @@ delib.module {
       systemd.variables = ["--all"];
 
       plugins =
-        [
-          inputs.gloview.packages.${system}.gloview
-          inputs.hypr-dynamic-cursors.packages.${system}.hypr-dynamic-cursors
-        ]
+        [inputs.gloview.packages.${system}.gloview]
         ++ lib.optional enableHyprglass hyprglass;
 
       settings = let
@@ -196,19 +193,7 @@ delib.module {
             vrr = 3;
           };
 
-          plugin = {
-            dynamic_cursors = {
-              enabled = true;
-              mode = "none";
-
-              shake.enabled = true;
-              hyprcursor.enabled = true;
-            };
-
-            gloview = {
-              layout = "rows";
-            };
-          };
+          plugin.gloview.layout = "rows";
         };
 
         device = [

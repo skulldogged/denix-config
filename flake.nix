@@ -130,12 +130,6 @@
       inputs.hyprland.follows = "hyprland";
     };
 
-    hypr-dynamic-cursors = {
-      url = "github:VirtCode/hypr-dynamic-cursors";
-      inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     hyprglass = {
       url = "github:hyprnux/hyprglass";
       flake = false;
