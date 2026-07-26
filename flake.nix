@@ -28,6 +28,11 @@
 
     nix-colors.url = "github:Misterio77/nix-colors";
 
+    nautilus-my-computer = {
+      url = "github:yannmasoch/nautilus-my-computer?dir=packaging/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 

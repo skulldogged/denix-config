@@ -1,7 +1,6 @@
 {
   config,
   delib,
-  pkgs,
   ...
 }:
 delib.module {
@@ -87,9 +86,9 @@ delib.module {
         ];
       };
 
-      "/mnt/games" = {
+      "/mnt/Shared" = {
         device = "/dev/disk/by-uuid/00AFAB5C797254C7";
-        fsType = "ntfs3";
+        fsType = "ntfs";
         options = [
           "rw"
           "uid=1000"
@@ -99,7 +98,7 @@ delib.module {
         ];
       };
 
-      "/mnt/music" = {
+      "/mnt/Music" = {
         device = "//192.168.1.82/music";
         fsType = "cifs";
         options = [
@@ -108,13 +107,10 @@ delib.module {
       };
     };
 
-    systemd.services.fix-games-mount = {
-      description = "Fix NTFS filesystem on games drive before mounting";
-      before = ["mnt-games.mount"];
-      wantedBy = ["mnt-games.mount"];
-      serviceConfig.Type = "oneshot";
-      script = "${pkgs.ntfs3g}/bin/ntfsfix -d /dev/disk/by-uuid/00AFAB5C797254C7";
-    };
+    environment.etc."udisks2/mount_options.conf".text = ''
+      [defaults]
+      ntfs_drivers=ntfs,ntfs3
+    '';
 
     services.btrfs.autoScrub = {
       enable = true;

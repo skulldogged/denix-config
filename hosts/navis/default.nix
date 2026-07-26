@@ -69,8 +69,8 @@ delib.host {
 
       linux-wallpaperengine = {
         enable = true;
-        assetsDir = "/mnt/games/SteamLibrary/steamapps/common/wallpaper_engine/assets";
-        wallpaperPath = "/mnt/games/SteamLibrary/steamapps/workshop/content/431960/2847826034";
+        assetsDir = "/mnt/Shared/SteamLibrary/steamapps/common/wallpaper_engine/assets";
+        wallpaperPath = "/mnt/Shared/SteamLibrary/steamapps/workshop/content/431960/2847826034";
         screen = "DP-1";
       };
     };

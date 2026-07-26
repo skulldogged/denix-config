@@ -498,6 +498,7 @@ delib.module {
       cli = {
         enable = true;
         package = caelestiaCli;
+        settings.theme.enableGtk = false;
       };
 
       settings = {

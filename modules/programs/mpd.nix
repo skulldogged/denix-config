@@ -4,7 +4,7 @@ delib.module {
 
   options.programs.mpd = with delib; {
     enable = boolOption false;
-    musicDirectory = strOption "/mnt/music";
+    musicDirectory = strOption "/mnt/Music";
   };
 
   home.ifEnabled = {myconfig, ...}: {
