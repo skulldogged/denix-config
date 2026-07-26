@@ -12,16 +12,13 @@ delib.module {
   };
 
   nixos.ifEnabled = {
-    nixpkgs.config = {
-      allowUnfree = true;
-      permittedInsecurePackages = [
-        "pnpm-9.15.9"
-      ];
-    };
+    nixpkgs.config.permittedInsecurePackages = [
+      "pnpm-9.15.9"
+    ];
 
     sops = {
       defaultSopsFile = ../../../secrets/polaris.yaml;
-      age.sshKeyPaths = ["/root/.ssh/id_ed25519"];
+      age.sshKeyPaths = ["/etc/ssh/ssh_host_ed25519_key"];
     };
 
     time.timeZone = "America/New_York";

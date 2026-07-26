@@ -10,30 +10,8 @@ delib.host {
   type = "laptop";
 
   darwin = {
-    # Allow unfree packages
-    nixpkgs.config.allowUnfree = true;
     # macOS-specific settings
     ids.gids.nixbld = 30000;
-
-    nix.buildMachines = [
-      {
-        hostName = "polaris";
-        protocol = "ssh-ng";
-        sshUser = "nix-builder";
-        sshKey = "/Users/marshall/.ssh/id_ed25519";
-        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU9tTitBZGZTSW03L1pla3dzV0IvYytpZFBZRnJ2QlVqZEhTMWkzUDRPRSsgcm9vdEBwb2xhcmlzLW5peAo=";
-        systems = ["x86_64-linux"];
-        maxJobs = 8;
-        speedFactor = 10;
-        supportedFeatures = [
-          "nixos-test"
-          "kvm"
-          "recursive-nix"
-          "big-parallel"
-          "gccarch-x86-64-v4"
-        ];
-      }
-    ];
 
     # Fonts
     fonts.packages = with pkgs; ([
@@ -85,6 +63,13 @@ delib.host {
     # System modules
     system.nix.enable = true;
     system.programs.enable = true;
+
+    system.distributed-builds = {
+      enable = true;
+      hostName = "polaris";
+      sshKey = "/Users/marshall/.ssh/id_ed25519";
+      publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU9tTitBZGZTSW03L1pla3dzV0IvYytpZFBZRnJ2QlVqZEhTMWkzUDRPRSsgcm9vdEBwb2xhcmlzLW5peAo=";
+    };
 
     # Home modules
     home.shell.enable = true;

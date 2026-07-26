@@ -1,7 +1,7 @@
 {
   inputs,
-  nugetDepsFile,
   pkgs,
+  nugetDepsFile ? ./jellyfin-nuget-deps.json,
 }: let
   fetchNupkg = pkgs.callPackage (inputs.nixpkgs + "/pkgs/build-support/dotnet/fetch-nupkg") {
     inherit (pkgs.dotnetCorePackages) patchNupkgs nugetPackageHook;

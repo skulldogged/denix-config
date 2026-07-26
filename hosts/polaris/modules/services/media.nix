@@ -1,7 +1,6 @@
 {
   config,
   delib,
-  inputs,
   pkgs,
   ...
 }:
@@ -43,10 +42,7 @@ delib.module {
         enable = true;
         openFirewall = true;
         dataDir = "/mnt/jellyfin";
-        package = pkgs.callPackage ../../../../pkgs/jellyfin/package.nix {
-          inherit inputs pkgs;
-          nugetDepsFile = ../../jellyfin-nuget-deps.json;
-        };
+        package = pkgs.local.jellyfin;
       };
 
       samba = {

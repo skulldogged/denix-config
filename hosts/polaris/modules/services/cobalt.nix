@@ -3,7 +3,7 @@
   pkgs,
   ...
 }: let
-  cobalt = pkgs.callPackage ../../../../pkgs/cobalt/package.nix {};
+  cobalt = pkgs.local.cobalt;
 in
   delib.module {
     name = "polaris";
