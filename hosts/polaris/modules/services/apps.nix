@@ -49,8 +49,17 @@ delib.module {
     };
 
     systemd.services = {
-      bluesky-pds.serviceConfig.BindPaths = ["/mnt/pds"];
-      zipline.serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+      bluesky-pds = {
+        after = ["mnt.mount"];
+        requires = ["mnt.mount"];
+        serviceConfig.BindPaths = ["/mnt/pds"];
+      };
+
+      zipline = {
+        after = ["mnt.mount"];
+        requires = ["mnt.mount"];
+        serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+      };
     };
   };
 }
