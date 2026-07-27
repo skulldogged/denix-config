@@ -32,6 +32,8 @@ delib.module {
       extraConfig = ''
         Host polaris
           ForwardAgent yes
+          IdentitiesOnly yes
+          IdentityFile ~/.ssh/id_ecdsa_polaris_tpm.pub
           IdentityAgent ''${XDG_RUNTIME_DIR}/ssh-tpm-agent.sock
       '';
     };
@@ -51,12 +53,10 @@ delib.module {
       services.ssh-tpm-agent = {
         description = "SSH TPM agent";
         requires = ["ssh-tpm-agent.socket"];
-        wants = ["ssh-agent.service"];
-        after = ["ssh-agent.service"];
 
         serviceConfig = {
           Environment = "SSH_TPM_AUTH_SOCK=%t/ssh-tpm-agent.sock";
-          ExecStart = "${pkgs.ssh-tpm-agent}/bin/ssh-tpm-agent -A %t/ssh-agent";
+          ExecStart = "${pkgs.ssh-tpm-agent}/bin/ssh-tpm-agent";
           SuccessExitStatus = 2;
           Type = "simple";
         };
