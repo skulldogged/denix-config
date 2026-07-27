@@ -86,4 +86,7 @@ sops secrets/navis.yaml
 
 You need an age identity matching one of the file's recipients (see
 `.sops.yaml`). Hosts decrypt at activation using their SSH host key
-(`/etc/ssh/ssh_host_ed25519_key`) via sops-nix's `age.sshKeyPaths`.
+via sops-nix's `age.sshKeyPaths`. On impermanent hosts, configure the key's
+persistent backing path (for navis,
+`/persist/etc/ssh/ssh_host_ed25519_key`) because activation runs before the
+`/etc/ssh` bind mount is established.

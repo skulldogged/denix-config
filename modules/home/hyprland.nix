@@ -12,9 +12,26 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = {myconfig, ...}: {
+  home.ifEnabled = {myconfig, ...}: let
+    system = pkgs.stdenv.hostPlatform.system;
+    snappySwitcher = inputs.snappy-switcher.packages.${system}.default;
+    hyprshot = pkgs.hyprshot.overrideAttrs (old: {
+      postPatch =
+        (old.postPatch or "")
+        + ''
+          # Active captures do not run slurp, so the selector watchdog only
+          # adds an unconditional one-second delay.
+          substituteInPlace hyprshot \
+            --replace-fail 'begin_grab $OPTION & checkRunning' \
+            'if [ "$CURRENT" -eq 1 ]; then
+                begin_grab "$OPTION"
+            else
+                begin_grab "$OPTION" & checkRunning
+            fi'
+        '';
+    });
+  in {
     wayland.windowManager.hyprland = let
-      system = pkgs.stdenv.hostPlatform.system;
       hyprland = inputs.hyprland.packages.${system}.hyprland;
       hyprlandPlugins = pkgs.hyprlandPlugins.override {inherit hyprland;};
       enableHyprglass = false;
@@ -93,7 +110,7 @@ delib.module {
           }
 
           # Capture screenshot
-          if ! ${lib.getExe pkgs.hyprshot} -s -m "$@" --freeze -o "$(dirname "$TMPFILE")" -f "$(basename "$TMPFILE")"; then
+          if ! ${lib.getExe hyprshot} -s -m "$@" -o "$(dirname "$TMPFILE")" -f "$(basename "$TMPFILE")"; then
             notify_error "Failed to capture screenshot"
           fi
 
@@ -362,6 +379,7 @@ delib.module {
             (mkBindWith "${mod} + mouse:273" "Resize window with mouse" (lua "hl.dsp.window.resize()") {mouse = true;})
 
             (mkBind "${mod} + TAB" "Open GloView overview" (lua "hl.plugin.gloview.toggle"))
+            (mkBind "ALT + TAB" "Switch windows" (exec "${snappySwitcher}/bin/snappy-switcher next --mod alt"))
 
             (mkBind "${mod} + E" "Open file manager" (exec fileManager))
             (mkBind "${mod} + R" "Open application launcher" (lua ''hl.dsp.global("caelestia:launcher")''))
@@ -375,9 +393,9 @@ delib.module {
             (mkBind "${mod} + D" "Open Discord scratchpad" (exec "${scratchpad} equibop equibop discord"))
             (mkBind "${mod} + T" "Open Telegram scratchpad" (exec "${scratchpad} Telegram org.telegram.desktop telegram"))
 
-            (mkBind "${modS} + S" "Capture window screenshot" (exec (screenshot "window")))
+            (mkBind "${modS} + S" "Capture active window screenshot" (exec (screenshot "window -m active")))
             (mkBind "CTRL + 3" "Capture active monitor screenshot" (exec (screenshot "output -m active")))
-            (mkBind "CTRL + 4" "Capture region screenshot" (exec (screenshot "region -C 0,0")))
+            (mkBind "CTRL + 4" "Capture region screenshot" (exec (screenshot "region --freeze")))
 
             (mkBind "${mod} + mouse_down" "Previous workspace" (lua ''hl.dsp.focus({ workspace = "e-1" })''))
             (mkBind "${mod} + mouse_up" "Next workspace" (lua ''hl.dsp.focus({ workspace = "e+1" })''))
@@ -450,17 +468,58 @@ delib.module {
       fi
     '';
 
-    home.packages = with pkgs; [
-      ddcutil
-      hyprpicker
-      hyprshot
-      libqalculate
-      wl-clipboard
-      (pkgs.writeShellScriptBin "hyprexit" ''
-        ${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl dispatch exit
-        ${pkgs.systemd}/bin/loginctl terminate-user ${myconfig.constants.username}
-      '')
-    ];
+    home.packages =
+      (with pkgs; [
+        ddcutil
+        hyprpicker
+        hyprshot
+        libqalculate
+        wl-clipboard
+        (pkgs.writeShellScriptBin "hyprexit" ''
+          ${inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland}/bin/hyprctl dispatch exit
+          ${pkgs.systemd}/bin/loginctl terminate-user ${myconfig.constants.username}
+        '')
+      ])
+      ++ [snappySwitcher];
+
+    xdg.configFile."snappy-switcher/config.ini".text = ''
+      [general]
+      mode = overview
+      follow_monitor = true
+      show_workspace_badge = true
+      sticky_mode = false
+      ignore_pinned = false
+      show_previews = true
+
+      [layout]
+      card_width = 300
+      card_height = 190
+      max_cols = 4
+
+      [theme]
+      name = catppuccin-mocha.ini
+
+      [icons]
+      theme = kora
+      fallback = hicolor
+      show_letter_fallback = true
+    '';
+
+    systemd.user.services.snappy-switcher = {
+      Unit = {
+        Description = "Snappy Switcher";
+        After = ["hyprland-session.target"];
+        PartOf = ["hyprland-session.target"];
+      };
+
+      Service = {
+        ExecStart = "${snappySwitcher}/bin/snappy-switcher --daemon";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+
+      Install.WantedBy = ["hyprland-session.target"];
+    };
 
     services.cliphist.enable = true;
   };
