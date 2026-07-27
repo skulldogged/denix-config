@@ -71,7 +71,7 @@ in
           };
 
           server = {
-            HTTP_ADDR = "0.0.0.0";
+            HTTP_ADDR = "127.0.0.1";
             HTTP_PORT = 6610;
             DOMAIN = forgejoDomain;
             ROOT_URL = "https://${forgejoDomain}/";

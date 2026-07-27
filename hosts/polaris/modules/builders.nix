@@ -38,13 +38,5 @@ delib.module {
     programs.ssh.knownHosts.builder.publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEe8rty9x/K1KY/Sk+8t2CQSxN5jeKkztIoTIKztnNHz";
 
     networking.hosts."37.27.111.236" = ["builder"];
-
-    users.users.nix-builder = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB7fPGt6KAzwOVQqOV0JT74unUXDbdQHvD3yufYyvLKW mars@navis-win"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsHqYKt58eFcZo7UdPX45CaEhLeGge+cE1Gdt74IHSv MacBook"
-      ];
-    };
   };
 }

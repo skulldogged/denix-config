@@ -19,10 +19,8 @@ delib.module {
             "jellyfin.pupbrained.dev".service = "http://localhost:8096";
             "zip.pupbrained.dev".service = "http://localhost:3000";
             "sky.skulldogged.dev".service = "http://localhost:6969";
-            "services.skulldogged.dev".service = "http://localhost:8081";
             "slskd.skulldogged.dev".service = "http://localhost:5030";
             "glance.skulldogged.dev".service = "http://localhost:5678";
-            "identity.skulldogged.dev".service = "http://localhost:8080";
             "home.skulldogged.dev".service = "http://127.0.0.1:8123";
             "cobalt.skulldogged.dev".service = "http://localhost:9001";
           };

@@ -54,13 +54,11 @@ delib.module {
         allowed-users = [
           "root"
           "@wheel"
-          "nix-builder"
         ];
 
         trusted-users = [
           "root"
           "@wheel"
-          "nix-builder"
         ];
 
         extra-experimental-features = [

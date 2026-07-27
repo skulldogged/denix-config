@@ -64,13 +64,6 @@ delib.host {
     system.nix.enable = true;
     system.programs.enable = true;
 
-    system.distributed-builds = {
-      enable = true;
-      hostName = "polaris";
-      sshKey = "/Users/marshall/.ssh/id_ed25519";
-      publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU9tTitBZGZTSW03L1pla3dzV0IvYytpZFBZRnJ2QlVqZEhTMWkzUDRPRSsgcm9vdEBwb2xhcmlzLW5peAo=";
-    };
-
     # Home modules
     home.shell.enable = true;
     home.fish.enable = true;

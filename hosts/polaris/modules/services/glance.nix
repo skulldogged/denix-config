@@ -4,7 +4,7 @@ delib.module {
 
   nixos.ifEnabled.services.glance = {
     enable = true;
-    openFirewall = true;
+    openFirewall = false;
     settings = {
       server = {
         host = "127.0.0.1";

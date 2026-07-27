@@ -50,7 +50,7 @@ delib.module {
 
     services.home-assistant = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
       extraComponents = [
         "google_assistant"
         "mqtt"
@@ -81,7 +81,7 @@ delib.module {
       };
     };
 
-    # The MQTT socket itself is bound only to the LAN address above.
-    networking.firewall.allowedTCPPorts = [1883];
+    # The MQTT and Home Assistant sockets are admitted only from the LAN
+    # source range in the host networking module.
   };
 }

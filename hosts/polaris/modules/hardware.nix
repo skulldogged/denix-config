@@ -21,7 +21,7 @@ delib.module {
       };
 
       "/mnt" = {
-        device = "/dev/xvdb";
+        device = "/dev/disk/by-uuid/88133d6c-7eed-4b4c-aba3-f561f9ac34f6";
         fsType = "ext4";
         options = ["nofail"];
       };

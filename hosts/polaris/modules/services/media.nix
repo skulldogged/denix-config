@@ -18,6 +18,7 @@ delib.module {
         owner = "slskd";
         group = "media";
         mode = "0440";
+        restartUnits = ["slskd.service"];
         content = ''
           directories:
             downloads: /mnt/music
@@ -26,11 +27,14 @@ delib.module {
               - /mnt/music
           feature:
             swagger: true
-          global:
+          transfers:
             download:
               slots: 5
           web:
+            ip_address: 127.0.0.1
             port: 5030
+            https:
+              disabled: true
             authentication:
               apiKey: ${config.sops.placeholder.slskd_api_key}
         '';
@@ -40,29 +44,19 @@ delib.module {
     services = {
       jellyfin = {
         enable = true;
-        openFirewall = true;
+        openFirewall = false;
         dataDir = "/mnt/jellyfin";
         package = pkgs.local.jellyfin;
       };
 
       samba = {
         enable = true;
-        openFirewall = true;
+        openFirewall = false;
         nmbd.enable = false;
 
         settings = {
           music = {
             path = "/mnt/music";
-            browseable = "yes";
-            "read only" = "no";
-            "guest ok" = "no";
-            "create mask" = "0664";
-            "directory mask" = "0775";
-            "valid users" = "marshall";
-          };
-
-          gamesaves = {
-            path = "/mnt/saves";
             browseable = "yes";
             "read only" = "no";
             "guest ok" = "no";
@@ -78,6 +72,7 @@ delib.module {
       slskd = {
         enable = true;
         openFirewall = true;
+        package = pkgs.local.slskd;
         user = "slskd";
         group = "media";
         domain = null;
@@ -87,16 +82,37 @@ delib.module {
           directories.downloads = "/mnt/music";
           feature.swagger = true;
           shares.directories = ["/mnt/music"];
-          global.download.slots = 5;
+          transfers.download.slots = 5;
+          web = {
+            ip_address = "127.0.0.1";
+            https.disabled = true;
+          };
         };
       };
     };
 
     systemd = {
-      services.slskd.serviceConfig = {
-        ExecStart = pkgs.lib.mkForce "${pkgs.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
-        ReadOnlyPaths = pkgs.lib.mkForce [""];
-        RuntimeDirectory = "slskd";
+      services = {
+        jellyfin = {
+          after = ["mnt.mount"];
+          requires = ["mnt.mount"];
+        };
+
+        samba-smbd = {
+          after = ["mnt.mount"];
+          requires = ["mnt.mount"];
+        };
+
+        slskd = {
+          after = ["mnt.mount"];
+          requires = ["mnt.mount"];
+
+          serviceConfig = {
+            ExecStart = pkgs.lib.mkForce "${pkgs.local.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
+            ReadOnlyPaths = pkgs.lib.mkForce [""];
+            RuntimeDirectory = "slskd";
+          };
+        };
       };
 
       tmpfiles.rules = [

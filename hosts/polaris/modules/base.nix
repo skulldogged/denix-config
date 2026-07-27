@@ -1,6 +1,7 @@
 {
   config,
   delib,
+  lib,
   pkgs,
   ...
 }:
@@ -12,16 +13,18 @@ delib.module {
   };
 
   nixos.ifEnabled = {
-    nixpkgs.config.permittedInsecurePackages = [
-      "pnpm-9.15.9"
-    ];
-
     sops = {
       defaultSopsFile = ../../../secrets/polaris.yaml;
       age.sshKeyPaths = ["/etc/ssh/ssh_host_ed25519_key"];
     };
 
     time.timeZone = "America/New_York";
+
+    nix.settings.trusted-users = lib.mkForce ["root"];
+
+    users.users.${config.myconfig.constants.username}.openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL2vmQG3o3yMTXUbHYM7evCpUo/V+gK8Lofajt/hEjrB navis"
+    ];
 
     environment = {
       systemPackages = with pkgs; [
@@ -58,10 +61,23 @@ delib.module {
       };
     };
 
-    programs.mosh.enable = true;
+    programs.mosh = {
+      enable = true;
+      openFirewall = false;
+    };
 
     security = {
-      pam.services.gdm.enableGnomeKeyring = true;
+      pam = {
+        rssh.enable = true;
+
+        services = {
+          gdm.enableGnomeKeyring = true;
+          sudo.rssh = true;
+          sudo-i.rssh = true;
+        };
+      };
+
+      sudo-rs.wheelNeedsPassword = lib.mkForce true;
 
       sudo.extraRules = [
         {

@@ -17,6 +17,7 @@ delib.module {
             inherit inputs;
             pkgs = prev;
           };
+          slskd = prev.callPackage ../../pkgs/slskd/package.nix {};
         };
       })
     ];

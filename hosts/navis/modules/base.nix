@@ -23,12 +23,22 @@ delib.module {
       sessionVariables.AQ_DRM_DEVICES = "/dev/dri/card1";
     };
 
+    programs.ssh = {
+      startAgent = pkgs.lib.mkForce true;
+
+      extraConfig = ''
+        Host polaris
+          ForwardAgent yes
+      '';
+    };
+
     hardware.logitech.wireless = {
       enable = true;
       enableGraphical = true;
     };
 
     services = {
+      gnome.gcr-ssh-agent.enable = pkgs.lib.mkForce false;
       gvfs.enable = true;
 
       tailscale = {
