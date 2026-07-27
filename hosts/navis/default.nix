@@ -39,6 +39,7 @@ delib.host {
       security.enable = true;
       services.enable = true;
       users.enable = true;
+      users.extraGroups = ["tss"];
     };
 
     home = {
