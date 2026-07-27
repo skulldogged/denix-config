@@ -1,19 +1,6 @@
 {
   description = "Modular configuration of NixOS, Home Manager, and Nix-Darwin with Denix";
 
-  nixConfig = {
-    extra-substituters = [
-      "https://hyprland.cachix.org/"
-      "https://nix-community.cachix.org/"
-      "https://pupbrained.cachix.org/"
-    ];
-    extra-trusted-public-keys = [
-      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "pupbrained.cachix.org-1:C64g/tdHk/o5bl9AZYW1a7XFRXhxa4XaufpIOxMsgxU="
-    ];
-  };
-
   inputs = {
     catppuccin = {
       url = "github:catppuccin/nix";
