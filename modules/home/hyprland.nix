@@ -36,6 +36,19 @@ delib.module {
       hyprlandPlugins = pkgs.hyprlandPlugins.override {inherit hyprland;};
       enableHyprglass = false;
 
+      gloview = inputs.gloview.packages.${system}.gloview.overrideAttrs (old: {
+        postPatch =
+          (old.postPatch or "")
+          + ''
+            # Hyprland 0.56 moved hyprctl commands to the Socket1 API.
+            substituteInPlace src/main.cpp \
+              --replace-fail 'SHyprCtlCommand{' 'IPC::Socket1::SCommand{' \
+              --replace-fail '.exact = true,' '.match = IPC::Socket1::COMMAND_MATCH_EXACT,' \
+              --replace-fail '.fn    = [](eHyprCtlOutputFormat, std::string) -> std::string {' \
+                '.handler = [](const IPC::Socket1::SRequest&) -> IPC::Socket1::SResponse {'
+          '';
+      });
+
       hyprglass = hyprlandPlugins.mkHyprlandPlugin {
         pluginName = "hyprglass";
         version = "0.7.0";
@@ -63,7 +76,7 @@ delib.module {
       systemd.variables = ["--all"];
 
       plugins =
-        [inputs.gloview.packages.${system}.gloview]
+        [gloview]
         ++ lib.optional enableHyprglass hyprglass;
 
       settings = let

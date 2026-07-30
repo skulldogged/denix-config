@@ -23,9 +23,18 @@ delib.module {
         paths = [package];
         nativeBuildInputs = [pkgs.makeWrapper];
         postBuild = ''
-          rm "$out/bin/t3-code-nightly"
-          makeWrapper "${lib.getExe package}" "$out/bin/t3-code-nightly" \
+          rm "$out/bin/${package.meta.mainProgram}"
+          makeWrapper "${lib.getExe package}" "$out/bin/${package.meta.mainProgram}" \
             --add-flags "--password-store=gnome-libsecret"
+
+          # T3 Code registers OAuth callbacks against t3code.desktop. Keep
+          # that identity and advertise its custom URI scheme to XDG.
+          rm "$out/share/applications/t3-code-nightly.desktop"
+          install -Dm644 \
+            "${package}/share/applications/t3-code-nightly.desktop" \
+            "$out/share/applications/t3code.desktop"
+          echo 'MimeType=x-scheme-handler/t3code;' \
+            >> "$out/share/applications/t3code.desktop"
         '';
       };
 

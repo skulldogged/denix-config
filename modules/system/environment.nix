@@ -96,5 +96,10 @@ delib.module {
       man.enable = true;
       man.cache.enable = true;
     };
+
+    xdg.mime = lib.mkIf myconfig.host.isDesktop {
+      addedAssociations."x-scheme-handler/t3code" = "t3code.desktop";
+      defaultApplications."x-scheme-handler/t3code" = "t3code.desktop";
+    };
   };
 }
