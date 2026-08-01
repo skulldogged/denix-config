@@ -36,6 +36,7 @@ delib.host {
       nix-index.enable = true;
       packages.enable = true;
       shell.enable = true;
+      t3code.enable = true;
     };
 
     programs = {
