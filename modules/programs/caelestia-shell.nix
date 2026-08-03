@@ -89,6 +89,67 @@ delib.module {
       +                                command: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--", ...subCmd],
     '';
 
+    caelestiaDockPinnedFlickerPatch = pkgs.writeText "caelestia-dock-pinned-flicker.patch" ''
+      diff --git a/modules/bar/components/Dock.qml b/modules/bar/components/Dock.qml
+      --- a/modules/bar/components/Dock.qml
+      +++ b/modules/bar/components/Dock.qml
+      @@ -428,6 +428,9 @@
+
+           property var modelDataArray: []
+
+      +    property bool forceRebuild: false
+      +    property int transientPinnedMisses: 0
+      +
+           property var currentOrder: []
+
+           onModelDataArrayChanged: currentOrder = [...modelDataArray]
+      @@ -536,6 +539,36 @@
+                   root.launchingApps = newLaunching;
+               }
+
+      +        // A desktop entry rescan can transiently drop entries (e.g. while
+      +        // the nix store or profile is being rebuilt). Pinned entries have
+      +        // no running window to keep them in the model, so the dock would
+      +        // remove and immediately re-add them, replaying the add/remove
+      +        // animations. Ignore rebuilds that would only remove pinned
+      +        // entries; a persistent removal is accepted after 25 consecutive
+      +        // identical results so uninstalled apps still disappear.
+      +        if (!root.forceRebuild) {
+      +            const newIds = {};
+      +            for (const app of apps) newIds[app.id] = true;
+      +
+      +            let missingPinned = false;
+      +            let missingOther = false;
+      +            for (const cur of root.modelDataArray) {
+      +                if (!newIds[cur.id]) {
+      +                    if (cur.isPinned) missingPinned = true;
+      +                    else missingOther = true;
+      +                }
+      +            }
+      +
+      +            if (missingPinned && !missingOther && apps.length < root.modelDataArray.length) {
+      +                if (root.transientPinnedMisses < 25) {
+      +                    root.transientPinnedMisses += 1;
+      +                    return;
+      +                }
+      +            }
+      +        }
+      +        root.forceRebuild = false;
+      +        root.transientPinnedMisses = 0;
+      +
+               let changed = false;
+               if (apps.length !== dockModel.count) {
+                   changed = true;
+      @@ -613,6 +646,7 @@
+               target: GlobalConfig.launcher
+
+               function onFavouriteAppsChanged(): void {
+      +            root.forceRebuild = true;
+                   root.rebuildModel();
+               }
+           }
+    '';
+
     caelestiaLauncherExtrasPatch = pkgs.writeText "caelestia-launcher-extras.patch" ''
       diff --git a/modules/launcher/services/Clipboard.qml b/modules/launcher/services/Clipboard.qml
       --- a/modules/launcher/services/Clipboard.qml
@@ -198,20 +259,8 @@ delib.module {
                        asynchronous: true
       +                cache: false
                        fillMode: Image.PreserveAspectCrop
-                       source: imagePreview.imagePath.length > 0 ? "file://" + imagePreview.imagePath : ""
-                   }
-      diff --git a/modules/launcher/KeybindsList.qml b/modules/launcher/KeybindsList.qml
-      --- a/modules/launcher/KeybindsList.qml
-      +++ b/modules/launcher/KeybindsList.qml
-      @@ -13,7 +13,7 @@
-       StyledListView {
-           id: root
-
-      -    required property StyledTextField search
-      +    required property SearchBar search
-           required property ScreenState screenState
-
-           readonly property string searchQuery: (search.text.slice((GlobalConfig.launcher.actionPrefix + "keybinds ").length)).toLowerCase()
+                    source: imagePreview.imagePath.length > 0 ? "file://" + imagePreview.imagePath : ""
+                }
     '';
 
     caelestiaShellBase = inputs.caelestia-shell.packages.${system}.default.override {
@@ -246,6 +295,7 @@ delib.module {
         ++ [
           caelestiaScopedAppLaunchPatch
           caelestiaLauncherExtrasPatch
+          caelestiaDockPinnedFlickerPatch
         ];
 
       passthru = (old.passthru or {}) // {plugin = caelestiaPlugin;};
