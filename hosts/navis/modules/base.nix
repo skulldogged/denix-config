@@ -23,7 +23,7 @@ delib.module {
         pkgs.sbctl
         pkgs.ssh-tpm-agent
       ];
-      sessionVariables.AQ_DRM_DEVICES = "/dev/dri/card1";
+      sessionVariables.AQ_DRM_DEVICES = "/dev/dri/nvidia-dgpu";
     };
 
     programs.ssh = {
@@ -71,6 +71,12 @@ delib.module {
     services = {
       gnome.gcr-ssh-agent.enable = pkgs.lib.mkForce false;
       gvfs.enable = true;
+
+      udev.extraRules = ''
+        # AQ_DRM_DEVICES uses ':' as its device separator, so the standard
+        # PCI by-path name cannot be passed to Aquamarine directly.
+        SUBSYSTEM=="drm", KERNEL=="card[0-9]*", KERNELS=="0000:01:00.0", SYMLINK+="dri/nvidia-dgpu"
+      '';
 
       tailscale = {
         enable = true;

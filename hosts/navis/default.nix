@@ -10,7 +10,10 @@ delib.host {
     navis.enable = true;
 
     system = {
-      boot.enable = true;
+      boot = {
+        enable = true;
+        enableIntelGraphics = true;
+      };
 
       distributed-builds = {
         enable = true;
@@ -57,7 +60,10 @@ delib.host {
       codex-desktop.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;
-      mpv.enable = true;
+      mpv = {
+        enable = true;
+        hardwareDecodeDevice = "/dev/dri/by-path/pci-0000:00:02.0-render";
+      };
       mpd.enable = true;
       rmpc.enable = true;
       caelestia-shell.enable = true;
@@ -68,11 +74,10 @@ delib.host {
         signingKey = "263409D620072FB8";
       };
 
-      linux-wallpaperengine = {
+      ranni-wallpaper = {
         enable = true;
-        assetsDir = "/mnt/Shared/SteamLibrary/steamapps/common/wallpaper_engine/assets";
-        wallpaperPath = "/mnt/Shared/SteamLibrary/steamapps/workshop/content/431960/2847826034";
-        screen = "DP-1";
+        engineAssetsRoot = "/mnt/Shared/SteamLibrary/steamapps/common/wallpaper_engine/assets";
+        scenePackage = "/mnt/Shared/SteamLibrary/steamapps/workshop/content/431960/2847826034/scene.pkg";
       };
     };
   };

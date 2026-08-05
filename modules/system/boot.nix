@@ -9,9 +9,16 @@ delib.module {
 
   options.system.boot = with delib; {
     enable = boolOption false;
+
+    enableIntelGraphics =
+      description
+      (boolOption false)
+      "Enable the Intel graphics driver instead of blacklisting i915";
   };
 
-  nixos.ifEnabled = {myconfig, ...}: {
+  nixos.ifEnabled = {myconfig, ...}: let
+    enableIntelGraphics = myconfig.system.boot.enableIntelGraphics;
+  in {
     boot = {
       kernelPackages = lib.mkIf myconfig.host.isDesktop pkgs.linuxPackages_zen;
       tmp.useTmpfs = true;
@@ -21,10 +28,9 @@ delib.module {
         "kernel.kptr_restrict" = 0;
       };
 
-      blacklistedKernelModules = lib.optionals myconfig.host.isDesktop [
-        "nouveau"
-        "i915"
-      ];
+      blacklistedKernelModules =
+        lib.optionals myconfig.host.isDesktop ["nouveau"]
+        ++ lib.optional (myconfig.host.isDesktop && !enableIntelGraphics) "i915";
 
       kernelModules = lib.optionals myconfig.host.isDesktop ["kvm-intel"];
 
@@ -48,7 +54,7 @@ delib.module {
         "intel_iommu=on"
         "iommu=pt"
         "kvm.ignore_msrs=1"
-        "modprobe.blacklist=nouveau,i915"
+        "modprobe.blacklist=nouveau${lib.optionalString (!enableIntelGraphics) ",i915"}"
         "nvidia_drm.fbdev=1"
       ];
 

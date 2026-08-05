@@ -1,11 +1,15 @@
-{delib, ...}:
+{
+  delib,
+  pkgs,
+  ...
+}:
 delib.module {
   name = "navis";
 
   nixos.ifEnabled = {
     boot = {
       extraModprobeConfig = ''
-        options iwlwifi power_save=0
+        options iwlwifi power_save=0 enable_ini=0 fw_restart=1
         options iwlmvm power_scheme=1
       '';
 
@@ -75,6 +79,12 @@ delib.module {
           };
         };
       };
+
+      kernelModules = ["i915"];
     };
+
+    hardware.graphics.extraPackages = [pkgs.intel-media-driver];
+
+    systemd.settings.Manager.RebootWatchdogSec = "2min";
   };
 }

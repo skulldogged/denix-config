@@ -17,6 +17,7 @@ delib.module {
             inherit inputs;
             pkgs = prev;
           };
+          ranni-wallpaper = prev.callPackage ../../pkgs/ranni-wallpaper/package.nix {};
           slskd = prev.callPackage ../../pkgs/slskd/package.nix {};
         };
       })

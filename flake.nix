@@ -147,11 +147,6 @@
       flake = false;
     };
 
-    linux-wallpaperengine-src = {
-      url = "git+https://github.com/Almamu/linux-wallpaperengine?submodules=1";
-      flake = false;
-    };
-
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
