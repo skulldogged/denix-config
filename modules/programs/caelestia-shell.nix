@@ -367,6 +367,11 @@ delib.module {
                 . + [$action]
               end
             )
+          | del(.bar.status)
+          | .bar.statusIcons = (
+              (.bar.statusIcons // [])
+              | map(if .id == "battery" then .enabled = false else . end)
+            )
           | .background.enabled = false
         ' "$seedPath" "$configPath" > "$tempPath"
       else
@@ -625,7 +630,44 @@ delib.module {
             }
           ];
 
-          status.showBattery = false;
+          statusIcons = [
+            {
+              id = "lockStatus";
+              enabled = true;
+            }
+            {
+              id = "audio";
+              enabled = false;
+            }
+            {
+              id = "microphone";
+              enabled = false;
+            }
+            {
+              id = "kbLayout";
+              enabled = false;
+            }
+            {
+              id = "network";
+              enabled = true;
+            }
+            {
+              id = "bluetooth";
+              enabled = true;
+            }
+            {
+              id = "battery";
+              enabled = false;
+            }
+            {
+              id = "peripheralBattery";
+              enabled = false;
+            }
+            {
+              id = "notifications";
+              enabled = true;
+            }
+          ];
           workspaces.showWindows = true;
           tray = {
             background = true;

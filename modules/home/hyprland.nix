@@ -13,7 +13,8 @@ delib.module {
   };
 
   home.ifEnabled = {myconfig, ...}: let
-    system = pkgs.stdenv.hostPlatform.system;
+    inherit (pkgs.stdenv.hostPlatform) system;
+
     snappySwitcher = inputs.snappy-switcher.packages.${system}.default;
     hyprshot = pkgs.hyprshot.overrideAttrs (old: {
       postPatch =
@@ -32,7 +33,8 @@ delib.module {
     });
   in {
     wayland.windowManager.hyprland = let
-      hyprland = inputs.hyprland.packages.${system}.hyprland;
+      inherit (inputs.hyprland.packages.${system}) hyprland;
+
       hyprlandPlugins = pkgs.hyprlandPlugins.override {inherit hyprland;};
       enableHyprglass = false;
 
@@ -46,6 +48,24 @@ delib.module {
               --replace-fail '.exact = true,' '.match = IPC::Socket1::COMMAND_MATCH_EXACT,' \
               --replace-fail '.fn    = [](eHyprCtlOutputFormat, std::string) -> std::string {' \
                 '.handler = [](const IPC::Socket1::SRequest&) -> IPC::Socket1::SResponse {'
+
+            # Hyprland now exposes keyboard modifiers as a scoped enum. Keep
+            # GloView's matching masks integral and cast only at the ABI edge.
+            substituteInPlace src/overview.cpp \
+              --replace-fail 'return HL_MODIFIER_SHIFT;' \
+                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT);' \
+              --replace-fail 'return HL_MODIFIER_CTRL;' \
+                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL);' \
+              --replace-fail 'return HL_MODIFIER_ALT;' \
+                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT);' \
+              --replace-fail 'return HL_MODIFIER_META;' \
+                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);' \
+              --replace-fail \
+                'uint32_t mods = g_pInputManager ? g_pInputManager->getModsFromAllKBs() : 0;' \
+                'uint32_t mods = g_pInputManager ? static_cast<uint32_t>(g_pInputManager->getModsFromAllKBs()) : 0;' \
+              --replace-fail \
+                'constexpr uint32_t STRICTMODS = HL_MODIFIER_SHIFT | HL_MODIFIER_CTRL | HL_MODIFIER_ALT | HL_MODIFIER_META;' \
+                'constexpr uint32_t STRICTMODS = static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);'
           '';
       });
 
@@ -223,7 +243,13 @@ delib.module {
             vrr = 3;
           };
 
-          plugin.gloview.layout = "rows";
+          plugin.gloview = {
+            layout = "rows";
+
+            # GloView otherwise paints an opaque card behind every live
+            # surface, hiding client-side transparency such as WezTerm's.
+            preview_bg = 1316895; # 0x0014181f (transparent ARGB)
+          };
         };
 
         device = [
