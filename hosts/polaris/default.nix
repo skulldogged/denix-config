@@ -43,6 +43,7 @@ delib.host {
       bun.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;
+      pi-coding-agent.enable = true;
 
       git = {
         enable = true;
