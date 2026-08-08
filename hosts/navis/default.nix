@@ -59,6 +59,7 @@ delib.host {
       cava.enable = true;
       codex-desktop.enable = true;
       pi-coding-agent.enable = true;
+      herdr.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;
       mpv = {

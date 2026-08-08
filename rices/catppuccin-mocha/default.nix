@@ -174,6 +174,10 @@ in
         platformTheme.name = "kde";
       };
 
-      xdg.enable = true;
+      xdg = {
+        enable = true;
+        configFile."t3code/themes/catppuccin-mocha.json".source =
+          ../../files/t3code/themes/catppuccin-mocha.json;
+      };
     };
   }

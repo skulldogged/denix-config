@@ -1,0 +1,51 @@
+diff --git a/compositor.ts b/compositor.ts
+index 878db60..1e92a9c 100644
+--- a/compositor.ts
++++ b/compositor.ts
+@@ -25,7 +25,7 @@ export class SidebarCompositor {
+   private terminal: any;
+   private getCtx: () => SidebarContext;
+   private originalColumnsDesc: PropertyDescriptor | undefined;
+-  private originalDoRender: (() => void) | null = null;
++  private installedWrite: ((data: string) => void) | null = null;
+   private originalWrite: (data: string) => void;
+   private disposed = false;
+ 
+@@ -55,15 +55,19 @@ export class SidebarCompositor {
+       },
+     });
+ 
+-    // Paint sidebar after every pi render cycle
+-    if (typeof this.tui.doRender === "function") {
+-      this.originalDoRender = this.tui.doRender.bind(this.tui);
++    // Pi 0.84 exposes the TUI through a stable Proxy whose method wrappers
++    // resolve the current method on every call. Saving and then replacing
++    // doRender therefore makes the saved wrapper call the replacement
++    // recursively. Hook the concrete terminal instead; it also survives TUI
++    // mode changes because all renderers share the same terminal.
++    if (typeof this.terminal.write === "function") {
+       const self = this;
+-      this.tui.doRender = function () {
+-        if (self.disposed) { self.originalDoRender?.(); return; }
+-        self.originalDoRender!();
+-        self.paint();
++      this.installedWrite = function (data: string) {
++        self.originalWrite(data);
++        // Do not repaint after entering or leaving the alternate screen.
++        if (!self.disposed && !data.includes("\x1b[?1049")) self.paint();
+       };
++      this.terminal.write = this.installedWrite;
+     }
+   }
+ 
+@@ -124,8 +128,8 @@ export class SidebarCompositor {
+       Reflect.deleteProperty(this.terminal, "columns");
+     }
+ 
+-    if (this.originalDoRender !== null) {
+-      this.tui.doRender = this.originalDoRender;
++    if (this.installedWrite !== null && this.terminal.write === this.installedWrite) {
++      this.terminal.write = this.originalWrite;
+     }
+   }
+ }

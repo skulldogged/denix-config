@@ -1,0 +1,120 @@
+--- a/packages/coding-agent/src/modes/interactive/components/footer.ts
++++ b/packages/coding-agent/src/modes/interactive/components/footer.ts
+@@ -56,8 +56,8 @@ export function formatCwdForFooter(cwd: string, home: string | undefined): strin
+  */
+ export class FooterComponent implements Component {
+ 	private autoCompactEnabled = true;
+-	private session: AgentSession;
+-	private footerData: ReadonlyFooterDataProvider;
++	protected session: AgentSession;
++	protected footerData: ReadonlyFooterDataProvider;
+ 
+ 	constructor(session: AgentSession, footerData: ReadonlyFooterDataProvider) {
+ 		this.session = session;
+@@ -243,3 +243,88 @@ export class FooterComponent implements Component {
+ 		return lines;
+ 	}
+ }
++
++const catppuccin = {
++	mauve: "#c6a0f6",
++	blue: "#8aadf4",
++	lavender: "#b7bdf8",
++	green: "#a6da95",
++	peach: "#f5a97f",
++	overlay0: "#6e738d",
++};
++
++function catppuccinFg(hex: string, text: string): string {
++	const value = hex.replace("#", "");
++	const red = Number.parseInt(value.slice(0, 2), 16);
++	const green = Number.parseInt(value.slice(2, 4), 16);
++	const blue = Number.parseInt(value.slice(4, 6), 16);
++	return `\x1b[38;2;${red};${green};${blue}m${text}\x1b[39m`;
++}
++
++function formatCatppuccinCount(value: number): string {
++	if (value < 1000) return `${value}`;
++	if (value < 1_000_000) return `${(value / 1000).toFixed(1)}k`;
++	return `${(value / 1_000_000).toFixed(1)}m`;
++}
++
++function formatCatppuccinModelName(model: string): string {
++	return (model.split("/").pop() ?? model).replace(/-\d{8}$/, "");
++}
++
++function formatCatppuccinFooterLine(width: number, left: string, right: string): string {
++	const padWidth = Math.max(1, width - visibleWidth(left) - visibleWidth(right));
++	return truncateToWidth(`${left}${" ".repeat(padWidth)}${right}`, width, "");
++}
++
++/** Compact Catppuccin footer used throughout the interactive session. */
++export class CatppuccinFooterComponent extends FooterComponent {
++	override render(width: number): string[] {
++		if (width <= 0) return [""];
++
++		let input = 0;
++		let output = 0;
++		let cost = 0;
++		for (const entry of this.session.sessionManager.getBranch()) {
++			if (entry.type !== "message" || entry.message.role !== "assistant") continue;
++			input += entry.message.usage.input ?? 0;
++			output += entry.message.usage.output ?? 0;
++			cost += entry.message.usage.cost?.total ?? 0;
++		}
++
++		const branch = this.footerData.getGitBranch();
++		const model = formatCatppuccinModelName(this.session.state.model?.id ?? "no model");
++		const branchName = branch ?? "no git";
++		const compactStats = [
++			catppuccinFg(catppuccin.blue, `↑${formatCatppuccinCount(input)}`),
++			catppuccinFg(catppuccin.lavender, `↓${formatCatppuccinCount(output)}`),
++			catppuccinFg(catppuccin.peach, `$${cost.toFixed(3)}`),
++		].join(" ");
++		const fullLeft = [
++			catppuccinFg(catppuccin.mauve, "◆"),
++			catppuccinFg(catppuccin.blue, model),
++			catppuccinFg(catppuccin.overlay0, "•"),
++			catppuccinFg(catppuccin.green, branch ? `git ${branchName}` : branchName),
++		].join(" ");
++		const fullRight = [
++			catppuccinFg(catppuccin.blue, `in ${formatCatppuccinCount(input)}`),
++			catppuccinFg(catppuccin.lavender, `out ${formatCatppuccinCount(output)}`),
++			catppuccinFg(catppuccin.peach, `cost $${cost.toFixed(3)}`),
++		].join("  ");
++
++		if (visibleWidth(fullLeft) + 1 + visibleWidth(fullRight) <= width) {
++			return [formatCatppuccinFooterLine(width, fullLeft, fullRight)];
++		}
++
++		const compactLeft = [
++			catppuccinFg(catppuccin.mauve, "◆"),
++			catppuccinFg(catppuccin.blue, model),
++			catppuccinFg(catppuccin.overlay0, "•"),
++			catppuccinFg(catppuccin.green, branchName),
++		].join(" ");
++		if (visibleWidth(compactLeft) + 1 + visibleWidth(compactStats) <= width) {
++			return [formatCatppuccinFooterLine(width, compactLeft, compactStats)];
++		}
++
++		return [truncateToWidth([catppuccinFg(catppuccin.mauve, "◆"), catppuccinFg(catppuccin.blue, model), compactStats].join(" "), width, "")];
++	}
++}
+--- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
++++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
+@@ -124,5 +124,5 @@ import { ExtensionInputComponent } from "./components/extension-input.ts";
+ import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
+-import { FooterComponent, formatTokens } from "./components/footer.ts";
++import { CatppuccinFooterComponent, FooterComponent, formatTokens } from "./components/footer.ts";
+ import { formatKeyText, keyDisplayText, keyHint, keyText, rawKeyHint } from "./components/keybinding-hints.ts";
+ import { LoginDialogComponent } from "./components/login-dialog.ts";
+ import { createMermaidMarkdownTransformer } from "./components/mermaid.ts";
+@@ -552,7 +552,7 @@ export class InteractiveMode {
+ 		this.editorContainer = new Container();
+ 		this.editorContainer.addChild(this.editor as Component);
+ 		this.footerDataProvider = new FooterDataProvider(this.sessionManager.getCwd());
+-		this.footer = new FooterComponent(this.session, this.footerDataProvider);
++		this.footer = new CatppuccinFooterComponent(this.session, this.footerDataProvider);
+ 		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
+ 		this.footerContainer = new Container();
+ 		this.footerContainer.addChild(this.footer);

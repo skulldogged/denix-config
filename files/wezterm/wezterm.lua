@@ -14,7 +14,7 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
     elseif number_value < 0 then
       window:perform_action(wezterm.action.ResetFontSize, pane)
       overrides.font_size = nil
-      overrides.enable_tab_bar = true
+      overrides.enable_tab_bar = false
     else
       overrides.font_size = number_value
       overrides.enable_tab_bar = false
@@ -39,76 +39,51 @@ wezterm.on('format-window-title', function(tab, pane, tabs, panes, config)
   return 'WezTerm - ' .. zoomed .. index .. tab.active_pane.title
 end)
 
-wezterm.plugin.require('https://github.com/nekowinston/wezterm-bar').apply_to_config(c, {
-  position = 'bottom',
-  max_width = 32,
-  dividers = 'slant_right',
-  indicator = {
-    leader = {
-      enabled = true,
-      off = ' ',
-      on = ' ',
-    },
-    mode = {
-      enabled = true,
-      names = {
-        resize_mode = 'RESIZE',
-        copy_mode = 'VISUAL',
-        search_mode = 'SEARCH',
-      },
-    },
-  },
-  tabs = {
-    numerals = 'arabic',
-    pane_count = 'subscript',
-    brackets = {
-      active = { '', ':' },
-      inactive = { '', ':' },
-    },
-  },
-  clock = {
-    enabled = true,
-    format = '%l:%M %p',
-  },
-})
-
 local act = wezterm.action
 
 local keybinds = {
   {
-    key = 'Enter',
+    key = 'c',
     mods = 'CTRL|SHIFT',
-    action = act.SplitHorizontal({ domain = 'CurrentPaneDomain' }),
+    action = act.CopyTo('Clipboard'),
   },
   {
-    key = 'Enter',
-    mods = 'CTRL|ALT',
-    action = act.SplitVertical({ domain = 'CurrentPaneDomain' }),
+    key = 'v',
+    mods = 'CTRL|SHIFT',
+    action = act.PasteFrom('Clipboard'),
   },
   {
-    key = 'h',
+    key = 'f',
     mods = 'CTRL|SHIFT',
-    action = act.ActivatePaneDirection('Left'),
+    action = act.Search('CurrentSelectionOrEmptyString'),
   },
   {
-    key = 'l',
+    key = '=',
     mods = 'CTRL|SHIFT',
-    action = act.ActivatePaneDirection('Right'),
+    action = act.IncreaseFontSize,
   },
   {
-    key = 'k',
+    key = '-',
     mods = 'CTRL|SHIFT',
-    action = act.ActivatePaneDirection('Up'),
+    action = act.DecreaseFontSize,
   },
   {
-    key = 'j',
+    key = '0',
     mods = 'CTRL|SHIFT',
-    action = act.ActivatePaneDirection('Down'),
+    action = act.ResetFontSize,
+  },
+  {
+    key = 'r',
+    mods = 'CTRL|SHIFT',
+    action = act.ReloadConfiguration,
   },
   {
     key = 't',
-    mods = 'CTRL|SHIFT',
-    action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }),
+    mods = 'CTRL|SHIFT|ALT',
+    action = act.SpawnCommandInNewWindow({
+      args = { 'fish' },
+      cwd = wezterm.home_dir,
+    }),
   },
 }
 
@@ -120,8 +95,11 @@ local config = {
   cursor_blink_ease_out = 'Constant',
   cursor_blink_rate = 500,
   default_cursor_style = 'BlinkingBar',
+  default_prog = { 'herdr' },
+  disable_default_key_bindings = true,
   enable_kitty_graphics = true,
   enable_scroll_bar = false,
+  enable_tab_bar = false,
   enable_wayland = true,
   font_size = 10,
   font = wezterm.font_with_fallback({

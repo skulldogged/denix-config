@@ -1,7 +1,18 @@
 diff --git a/packages/coding-agent/src/modes/interactive/interactive-mode.ts b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
-index a306d90..6bdd4cc 100644
+index a306d90..621279e 100644
 --- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
 +++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
+@@ -763,8 +763,8 @@ export class InteractiveMode {
+ 	private stopInteractiveTui(): void {
+ 		if (this.renderer.mode === "fullscreen") {
+ 			while (this.renderer.hasOverlayEntries) this.renderer.hideOverlay();
+-			this.switchTuiMode("regular", false, false);
+-			this.renderer.renderNow();
++			this.ui.stop({ preserveScreen: true });
++			return;
+ 		}
+ 		this.ui.stop();
+ 	}
 @@ -958,6 +958,7 @@ export class InteractiveMode {
  
  		// Set up theme file watcher
