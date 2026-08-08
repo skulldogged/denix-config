@@ -44,8 +44,18 @@ in
           "/home/marshall/.ssh"
           "/root/.ssh"
 
+          # Local source and application state that may not have been pushed.
+          "/home/marshall/.config"
+          "/home/marshall/Desktop"
+          "/home/marshall/Documents"
+          "/home/marshall/Projects"
+          "/home/marshall/nix-config"
+          "/home/marshall/personal-agent"
+
           # Media stored on the single external SSD.
           "/mnt/books"
+          "/mnt/migration-backup"
+          "/mnt/minecraft"
           "/mnt/muse"
           "/mnt/music"
           "/mnt/music-videos"
@@ -59,6 +69,13 @@ in
         exclude = [
           # GnuPG creates transient socket/lock files with this prefix.
           "**/.#*"
+
+          # Reproducible development outputs and dependency caches dwarf the
+          # source trees and are unnecessary for bare-metal recovery.
+          "**/.cache/**"
+          "**/.direnv/**"
+          "**/node_modules/**"
+          "**/target/**"
         ];
 
         extraBackupArgs = [
@@ -104,6 +121,8 @@ in
             home-assistant.service \
             mosquitto.service \
             forgejo.service \
+            vaultwarden-cloudflared.service \
+            vaultwarden.service \
             zipline.service \
             bluesky-pds.service \
             jellyfin.service \
@@ -137,7 +156,36 @@ in
             fi
           }
 
+          # Keep the material required to bootstrap SOPS and this flake on the
+          # external VHD as well as in encrypted Restic. The physical SSD must
+          # remain untouched until this VHD has been recovered after install.
+          bootstrap=/mnt/migration-backup/baremetal-bootstrap
+          "$install" -d -o root -g root -m 0700 "$bootstrap"
+          "$install" -o root -g root -m 0600 \
+            /etc/ssh/ssh_host_ed25519_key \
+            "$bootstrap/ssh_host_ed25519_key"
+          "$install" -o root -g root -m 0644 \
+            /etc/ssh/ssh_host_ed25519_key.pub \
+            "$bootstrap/ssh_host_ed25519_key.pub"
+          if [[ -f /home/marshall/amt.txt ]]; then
+            "$install" -o root -g root -m 0600 \
+              /home/marshall/amt.txt \
+              "$bootstrap/amt.txt"
+          fi
+          if [[ -f /home/marshall/xoa.txt ]]; then
+            "$install" -o root -g root -m 0600 \
+              /home/marshall/xoa.txt \
+              "$bootstrap/xoa.txt"
+          fi
+          sync_state /home/marshall/nix-config "$bootstrap/nix-config" \
+            --exclude=/.direnv/ \
+            --exclude=/result
+
           sync_state /var/lib/forgejo "$stage/forgejo"
+          # Polaris keeps system.stateVersion at 23.11, so the NixOS
+          # Vaultwarden module intentionally retains its historical state
+          # directory name.
+          sync_state /var/lib/bitwarden_rs "$stage/vaultwarden"
           sync_state /var/lib/hass "$stage/home-assistant" \
             --exclude=/.cache/
           sync_state /var/lib/mosquitto "$stage/mosquitto"
@@ -175,6 +223,7 @@ in
             wants = ["network-online.target"];
             after = ["network-online.target"];
             environment.RESTIC_PASSWORD_FILE = config.sops.secrets.restic_repository_password.path;
+            environment.RESTIC_CACHE_DIR = "/var/cache/restic-backups-${backupName}";
             serviceConfig = {
               Type = "oneshot";
               EnvironmentFile = config.sops.templates."restic-b2.env".path;

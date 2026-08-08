@@ -34,7 +34,8 @@ delib.module {
         flake-registry = "/etc/nix/registry.json";
         keep-going = true;
         log-lines = 30;
-        max-jobs = "auto";
+        max-jobs = 0;
+        max-substitution-jobs = 4;
         max-free = "${toString (10 * 1024 * 1024 * 1024)}";
         min-free = "${toString (5 * 1024 * 1024 * 1024)}";
         sandbox-fallback = false;

@@ -211,8 +211,21 @@
       };
   in {
     nixosConfigurations =
-      inputs.nixpkgs.lib.getAttrs ["navis" "polaris"]
-      (mkConfigurations "nixos");
+      inputs.nixpkgs.lib.getAttrs ["navis" "polaris" "polaris-baremetal"]
+      (mkConfigurations "nixos")
+      // {
+        polaris-bootstrap = inputs.nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = {inherit inputs;};
+          modules = [./migration/polaris/bootstrap.nix];
+        };
+
+        polaris-installer = inputs.nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = {inherit inputs;};
+          modules = [./migration/polaris/installer.nix];
+        };
+      };
 
     darwinConfigurations =
       inputs.nixpkgs.lib.getAttrs ["canis"]
