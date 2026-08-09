@@ -36,21 +36,16 @@ in
         passwordFile = config.sops.secrets.restic_repository_password.path;
 
         paths = [
-          # Server and user identities that cannot be reconstructed from Nix.
-          "/etc/ssh"
-          "/home/marshall/.gnupg"
-          "/home/marshall/.local/share/keyrings"
-          "/home/marshall/.pki"
-          "/home/marshall/.ssh"
-          "/root/.ssh"
-
-          # Local source and application state that may not have been pushed.
-          "/home/marshall/.config"
-          "/home/marshall/Desktop"
-          "/home/marshall/Documents"
-          "/home/marshall/Projects"
-          "/home/marshall/nix-config"
-          "/home/marshall/personal-agent"
+          # Complete local identities, credentials, configuration, source,
+          # user data, and small system state that cannot be reconstructed
+          # from Nix alone. This includes SSH host/user/root keys, the SOPS age
+          # key, GPG, keyrings, browser and agent profiles, histories, and
+          # unpushed repositories.
+          "/etc"
+          "/home/marshall"
+          "/root"
+          "/var/lib/nixos"
+          "/var/spool"
 
           # Media stored on the single external SSD.
           "/mnt/books"
@@ -76,6 +71,16 @@ in
           "**/.direnv/**"
           "**/node_modules/**"
           "**/target/**"
+
+          # Rebuildable downloads and package-manager caches. Persistent
+          # application settings and container volumes remain included.
+          "/home/marshall/polaris-migration.iso"
+          "**/.cargo/git/**"
+          "**/.cargo/registry/**"
+          "**/.gradle/caches/**"
+          "**/.gradle/wrapper/dists/**"
+          "**/.local/share/Trash/**"
+          "**/.npm/_cacache/**"
         ];
 
         extraBackupArgs = [
@@ -125,6 +130,10 @@ in
             vaultwarden.service \
             zipline.service \
             bluesky-pds.service \
+            cloudflared-tunnel-29205063-551c-44a0-9c85-c1c51f40a0d2.service \
+            caddy.service \
+            cobalt-api.service \
+            redis-cobalt.service \
             jellyfin.service \
             slskd.service \
             samba-smbd.service \
@@ -197,6 +206,47 @@ in
           sync_state /mnt/pds "$stage/bluesky-pds"
           sync_state /mnt/zipline "$stage/zipline"
           sync_state /var/lib/samba "$stage/samba"
+
+          # Preserve secondary service identities and state even when the
+          # corresponding service is currently disabled. Container layers and
+          # images are reproducible; named volumes are not.
+          sync_state /var/lib/AccountsService "$stage/accounts-service"
+          sync_state /var/lib/bluetooth "$stage/bluetooth"
+          sync_state /var/lib/caddy "$stage/caddy"
+          sync_state /var/lib/cloudflared "$stage/cloudflared"
+          sync_state /var/lib/gitea-runner "$stage/gitea-runner"
+          sync_state /var/lib/gnome-remote-desktop "$stage/gnome-remote-desktop"
+          sync_state /var/lib/libvirt "$stage/libvirt" \
+            --exclude=/images/
+          sync_state /var/lib/private "$stage/var-lib-private"
+          sync_state /var/lib/redis-cobalt "$stage/redis-cobalt"
+          sync_state /var/lib/zerotier-one "$stage/zerotier-one"
+          sync_state /var/lib/containers/storage/volumes "$stage/root-containers-volumes"
+          sync_state /var/lib/docker/volumes "$stage/root-docker-volumes"
+
+          for state_name in \
+            atticd \
+            aurelia-sidecar \
+            blocky \
+            cobalt \
+            cobalt-api \
+            copyparty \
+            couchdb \
+            gatus \
+            jellyseerr \
+            kyros \
+            lidarr \
+            matrix-conduit \
+            navidrome \
+            pds \
+            prowlarr \
+            qBittorrent \
+            wastebin \
+            yt-session-generator \
+            zipline
+          do
+            sync_state "/var/lib/$state_name" "$stage/legacy/$state_name"
+          done
 
           # Tailscale remains online so the backup cannot sever remote access.
           # Its state file is atomically replaced, making a live copy safe.
