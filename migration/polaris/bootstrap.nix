@@ -67,8 +67,30 @@ in {
 
   networking = {
     hostName = "polaris";
-    useDHCP = lib.mkForce true;
-    networkmanager.enable = true;
+    useDHCP = lib.mkOverride 40 false;
+    networkmanager = {
+      enable = true;
+      settings.main.no-auto-default = "*";
+      ensureProfiles.profiles.polaris-lan = {
+        connection = {
+          id = "polaris-lan";
+          type = "ethernet";
+          autoconnect = true;
+          autoconnect-priority = 100;
+        };
+        ethernet.mac-address = "38:22:E2:0C:1E:5A";
+        ipv4 = {
+          addresses = "192.168.1.82/24";
+          gateway = "192.168.1.1";
+          dns = "1.1.1.1;1.0.0.1;";
+          method = "manual";
+        };
+        ipv6 = {
+          addr-gen-mode = "stable-privacy";
+          method = "auto";
+        };
+      };
+    };
     firewall.allowedTCPPorts = [22];
   };
 

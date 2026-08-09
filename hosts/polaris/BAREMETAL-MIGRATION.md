@@ -148,9 +148,11 @@ Keeping `192.168.1.82` on bare metal is the least disruptive choice because:
 - Local DNS points `voice.skulldogged.dev` to `192.168.1.82`.
 - LAN clients may use Polaris for DNS and local services.
 
-Update the FiOS reservation to associate `192.168.1.82` with the physical MAC,
-or configure that address statically before the final service cutover. Confirm
-that this does not interfere with AMT's shared NIC/IP configuration.
+The FiOS router is not administratively accessible, so both the bootstrap and
+final bare-metal configurations assign `192.168.1.82/24` statically to the
+physical MAC `38:22:e2:0c:1e:5a`, with gateway `192.168.1.1`. The VM must be
+stopped before bare metal boots so the two systems never claim the address at
+the same time.
 
 ## Prepared handoff tooling
 
@@ -194,9 +196,9 @@ Preparation (safe to do while the VM is live):
 1. Commit and push the complete Nix configuration, then rebuild the final ISO.
 2. Put `polaris-migration.iso` in NanoKVM virtual media and verify that AMT or
    NanoKVM provides a working remote console. Do not boot it yet.
-3. Change the FiOS DHCP reservation for `192.168.1.82` from virtual MAC
-   `12:53:b7:f3:88:ae` to physical MAC `38:22:e2:0c:1e:5a`, while checking the
-   AMT shared-NIC configuration for an address conflict.
+3. Confirm the bootstrap and final bare-metal configurations still assign
+   `192.168.1.82/24` to physical MAC `38:22:e2:0c:1e:5a`; do not boot either
+   while the VM still owns that address.
 4. Run the expanded Restic backup and repository check one final time. Verify
    `/mnt/migration-backup/baremetal-bootstrap` exists and contains the SSH host
    key and Git working tree.
