@@ -83,7 +83,8 @@ pub="$bootstrap/ssh_host_ed25519_key.pub"
 [[ -f "$key" && -f "$pub" ]] || die 'recovery SSH host key pair is missing'
 
 derived_pub=$(ssh-keygen -y -f "$key")
-recorded_pub=$(cut -d ' ' -f 1,2 "$pub")
+read -r recorded_type recorded_key _ < "$pub"
+recorded_pub="$recorded_type $recorded_key"
 [[ "$derived_pub" == "$recorded_pub" ]] || die 'recovery SSH host key pair does not match'
 
 [[ -d "$embedded_repo" ]] || die 'installer-embedded Nix configuration is missing'
