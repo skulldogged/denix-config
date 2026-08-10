@@ -2,8 +2,7 @@
   delib,
   pkgs,
   ...
-}:
-let
+}: let
   herdrSshPicker = pkgs.writeShellApplication {
     name = "herdr-ssh-picker";
     runtimeInputs = with pkgs; [
@@ -127,101 +126,101 @@ let
     '';
   };
 in
-delib.module {
-  name = "programs.herdr";
+  delib.module {
+    name = "programs.herdr";
 
-  options.programs.herdr = with delib; {
-    enable = boolOption false;
-  };
+    options.programs.herdr = with delib; {
+      enable = boolOption false;
+    };
 
-  home.ifEnabled = {
-    # The Home Manager module owns package installation, TOML generation, and
-    # reloading the running server when its generated config changes.
-    programs.herdr = {
-      enable = true;
-      package = pkgs.herdr;
-      settings = {
-        onboarding = false;
+    home.ifEnabled = {
+      # The Home Manager module owns package installation, TOML generation, and
+      # reloading the running server when its generated config changes.
+      programs.herdr = {
+        enable = true;
+        package = pkgs.herdr;
+        settings = {
+          onboarding = false;
 
-        theme.name = "catppuccin";
+          theme.name = "catppuccin";
 
-        terminal = {
-          default_shell = "${pkgs.fish}/bin/fish";
-          shell_mode = "non_login";
-          new_cwd = "home";
-        };
-
-        update = {
-          # Herdr itself is upgraded by the flake; agent detection manifests
-          # may still refresh independently between Nix rebuilds.
-          version_check = false;
-          manifest_check = true;
-        };
-
-        # Keep the prefix bindings while mirroring the old WezTerm shortcuts.
-        keys = {
-          focus_pane_left = ["prefix+h" "ctrl+shift+h"];
-          focus_pane_down = ["prefix+j" "ctrl+shift+j"];
-          focus_pane_up = ["prefix+k" "ctrl+shift+k"];
-          focus_pane_right = ["prefix+l" "ctrl+shift+l"];
-          previous_tab = ["prefix+p" "ctrl+shift+tab"];
-          next_tab = ["prefix+n" "ctrl+tab"];
-          new_tab = ["prefix+c" "ctrl+shift+t"];
-          switch_tab = ["prefix+1..9" "ctrl+shift+1..9"];
-          split_vertical = ["prefix+v" "ctrl+shift+enter"];
-          split_horizontal = ["prefix+minus" "ctrl+alt+enter"];
-          close_tab = ["prefix+shift+x" "ctrl+shift+w"];
-          zoom = ["prefix+z" "ctrl+shift+z"];
-
-          command = [
-            {
-              key = "ctrl+shift+n";
-              type = "shell";
-              description = "open the focused pane in another WezTerm window";
-              command = ''
-                terminal_id="$(${pkgs.lib.getExe pkgs.herdr} pane get "$HERDR_ACTIVE_PANE_ID" | ${pkgs.lib.getExe pkgs.jq} -r '.result.pane.terminal_id')"
-                exec ${pkgs.lib.getExe pkgs.wezterm} start -- ${pkgs.lib.getExe pkgs.herdr} terminal attach "$terminal_id"
-              '';
-            }
-            {
-              key = "ctrl+shift+s";
-              type = "popup";
-              description = "open an SSH host in a new tab";
-              command = "${pkgs.lib.getExe herdrSshPicker} tab";
-              width = "70%";
-              height = "70%";
-            }
-            {
-              key = "ctrl+shift+r";
-              type = "popup";
-              description = "open a remote Herdr session in another WezTerm window";
-              command = "${pkgs.lib.getExe herdrSshPicker} remote";
-              width = "70%";
-              height = "70%";
-            }
-          ];
-        };
-
-        ui = {
-          sidebar_width = 28;
-          hide_tab_bar_when_single_tab = true;
-          prompt_new_tab_name = false;
-          show_agent_labels_on_pane_borders = true;
-          toast = {
-            delivery = "system";
-            delay_seconds = 2;
+          terminal = {
+            default_shell = "${pkgs.fish}/bin/fish";
+            shell_mode = "non_login";
+            new_cwd = "home";
           };
-          sound.enabled = false;
-        };
 
-        session.resume_agents_on_restore = true;
+          update = {
+            # Herdr itself is upgraded by the flake; agent detection manifests
+            # may still refresh independently between Nix rebuilds.
+            version_check = false;
+            manifest_check = true;
+          };
+
+          # Keep the prefix bindings while mirroring the old WezTerm shortcuts.
+          keys = {
+            focus_pane_left = ["prefix+h" "ctrl+shift+h"];
+            focus_pane_down = ["prefix+j" "ctrl+shift+j"];
+            focus_pane_up = ["prefix+k" "ctrl+shift+k"];
+            focus_pane_right = ["prefix+l" "ctrl+shift+l"];
+            previous_tab = ["prefix+p" "ctrl+shift+tab"];
+            next_tab = ["prefix+n" "ctrl+tab"];
+            new_tab = ["prefix+c" "ctrl+shift+t"];
+            switch_tab = ["prefix+1..9" "ctrl+shift+1..9"];
+            split_vertical = ["prefix+v" "ctrl+shift+enter"];
+            split_horizontal = ["prefix+minus" "ctrl+alt+enter"];
+            close_tab = ["prefix+shift+x" "ctrl+shift+w"];
+            zoom = ["prefix+z" "ctrl+shift+z"];
+
+            command = [
+              {
+                key = "ctrl+shift+n";
+                type = "shell";
+                description = "open the focused pane in another WezTerm window";
+                command = ''
+                  terminal_id="$(${pkgs.lib.getExe pkgs.herdr} pane get "$HERDR_ACTIVE_PANE_ID" | ${pkgs.lib.getExe pkgs.jq} -r '.result.pane.terminal_id')"
+                  exec ${pkgs.lib.getExe pkgs.wezterm} start -- ${pkgs.lib.getExe pkgs.herdr} terminal attach "$terminal_id"
+                '';
+              }
+              {
+                key = "ctrl+shift+s";
+                type = "popup";
+                description = "open an SSH host in a new tab";
+                command = "${pkgs.lib.getExe herdrSshPicker} tab";
+                width = "70%";
+                height = "70%";
+              }
+              {
+                key = "ctrl+shift+r";
+                type = "popup";
+                description = "open a remote Herdr session in another WezTerm window";
+                command = "${pkgs.lib.getExe herdrSshPicker} remote";
+                width = "70%";
+                height = "70%";
+              }
+            ];
+          };
+
+          ui = {
+            sidebar_width = 28;
+            hide_tab_bar_when_single_tab = true;
+            prompt_new_tab_name = false;
+            show_agent_labels_on_pane_borders = true;
+            toast = {
+              delivery = "system";
+              delay_seconds = 2;
+            };
+            sound.enabled = false;
+          };
+
+          session.resume_agents_on_restore = true;
+        };
+      };
+
+      # Home Manager does not manage Herdr's Pi integration or agent skill.
+      home.file = {
+        ".pi/agent/extensions/herdr-agent-state.ts".source = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
+        ".pi/agent/skills/herdr/SKILL.md".source = "${pkgs.herdr}/share/herdr/skills/herdr/SKILL.md";
       };
     };
-
-    # Home Manager does not manage Herdr's Pi integration or agent skill.
-    home.file = {
-      ".pi/agent/extensions/herdr-agent-state.ts".source = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
-      ".pi/agent/skills/herdr/SKILL.md".source = "${pkgs.herdr}/share/herdr/skills/herdr/SKILL.md";
-    };
-  };
-}
+  }

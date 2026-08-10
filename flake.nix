@@ -211,7 +211,7 @@
       };
   in {
     nixosConfigurations =
-      inputs.nixpkgs.lib.getAttrs ["navis" "polaris" "polaris-baremetal"]
+      inputs.nixpkgs.lib.getAttrs ["navis" "polaris"]
       (mkConfigurations "nixos")
       // {
         polaris-bootstrap = inputs.nixpkgs.lib.nixosSystem {
@@ -261,7 +261,13 @@
               (writeScriptBin "build" ''
                 ${
                   if stdenv.isLinux
-                  then ''[ -f "hosts/$(hostname)/facter.json" ] || facter''
+                  then ''
+                    host_dir="hosts/$(hostname)"
+                    if ${pkgs.gnugrep}/bin/grep -Rqs 'facter\.reportPath' "$host_dir" \
+                      && [ ! -f "$host_dir/facter.json" ]; then
+                      facter
+                    fi
+                  ''
                   else ""
                 }
                 nix fmt

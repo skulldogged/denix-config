@@ -35,7 +35,7 @@ files; `git add` them before evaluating).
 
 ```sh
 nix develop   # enter the dev shell
-build         # nix fmt + nh os|darwin switch (generates facter.json first if missing)
+build         # nix fmt + nh os|darwin switch (generates required facter data first)
 facter        # (linux) regenerate hosts/<hostname>/facter.json — only after hardware changes
 up            # nix flake update
 nix fmt       # format + deadnix (treefmt: alejandra, stylua, taplo, jsonfmt)

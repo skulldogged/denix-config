@@ -10,7 +10,6 @@ delib.module {
 
   options.polaris = with delib; {
     enable = boolOption false;
-    bareMetal = boolOption false;
   };
 
   nixos.ifEnabled = {
@@ -50,7 +49,6 @@ delib.module {
 
       eternal-terminal.enable = true;
       protonmail-bridge.enable = true;
-      xe-guest-utilities.enable = !config.myconfig.polaris.bareMetal;
     };
 
     virtualisation = {

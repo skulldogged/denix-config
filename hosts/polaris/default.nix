@@ -1,9 +1,44 @@
-{delib, ...}:
+{
+  delib,
+  lib,
+  ...
+}:
 delib.host {
   name = "polaris";
 
   system = "x86_64-linux";
   type = "server";
+
+  nixos.networking = {
+    useDHCP = lib.mkOverride 40 false;
+
+    networkmanager = {
+      settings.main.no-auto-default = "*";
+
+      ensureProfiles.profiles.polaris-lan = {
+        ethernet.mac-address = "38:22:E2:0C:1E:5A";
+
+        connection = {
+          id = "polaris-lan";
+          type = "ethernet";
+          autoconnect = true;
+          autoconnect-priority = 100;
+        };
+
+        ipv4 = {
+          addresses = "192.168.1.82/24";
+          gateway = "192.168.1.1";
+          dns = "1.1.1.1;1.0.0.1;";
+          method = "manual";
+        };
+
+        ipv6 = {
+          addr-gen-mode = "stable-privacy";
+          method = "auto";
+        };
+      };
+    };
+  };
 
   myconfig = {
     polaris.enable = true;
@@ -43,7 +78,6 @@ delib.host {
       bun.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;
-      pi-coding-agent.enable = true;
 
       git = {
         enable = true;
