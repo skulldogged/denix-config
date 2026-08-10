@@ -3,6 +3,43 @@
   pkgs,
   ...
 }: let
+  # Herdr's tab API cannot provide an argv, but it can inject environment
+  # variables before launching the configured shell. Dispatch SSH here so
+  # remote tabs never start Fish or evaluate its interactive configuration.
+  herdrPaneShell = pkgs.writeShellApplication {
+    name = "herdr-pane-shell";
+    text = ''
+      if [[ -n "''${HERDR_SSH_HOST:-}" ]]; then
+        exec ${pkgs.lib.getExe pkgs.openssh} "$HERDR_SSH_HOST"
+      fi
+      exec ${pkgs.lib.getExe pkgs.fish} "$@"
+    '';
+  };
+
+  herdrRemoteSession = pkgs.writeShellApplication {
+    name = "herdr-remote-session";
+    runtimeInputs = [pkgs.herdr];
+    text = ''
+      target="''${1:-}"
+      if [[ -z "$target" ]]; then
+        echo "usage: herdr-remote-session SSH_TARGET" >&2
+        exit 2
+      fi
+
+      set +e
+      herdr --remote "$target"
+      status=$?
+      set -e
+
+      if [[ "$status" -ne 0 ]]; then
+        printf '\nRemote Herdr exited with status %s.\n' "$status" >&2
+        printf 'Press Enter to close this window.' >&2
+        IFS= read -r _ || true
+      fi
+      exit "$status"
+    '';
+  };
+
   herdrSshPicker = pkgs.writeShellApplication {
     name = "herdr-ssh-picker";
     runtimeInputs = with pkgs; [
@@ -12,8 +49,6 @@
       gawk
       gnused
       herdr
-      jq
-      openssh
       wezterm
     ];
     text = ''
@@ -48,7 +83,12 @@
           )
 
           while IFS= read -r -d "" file; do
-            awk 'NF > 0 && $1 !~ /^#/ { print $1 }' "$file"
+            awk '
+              NF > 0 && $1 !~ /^#/ {
+                hosts = ($1 ~ /^@/) ? $2 : $1
+                if (hosts != "") print hosts
+              }
+            ' "$file"
           done < <(
             find "$HOME/.ssh" -maxdepth 1 -type f \
               -name "known_hosts*" -print0
@@ -64,17 +104,30 @@
         }
       ' | sort -u)"
 
-      if ! selection="$(
+      fzf_status=0
+      selection="$(
         printf '%s\n' "$candidates" |
           fzf \
             --print-query \
             --prompt="SSH host> " \
             --header="Select a host, or type any SSH target and press Enter"
-      )"; then
-        exit 0
-      fi
+      )" || fzf_status=$?
 
-      host="$(printf '%s\n' "$selection" | awk 'NF { selected = $0 } END { print selected }')"
+      case "$fzf_status" in
+        0)
+          host="$(printf '%s\n' "$selection" | awk 'NF { selected = $0 } END { print selected }')"
+          ;;
+        1)
+          # fzf returns 1 for an unmatched query but still prints that query.
+          host="$(printf '%s\n' "$selection" | awk 'NF { print; exit }')"
+          ;;
+        130)
+          exit 0
+          ;;
+        *)
+          pause_on_error "The SSH host picker failed with status $fzf_status."
+          ;;
+      esac
       if [[ -z "$host" ]]; then
         exit 0
       fi
@@ -98,29 +151,18 @@
           )"; then
             pause_on_error "$response"
           fi
-
-          if ! pane_id="$(
-            printf '%s\n' "$response" |
-              jq -er '.result.root_pane.pane_id'
-          )"; then
-            pause_on_error "Herdr returned an unexpected tab-create response."
-          fi
-
-          # Expand HERDR_SSH_HOST in the new tab rather than in this popup.
-          # shellcheck disable=SC2016
-          if ! herdr pane run "$pane_id" 'ssh "$HERDR_SSH_HOST"'; then
-            pause_on_error "The SSH command could not be started in the new tab."
-          fi
           ;;
         remote)
-          exec wezterm start -- \
+          if ! wezterm start -- \
             env \
               -u HERDR_ENV \
               -u HERDR_PANE_ID \
               -u HERDR_TAB_ID \
               -u HERDR_WORKSPACE_ID \
               -u HERDR_SOCKET_PATH \
-              herdr --remote "$host"
+              ${pkgs.lib.getExe herdrRemoteSession} "$host"; then
+            pause_on_error "WezTerm could not open the remote Herdr window."
+          fi
           ;;
       esac
     '';
@@ -145,7 +187,7 @@ in
           theme.name = "catppuccin";
 
           terminal = {
-            default_shell = "${pkgs.fish}/bin/fish";
+            default_shell = pkgs.lib.getExe herdrPaneShell;
             shell_mode = "non_login";
             new_cwd = "home";
           };
@@ -191,7 +233,7 @@ in
                 height = "70%";
               }
               {
-                key = "ctrl+shift+r";
+                key = "ctrl+shift+g";
                 type = "popup";
                 description = "open a remote Herdr session in another WezTerm window";
                 command = "${pkgs.lib.getExe herdrSshPicker} remote";
@@ -203,6 +245,10 @@ in
 
           ui = {
             sidebar_width = 28;
+            sidebar.agents.rows = [
+              ["state_icon" "workspace" "tab"]
+              ["agent" "$summary"]
+            ];
             hide_tab_bar_when_single_tab = true;
             prompt_new_tab_name = false;
             show_agent_labels_on_pane_borders = true;
@@ -214,6 +260,10 @@ in
           };
 
           session.resume_agents_on_restore = true;
+
+          # Herdr must decode pane Kitty graphics and repaint them into the
+          # Kitty-compatible outer terminal; raw escape passthrough is not enough.
+          experimental.kitty_graphics = true;
         };
       };
 

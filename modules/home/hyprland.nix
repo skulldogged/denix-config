@@ -244,6 +244,7 @@ delib.module {
           };
 
           plugin.gloview = {
+            anchor = "left";
             layout = "rows";
 
             # GloView otherwise paints an opaque card behind every live

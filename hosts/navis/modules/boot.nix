@@ -1,6 +1,7 @@
 {
   config,
   delib,
+  lib,
   pkgs,
   ...
 }: let
@@ -160,7 +161,12 @@ in
         };
 
         initrd = {
-          availableKernelModules = ["tpm_tis"];
+          availableKernelModules = [
+            "nvme"
+            "tpm_tis"
+            "xhci_pci"
+          ];
+          kernelModules = ["nvidia"];
 
           luks.devices."enc" = {
             device = "/dev/disk/by-uuid/9952fcd1-46eb-4c9c-ab7d-361d31fdb9a2";
@@ -213,7 +219,11 @@ in
         kernelModules = ["i915"];
       };
 
-      hardware.graphics.extraPackages = [pkgs.intel-media-driver];
+      hardware = {
+        enableRedistributableFirmware = true;
+        cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+        graphics.extraPackages = [pkgs.intel-media-driver];
+      };
 
       services.udev.extraRules = ''
         ACTION=="change", SUBSYSTEM=="pci", KERNEL=="0000:04:00.0", ATTR{vendor}=="0x8086", ATTR{device}=="0x2725", ENV{EVENT}=="INACCESSIBLE", RUN+="${config.systemd.package}/bin/systemctl --no-block start navis-wifi-recovery.service"

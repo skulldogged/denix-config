@@ -8,7 +8,6 @@ delib.module {
 
   nixos.always.imports = [
     inputs.sops-nix.nixosModules.sops
-    inputs.nixos-facter-modules.nixosModules.facter
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
   ];

@@ -36,6 +36,16 @@ delib.module {
       toolChrome = "theme";
       userMessageBox = "theme";
     };
+    blackholeDefaults = {
+      compactAfterTokens = 150000;
+      compaction = "auto";
+      compactionEngine = "blackhole";
+      debug = false;
+      debugLog = false;
+      memory = true;
+      midRunCompaction = "off";
+      tailBehavior = "pi-default";
+    };
     piOpaque = pkgs.pi-coding-agent.overrideAttrs (old: rec {
       version = "0.84.0";
       src = pkgs.fetchFromGitHub {
@@ -113,19 +123,28 @@ delib.module {
       file = {
         ".pi/agent/bin/pi".source = "${piOpaque}/bin/pi";
         ".pi/agent/AGENTS.md".text = ''
-          # Collaborating agents
+          # Subagents
 
-          For every non-trivial task, proactively use the `collaborating-agents-system`
-          skill and the collaborating-agents tools without waiting for the user to ask.
-          Read the skill before doing substantial work, then spawn and coordinate
-          collaborators for independent work that benefits from parallel exploration,
-          implementation, testing, or review.
+          For every non-trivial task, proactively use the `pi-subagents` skill and
+          `subagent` tool without waiting for the user to ask. Read the skill before
+          delegating, and use focused children for codebase reconnaissance, independent
+          research, implementation, verification, or fresh review when they materially
+          improve the result.
 
-          Handle genuinely small or strictly linear tasks directly when delegation would
-          add more overhead than value. Reserve shared write targets before parallel edits,
-          avoid conflicting changes, and keep the main agent responsible for reviewing and
-          integrating collaborators' results into one coherent answer.
+          Keep the parent session responsible for orchestration and the final answer. Use
+          one writer per working directory, prefer fresh-context reviewers, and give each
+          parallel child a distinct, self-contained assignment. Handle genuinely small or
+          strictly linear tasks directly when delegation would add more overhead than value.
         '';
+        ".pi/agent/extensions/subagent/config.json".text = builtins.toJSON {
+          artifactDir = "session";
+          asyncWidget = false;
+          fleetView = true;
+          fleetViewPlacement = "aboveEditor";
+          missions.enabled = false;
+          scheduledRuns.enabled = false;
+          toolDescriptionMode = "compact";
+        };
         ".pi/agent/themes/catppuccin-mocha-opaque.json".source =
           ../../files/pi/themes/catppuccin-mocha-opaque.json;
         ".pi-lens/config.json".text = builtins.toJSON {
@@ -160,6 +179,34 @@ delib.module {
           $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tempPath" "$settingsPath"
         fi
       '';
+
+      # Blackhole's settings overlay writes this file at runtime. Seed a regular,
+      # user-owned file so experiments remain writable while these defaults are
+      # restored whenever the file is missing or still managed as a symlink.
+      activation.piBlackholeMutableConfig = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
+        configDir="$HOME/.pi/agent/pi-blackhole"
+        configPath="$configDir/pi-blackhole-config.json"
+        seedPath=${pkgs.lib.escapeShellArg (pkgs.writeText "pi-blackhole-defaults.json" (builtins.toJSON blackholeDefaults))}
+
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$configDir"
+        tempPath="$(${pkgs.coreutils}/bin/mktemp "$configDir/.pi-blackhole-config.json.XXXXXX")"
+        trap '${pkgs.coreutils}/bin/rm -f "$tempPath"' EXIT
+
+        if [[ -L "$configPath" || ! -e "$configPath" ]]; then
+          ${pkgs.coreutils}/bin/cp "$seedPath" "$tempPath"
+        elif [[ -f "$configPath" ]]; then
+          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$seedPath" "$configPath" > "$tempPath"
+        else
+          errorEcho "Blackhole config is not a regular file: $configPath"
+          exit 1
+        fi
+
+        ${pkgs.coreutils}/bin/chmod 0600 "$tempPath"
+        if [[ -L "$configPath" ]] || ! ${pkgs.diffutils}/bin/cmp -s "$tempPath" "$configPath"; then
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$configPath"
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tempPath" "$configPath"
+        fi
+      '';
     };
 
     programs.pi-coding-agent = {
@@ -185,22 +232,14 @@ delib.module {
           reserveTokens = 49152;
           keepRecentTokens = 20000;
         };
-        "pi-slipstream-compact" = {
-          enabled = true;
-          autoTrigger = true;
-          replaceDefaultCompact = true;
-          triggerContextPercent = 0.6;
-          retainArtifacts = false;
-        };
-
         packages = [
           "${piComfyUi}"
-          "npm:@baochunli/pi-collaborating-agents"
           "npm:@owlburtoe/pi-claudify"
           "npm:@mrclrchtr/supi-ask-user"
-          "npm:pi-slipstream-compact@0.1.7"
+          "npm:pi-blackhole@0.4.5"
           "npm:pi-lens"
           "npm:pi-simplify"
+          "npm:pi-subagents@0.45.1"
           "npm:pi-undo-redo"
           "npm:pi-web-access"
         ];

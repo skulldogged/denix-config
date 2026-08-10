@@ -1,5 +1,6 @@
 {
   delib,
+  lib,
   pkgs,
   ...
 }:
@@ -11,10 +12,14 @@ delib.module {
   };
 
   nixos.ifEnabled = {
-    facter.reportPath = ../facter.json;
-
     networking = {
       hosts."37.27.111.236" = ["builder"];
+
+      interfaces = {
+        enp5s0.useDHCP = lib.mkDefault true;
+        wlp4s0.useDHCP = lib.mkDefault true;
+      };
+
       networkmanager.wifi.powersave = false;
     };
 
@@ -34,7 +39,7 @@ delib.module {
           ForwardAgent yes
           IdentitiesOnly yes
           IdentityFile ~/.ssh/id_ecdsa_polaris_tpm.pub
-          IdentityAgent ''${XDG_RUNTIME_DIR}/ssh-tpm-agent.sock
+          IdentityAgent /run/user/%i/ssh-tpm-agent.sock
       '';
     };
 

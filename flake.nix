@@ -20,7 +20,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     nixvim.url = "github:skulldogged/nixvim-new";
@@ -240,46 +239,25 @@
     devShells = forAllSystems (
       system: let
         pkgs = import inputs.nixpkgs {inherit system;};
-
-        facterScript = pkgs.writeScriptBin "facter" ''
-          sudo nix run \
-            --option experimental-features "nix-command flakes" \
-            --option extra-substituters https://numtide.cachix.org \
-            --option extra-trusted-public-keys numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE= \
-            github:numtide/nixos-facter -- -o hosts/$(hostname)/facter.json
-        '';
       in {
         default = pkgs.mkShellNoCC {
-          packages = with pkgs;
-            [
-              alejandra
-              git
-              lua-language-server
-              nh
-              statix
+          packages = with pkgs; [
+            alejandra
+            git
+            lua-language-server
+            nh
+            statix
 
-              (writeScriptBin "build" ''
-                ${
-                  if stdenv.isLinux
-                  then ''
-                    host_dir="hosts/$(hostname)"
-                    if ${pkgs.gnugrep}/bin/grep -Rqs 'facter\.reportPath' "$host_dir" \
-                      && [ ! -f "$host_dir/facter.json" ]; then
-                      facter
-                    fi
-                  ''
-                  else ""
-                }
-                nix fmt
-                nh ${
-                  if stdenv.isDarwin
-                  then "darwin"
-                  else "os"
-                } switch
-              '')
-              (writeScriptBin "up" "nix flake update")
-            ]
-            ++ lib.optionals stdenv.isLinux [facterScript];
+            (writeScriptBin "build" ''
+              nix fmt
+              nh ${
+                if stdenv.isDarwin
+                then "darwin"
+                else "os"
+              } switch
+            '')
+            (writeScriptBin "up" "nix flake update")
+          ];
         };
       }
     );
