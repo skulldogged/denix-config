@@ -1,0 +1,48 @@
+diff --git a/packages/coding-agent/src/modes/interactive/interactive-mode.ts b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
+--- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
++++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
+@@ -763,8 +763,8 @@
+ 	private stopInteractiveTui(): void {
+ 		if (this.renderer.mode === "fullscreen") {
+ 			while (this.renderer.hasOverlayEntries) this.renderer.hideOverlay();
+-			this.switchTuiMode("regular", false, false);
+-			this.renderer.renderNow();
++			this.ui.stop({ preserveScreen: true });
++			return;
+ 		}
+ 		this.ui.stop();
+ 	}
+@@ -849,14 +849,8 @@
+ 
+ 		// Keep one component tree and remount it when changing renderers.
+ 		this.renderWidgets(); // Initialize with default spacer
+-		this.transcriptScrollView = new TuiLayouts.ScrollView(this.documentContainer, {
+-			follow: "end",
+-			primary: true,
+-			overscroll: "chain",
+-			scrollbar: this.settingsManager.getFullscreenScrollbar(),
+-			scrollbarStyle: (text) => theme.bg("scrollbarThumb", text),
+-		});
+-		const dock = new TuiLayouts.VStack([
++		const fullscreenDocument = new TuiLayouts.VStack([
++			{ component: this.documentContainer, shrink: 1, minSize: 0 },
+ 			{ component: this.pendingMessagesContainer, shrink: 1, minSize: 0 },
+ 			{ component: this.statusContainer, shrink: 1, minSize: 0 },
+ 			{ component: this.widgetContainerAbove, shrink: 1, minSize: 0 },
+@@ -864,9 +858,15 @@
+ 			{ component: this.widgetContainerBelow, shrink: 1, minSize: 0 },
+ 			{ component: this.footerContainer, shrink: 1, minSize: 1 },
+ 		]);
++		this.transcriptScrollView = new TuiLayouts.ScrollView(fullscreenDocument, {
++			follow: "end",
++			primary: true,
++			overscroll: "chain",
++			scrollbar: this.settingsManager.getFullscreenScrollbar(),
++			scrollbarStyle: (text) => theme.bg("scrollbarThumb", text),
++		});
+ 		this.fullscreenLayoutRoot = new TuiLayouts.VStack([
+ 			{ component: this.transcriptScrollView, basis: 0, grow: 1, shrink: 1, minSize: 1 },
+-			{ component: dock, basis: "auto", grow: 0, shrink: 1, minSize: 1 },
+ 		]);
+ 		this.mountInteractiveTui(this.renderer, [
+ 			this.documentContainer,

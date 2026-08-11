@@ -13,16 +13,6 @@ delib.module {
   };
 
   home.ifEnabled = let
-    piComfyUi = pkgs.applyPatches {
-      name = "pi-comfy-ui-0.3.0-pi-0.84";
-      src = pkgs.fetchFromGitHub {
-        owner = "adanft";
-        repo = "pi-comfy-ui";
-        rev = "4b7251f2ccde4df46e6e2c77a93873d6056141cf";
-        hash = "sha256-f0DaC8te+X0hnWehL4FSIKk3uy4M/uogqYRUCIIhCzM=";
-      };
-      patches = [./pi-comfy-ui-pi-0.84.patch];
-    };
     claudifyDefaults = {
       accentColor = "theme";
       bashSemanticDisplay = true;
@@ -46,6 +36,314 @@ delib.module {
       midRunCompaction = "off";
       tailBehavior = "pi-default";
     };
+    piFishProfile = pkgs.writeText "pi-fish-profile.fish" ''
+      # Commands entered with Pi's ! shortcut run in an interactive Fish shell.
+      # Keep Pi-specific shell behavior here instead of changing the normal
+      # Home Manager Fish configuration for every non-interactive invocation.
+      set --global --export PI_MANUAL_SHELL 1
+    '';
+    piFishShell = pkgs.writeShellScript "pi-fish-shell" ''
+      exec ${pkgs.fish}/bin/fish \
+        --interactive \
+        --init-command ${pkgs.lib.escapeShellArg "source ${piFishProfile}"} \
+        "$@"
+    '';
+    piFishExtension = pkgs.writeText "pi-fish-shell.ts" ''
+      import {
+        createLocalBashOperations,
+        type ExtensionAPI,
+      } from "@earendil-works/pi-coding-agent";
+
+      const fishOperations = createLocalBashOperations({
+        shellPath: "${piFishShell}",
+      });
+
+      export default function (pi: ExtensionAPI): void {
+        // Scope Fish to commands the user enters with ! or !!. Agent tool calls
+        // keep Pi's normal shell backend and its predictable Bash semantics.
+        pi.on("user_bash", () => ({ operations: fishOperations }));
+      }
+    '';
+    piFishPackage = pkgs.linkFarm "pi-fish-shell-1.0.0" [
+      {
+        name = "extension.ts";
+        path = piFishExtension;
+      }
+      {
+        name = "package.json";
+        path = pkgs.writeText "pi-fish-shell-package.json" (builtins.toJSON {
+          name = "pi-fish-shell";
+          version = "1.0.0";
+          pi.extensions = ["./extension.ts"];
+        });
+      }
+    ];
+    piMoreBelowExtension = pkgs.writeText "more-below.ts" ''
+      import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+      import { TuiAltScreen } from "@earendil-works/pi-tui";
+
+      const WIDGET_ID = "more-messages-below";
+
+      function labelForWidth(width: number): string {
+        if (width >= 42) return "↓ more messages below · End to jump";
+        if (width >= 24) return "↓ more messages below";
+        if (width >= 12) return "↓ more below";
+        return "↓";
+      }
+
+      export default function moreBelow(pi: ExtensionAPI): void {
+        pi.on("session_start", (_event, ctx) => {
+          if (ctx.mode !== "tui") return;
+
+          ctx.ui.setWidget(
+            WIDGET_ID,
+            (tui, theme) => ({
+              render(width: number): string[] {
+                // The factory receives Pi's stable TUI proxy. Its prototype and
+                // properties follow the active renderer when /settings switches modes.
+                if (!(tui instanceof TuiAltScreen) || tui.isFollowingOutput) return [];
+
+                const label = labelForWidth(width);
+                return [theme.bold(theme.fg("warning", label))];
+              },
+              invalidate(): void {},
+            }),
+            { placement: "aboveEditor" },
+          );
+        });
+
+        pi.on("session_shutdown", (_event, ctx) => {
+          if (ctx.mode === "tui") ctx.ui.setWidget(WIDGET_ID, undefined);
+        });
+      }
+    '';
+    piSubagents =
+      pkgs.runCommand "pi-subagents-0.45.1-prompt-status" {
+        nativeBuildInputs = [pkgs.patch];
+      } ''
+        cp -R ${
+          pkgs.fetchzip {
+            url = "https://registry.npmjs.org/pi-subagents/-/pi-subagents-0.45.1.tgz";
+            hash = "sha256-tp4ToGLz9NIpAzdCOGQNV+0H0akPsFFh1FZQlVFAEdY=";
+          }
+        }/. "$out"
+        chmod -R u+w "$out"
+        patch --directory="$out" -p1 < ${./pi-subagents-prompt-status.patch}
+
+        mkdir -p "$out/node_modules"
+        ln -s ${
+          pkgs.fetchzip {
+            url = "https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz";
+            hash = "sha256-oPonUKfp30HUGa5NRgyRoVqpf+s5ztkB1YpUNOAUJIA=";
+          }
+        } "$out/node_modules/jiti"
+        ln -s ${
+          pkgs.fetchzip {
+            url = "https://registry.npmjs.org/typebox/-/typebox-1.1.38.tgz";
+            hash = "sha256-0Drk/INyZFu562LoQa5wrB+b0DTQoTaotbI/spOCHVI=";
+          }
+        } "$out/node_modules/typebox"
+        ln -s ${
+          pkgs.fetchzip {
+            url = "https://registry.npmjs.org/yaml/-/yaml-2.8.3.tgz";
+            hash = "sha256-sslihpXhi8dVxXJ8svHg4lpKGdGL74Oqqs5J/P/jvDg=";
+          }
+        } "$out/node_modules/yaml"
+      '';
+    piStarshipExtension = pkgs.writeText "extension.ts" ''
+      import { execFile } from "node:child_process";
+      import { basename } from "node:path";
+      import { promisify } from "node:util";
+      import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+      import { Text } from "@earendil-works/pi-tui";
+      import { StarshipEditor, tk } from "./index.ts";
+
+      const runFile = promisify(execFile);
+
+      type FleetStatusSummary = {
+        activeAgents: number;
+      };
+
+      function renderPiDetails(
+        pi: ExtensionAPI,
+        ctx: any,
+        shellPrompt: string,
+        fleetStatus: FleetStatusSummary | undefined,
+      ): string {
+        const theme = ctx.ui.theme;
+        const parts: string[] = [
+          shellPrompt || theme.bold(theme.fg("syntaxFunction", basename(ctx.cwd))),
+        ];
+        const model = ctx.model?.id;
+
+        if (model) {
+          const provider = ctx.model?.provider ?? "";
+          const providerIcons: Record<string, string> = {
+            "openai-codex": "",
+            openai: "",
+            anthropic: "",
+            "github-copilot": "",
+            "github-copilot-enterprise": "",
+          };
+          const icon = providerIcons[provider] ?? "󰚩";
+          parts.push(" via ", theme.bold(theme.fg("syntaxString", icon + " " + model)));
+        }
+
+        const thinking = pi.getThinkingLevel();
+        if (thinking !== "off") {
+          const colors: Record<string, string> = {
+            minimal: "thinkingMinimal",
+            low: "thinkingLow",
+            medium: "thinkingMedium",
+            high: "thinkingHigh",
+            xhigh: "thinkingXhigh",
+          };
+          parts.push(" ", theme.bold(theme.fg(colors[thinking] ?? "warning", "󱐋 " + thinking)));
+        }
+
+        if (fleetStatus && fleetStatus.activeAgents > 0) {
+          const label = fleetStatus.activeAgents + " active " + (fleetStatus.activeAgents === 1 ? "agent" : "agents");
+          parts.push(
+            theme.fg("dim", " · "),
+            theme.fg("muted", label),
+          );
+        }
+
+        let input = 0;
+        let output = 0;
+        let cacheRead = 0;
+        for (const entry of ctx.sessionManager.getBranch()) {
+          if (entry.type !== "message" || entry.message.role !== "assistant") continue;
+          input += entry.message.usage.input ?? 0;
+          output += entry.message.usage.output ?? 0;
+          cacheRead += entry.message.usage.cacheRead ?? 0;
+        }
+
+        parts.push(theme.fg("dim", " · "));
+        parts.push(
+          theme.fg("syntaxFunction", "↑ " + tk(input)) +
+            (cacheRead > 0 ? theme.fg("dim", "/" + tk(cacheRead)) : "") +
+            " " +
+            theme.fg("syntaxString", "↓ " + tk(output)),
+        );
+        const usage = ctx.getContextUsage();
+        if (usage) {
+          const limit = ctx.model?.contextWindow ?? usage.limit;
+          const percent = limit > 0 ? (usage.tokens / limit) * 100 : 0;
+          const color = limit > 0 ? (percent > 85 ? "error" : percent > 60 ? "warning" : "success") : "dim";
+          parts.push(
+            theme.fg("dim", " · "),
+            theme.fg(color, "󰍛 " + tk(usage.tokens) + "/" + (limit > 0 ? tk(limit) : "???")),
+          );
+        }
+
+        return parts.join("");
+      }
+
+      export default function (pi: ExtensionAPI): void {
+        let shellPrompt = "";
+        let fleetStatus: FleetStatusSummary | undefined;
+        let currentContext: any;
+        let refreshGeneration = 0;
+        let bashTimer: ReturnType<typeof setTimeout> | undefined;
+
+        const update = (ctx: any) => {
+          currentContext = ctx;
+          const line = renderPiDetails(pi, ctx, shellPrompt, fleetStatus);
+          ctx.ui.setWidget("starship-info", () => new Text(line, 0, 0));
+        };
+
+        pi.events.on("subagent:fleet-status", (value) => {
+          if (
+            value &&
+            typeof value === "object" &&
+            Number.isFinite((value as FleetStatusSummary).activeAgents)
+          ) {
+            fleetStatus = value as FleetStatusSummary;
+          } else {
+            fleetStatus = undefined;
+          }
+          if (currentContext?.hasUI) update(currentContext);
+        });
+
+        const refreshShellPrompt = async (ctx: any) => {
+          const generation = ++refreshGeneration;
+          try {
+            const { stdout } = await runFile(
+              "${pkgs.starship}/bin/starship",
+              [
+                "prompt",
+                "--status", "0",
+                "--pipestatus", "0",
+                "--jobs", "0",
+                "--cmd-duration", "0",
+                "--keymap", "insert",
+                "--terminal-width", "4096",
+              ],
+              {
+                cwd: ctx.cwd,
+                env: { ...process.env, STARSHIP_SHELL: "fish" },
+                timeout: 1500,
+              },
+            );
+            if (generation !== refreshGeneration) return;
+            shellPrompt = stdout
+              .replace(/\u001b\[J/g, "")
+              .split("\n")
+              .find((line) => line.trim().length > 0)
+              ?.trim() ?? "";
+          } catch {
+            if (generation !== refreshGeneration) return;
+            shellPrompt = "";
+          }
+          update(ctx);
+        };
+
+        pi.on("session_start", (_event, ctx) => {
+          if (!ctx.hasUI) return;
+
+          ctx.ui.setEditorComponent(
+            (tui, editorTheme, keybindings) =>
+              new StarshipEditor(tui, editorTheme, keybindings, undefined, ctx),
+          );
+          ctx.ui.setFooter(() => ({
+            invalidate() {},
+            render() {
+              return [];
+            },
+          }));
+          update(ctx);
+          void refreshShellPrompt(ctx);
+        });
+
+        pi.on("session_switch", (_event, ctx) => void refreshShellPrompt(ctx));
+        pi.on("agent_start", (_event, ctx) => update(ctx));
+        pi.on("turn_end", (_event, ctx) => update(ctx));
+        pi.on("agent_end", (_event, ctx) => update(ctx));
+        pi.on("model_select", (_event, ctx) => update(ctx));
+        pi.on("user_bash", (_event, ctx) => {
+          if (bashTimer) clearTimeout(bashTimer);
+          bashTimer = setTimeout(() => void refreshShellPrompt(ctx), 300);
+        });
+      }
+    '';
+    piStarship = pkgs.runCommand "pi-starship-1.0.0-earendil" {nativeBuildInputs = [pkgs.jq];} ''
+      cp -R ${
+        pkgs.fetchzip {
+          url = "https://registry.npmjs.org/@elianiva/pi-starship/-/pi-starship-1.0.0.tgz";
+          hash = "sha256-m/lOx6ddpFMMeMU/MFz7y4L41OMwQR2Vmawg/shT4I8=";
+        }
+      }/. "$out"
+      chmod -R u+w "$out"
+
+      substituteInPlace "$out/index.ts" \
+        --replace-fail '@mariozechner/pi-ai' '@earendil-works/pi-ai' \
+        --replace-fail '@mariozechner/pi-coding-agent' '@earendil-works/pi-coding-agent' \
+        --replace-fail '@mariozechner/pi-tui' '@earendil-works/pi-tui'
+      cp ${piStarshipExtension} "$out/extension.ts"
+      jq '.pi = { extensions: ["./extension.ts"] }' "$out/package.json" > "$out/package.json.new"
+      mv "$out/package.json.new" "$out/package.json"
+    '';
     piOpaque = pkgs.pi-coding-agent.overrideAttrs (old: rec {
       version = "0.84.0";
       src = pkgs.fetchFromGitHub {
@@ -73,10 +371,9 @@ delib.module {
       patches =
         (old.patches or [])
         ++ [
-          ./pi-opaque-background.patch
           ./pi-wheel-scroll-lines.patch
-          ./pi-comfy-default-editor.patch
-          ./pi-catppuccin-default-footer.patch
+          ./pi-starship-default-prompt.patch
+          ./pi-fullscreen-scrollable-prompt.patch
         ];
       buildPhase = ''
         runHook preBuild
@@ -140,13 +437,14 @@ delib.module {
           artifactDir = "session";
           asyncWidget = false;
           fleetView = true;
-          fleetViewPlacement = "aboveEditor";
+          fleetViewPlacement = "prompt";
           missions.enabled = false;
           scheduledRuns.enabled = false;
           toolDescriptionMode = "compact";
         };
-        ".pi/agent/themes/catppuccin-mocha-opaque.json".source =
-          ../../files/pi/themes/catppuccin-mocha-opaque.json;
+        ".pi/agent/extensions/more-below.ts".source = piMoreBelowExtension;
+        ".pi/agent/themes/catppuccin-mocha.json".source =
+          ../../files/pi/themes/catppuccin-mocha.json;
         ".pi-lens/config.json".text = builtins.toJSON {
           widget.visible = false;
         };
@@ -226,20 +524,24 @@ delib.module {
           "${pkgs.bun}/bin/bun"
           "--minimum-release-age=0"
         ];
-        theme = "catppuccin-mocha-opaque";
+        theme = "catppuccin-mocha";
         tuiMode = "fullscreen";
         compaction = {
           reserveTokens = 49152;
           keepRecentTokens = 20000;
         };
         packages = [
-          "${piComfyUi}"
           "npm:@owlburtoe/pi-claudify"
+          # This package owns the final editor, widget, and hidden footer state.
+          "${piStarship}"
+          # Keep this after pi-starship so its user_bash refresh handler runs
+          # before Fish supplies the execution backend.
+          "${piFishPackage}"
           "npm:@mrclrchtr/supi-ask-user"
           "npm:pi-blackhole@0.4.5"
           "npm:pi-lens"
           "npm:pi-simplify"
-          "npm:pi-subagents@0.45.1"
+          "${piSubagents}"
           "npm:pi-undo-redo"
           "npm:pi-web-access"
         ];

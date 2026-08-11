@@ -18,7 +18,6 @@ delib.module {
       git-cliff.enable = true;
       jq.enable = true;
       ripgrep.enable = true;
-      starship.enable = true;
 
       atuin = {
         enable = true;
@@ -47,6 +46,11 @@ delib.module {
           bg = mkForce "-1";
           "bg+" = mkForce "-1";
         };
+      };
+
+      starship = {
+        enable = true;
+        settings.nix_shell.symbol = " ";
       };
 
       zoxide = {

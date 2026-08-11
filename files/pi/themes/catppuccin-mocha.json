@@ -1,5 +1,5 @@
 {
-  "name": "catppuccin-mocha-opaque",
+  "name": "catppuccin-mocha",
   "vars": {
     "rosewater": "#f5e0dc",
     "flamingo": "#f2cdcd",
@@ -29,7 +29,6 @@
     "crust": "#11111b"
   },
   "colors": {
-    "background": "base",
     "accent": "mauve",
     "border": "surface2",
     "borderAccent": "lavender",

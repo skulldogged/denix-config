@@ -49,7 +49,13 @@ delib.module {
           ++ (with nerd-fonts; [
             iosevka
             jetbrains-mono
-            symbols-only
+            (symbols-only.overrideAttrs (_: {
+              version = "3.5.0";
+              src = pkgs.fetchurl {
+                url = "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.0/NerdFontsSymbolsOnly.tar.xz";
+                hash = "sha256-t+8ig0YrQ18f6R1yncQS1dvjQmndLH9OHYA+QQXI2IM=";
+              };
+            }))
             ubuntu-mono
           ]);
       };

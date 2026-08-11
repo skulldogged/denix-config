@@ -3,14 +3,23 @@
   pkgs,
   ...
 }: let
-  # Herdr's tab API cannot provide an argv, but it can inject environment
-  # variables before launching the configured shell. Dispatch SSH here so
-  # remote tabs never start Fish or evaluate its interactive configuration.
+  herdr = pkgs.herdr.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [./herdr-workspace-picker.patch];
+  });
+
+  # Herdr persists a workspace's launch environment and injects it into the
+  # root pane, later tabs and splits, and restored panes. Dispatch SSH here so
+  # remote spaces never start Fish or evaluate its interactive configuration.
   herdrPaneShell = pkgs.writeShellApplication {
     name = "herdr-pane-shell";
     text = ''
-      if [[ -n "''${HERDR_SSH_HOST:-}" ]]; then
-        exec ${pkgs.lib.getExe pkgs.openssh} "$HERDR_SSH_HOST"
+      host="''${HERDR_SSH_HOST:-}"
+      if [[ -n "$host" ]]; then
+        if [[ "$host" == -* || "$host" =~ [[:space:]] ]]; then
+          printf 'Invalid SSH target in this Herdr space: %s\n' "$host" >&2
+          exit 2
+        fi
+        exec ${pkgs.lib.getExe pkgs.openssh} "$host"
       fi
       exec ${pkgs.lib.getExe pkgs.fish} "$@"
     '';
@@ -18,7 +27,7 @@
 
   herdrRemoteSession = pkgs.writeShellApplication {
     name = "herdr-remote-session";
-    runtimeInputs = [pkgs.herdr];
+    runtimeInputs = [herdr];
     text = ''
       target="''${1:-}"
       if [[ -z "$target" ]]; then
@@ -55,9 +64,9 @@
       mode="''${1:-}"
 
       case "$mode" in
-        tab | remote) ;;
+        workspace | remote) ;;
         *)
-          echo "usage: herdr-ssh-picker tab|remote" >&2
+          echo "usage: herdr-ssh-picker workspace|remote" >&2
           exit 2
           ;;
       esac
@@ -104,13 +113,21 @@
         }
       ' | sort -u)"
 
+      local_choice="Local (this machine)"
+      picker_input="$candidates"
+      picker_header="Select a host, or type any SSH target and press Enter"
+      if [[ "$mode" == workspace ]]; then
+        picker_input="$(printf '%s\n%s\n' "$local_choice" "$candidates")"
+        picker_header="Select local or an SSH host for the new space"
+      fi
+
       fzf_status=0
       selection="$(
-        printf '%s\n' "$candidates" |
+        printf '%s\n' "$picker_input" |
           fzf \
             --print-query \
-            --prompt="SSH host> " \
-            --header="Select a host, or type any SSH target and press Enter"
+            --prompt="Machine> " \
+            --header="$picker_header"
       )" || fzf_status=$?
 
       case "$fzf_status" in
@@ -131,20 +148,22 @@
       if [[ -z "$host" ]]; then
         exit 0
       fi
-      if [[ "$host" == -* || "$host" =~ [[:space:]] ]]; then
+
+      local_selection=false
+      if [[ "$mode" == workspace && "$host" == "$local_choice" ]]; then
+        local_selection=true
+      elif [[ "$host" == -* || "$host" =~ [[:space:]] ]]; then
         pause_on_error "SSH targets cannot begin with '-' or contain whitespace."
       fi
 
       case "$mode" in
-        tab)
-          workspace_id="''${HERDR_ACTIVE_WORKSPACE_ID:-}"
-          if [[ -z "$workspace_id" ]]; then
-            pause_on_error "Herdr did not provide an active workspace."
-          fi
-
-          if ! response="$(
-            herdr tab create \
-              --workspace "$workspace_id" \
+        workspace)
+          if [[ "$local_selection" == true ]]; then
+            if ! response="$(herdr workspace create --focus 2>&1)"; then
+              pause_on_error "$response"
+            fi
+          elif ! response="$(
+            herdr workspace create \
               --label "ssh:$host" \
               --env "HERDR_SSH_HOST=$host" \
               --focus 2>&1
@@ -180,7 +199,7 @@ in
       # reloading the running server when its generated config changes.
       programs.herdr = {
         enable = true;
-        package = pkgs.herdr;
+        package = herdr;
         settings = {
           onboarding = false;
 
@@ -207,6 +226,7 @@ in
             focus_pane_right = ["prefix+l" "ctrl+shift+l"];
             previous_tab = ["prefix+p" "ctrl+shift+tab"];
             next_tab = ["prefix+n" "ctrl+tab"];
+            new_workspace = ["prefix+shift+n" "ctrl+shift+s"];
             new_tab = ["prefix+c" "ctrl+shift+t"];
             switch_tab = ["prefix+1..9" "ctrl+shift+1..9"];
             split_vertical = ["prefix+v" "ctrl+shift+enter"];
@@ -220,17 +240,9 @@ in
                 type = "shell";
                 description = "open the focused pane in another WezTerm window";
                 command = ''
-                  terminal_id="$(${pkgs.lib.getExe pkgs.herdr} pane get "$HERDR_ACTIVE_PANE_ID" | ${pkgs.lib.getExe pkgs.jq} -r '.result.pane.terminal_id')"
-                  exec ${pkgs.lib.getExe pkgs.wezterm} start -- ${pkgs.lib.getExe pkgs.herdr} terminal attach "$terminal_id"
+                  terminal_id="$(${pkgs.lib.getExe herdr} pane get "$HERDR_ACTIVE_PANE_ID" | ${pkgs.lib.getExe pkgs.jq} -r '.result.pane.terminal_id')"
+                  exec ${pkgs.lib.getExe pkgs.wezterm} start -- ${pkgs.lib.getExe herdr} terminal attach "$terminal_id"
                 '';
-              }
-              {
-                key = "ctrl+shift+s";
-                type = "popup";
-                description = "open an SSH host in a new tab";
-                command = "${pkgs.lib.getExe herdrSshPicker} tab";
-                width = "70%";
-                height = "70%";
               }
               {
                 key = "ctrl+shift+g";
@@ -245,6 +257,7 @@ in
 
           ui = {
             sidebar_width = 28;
+            new_workspace_command = "${pkgs.lib.getExe herdrSshPicker} workspace";
             sidebar.agents.rows = [
               ["state_icon" "workspace" "tab"]
               ["agent" "$summary"]
@@ -269,8 +282,8 @@ in
 
       # Home Manager does not manage Herdr's Pi integration or agent skill.
       home.file = {
-        ".pi/agent/extensions/herdr-agent-state.ts".source = "${pkgs.herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
-        ".pi/agent/skills/herdr/SKILL.md".source = "${pkgs.herdr}/share/herdr/skills/herdr/SKILL.md";
+        ".pi/agent/extensions/herdr-agent-state.ts".source = "${herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
+        ".pi/agent/skills/herdr/SKILL.md".source = "${herdr}/share/herdr/skills/herdr/SKILL.md";
       };
     };
   }

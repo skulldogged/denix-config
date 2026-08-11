@@ -1,0 +1,120 @@
+diff --git a/src/extension/index.ts b/src/extension/index.ts
+index e4249e1..7f07c5c 100644
+--- a/src/extension/index.ts
++++ b/src/extension/index.ts
+@@ -379,7 +379,12 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
+ 			const ctx = state.lastUiContext;
+ 			if (!ctx?.hasUI) return;
+ 			await openSubagentFleet(ctx, state, { initialKey: itemKey, asyncDirRoot: DIRS.async, resultsDir: DIRS.results });
+-		}, { placement: fleetViewPlacement })
++		}, {
++			placement: fleetViewPlacement,
++			...(fleetViewPlacement === "prompt"
++				? { publishSummary: (summary) => pi.events.emit("subagent:fleet-status", summary) }
++				: {}),
++		})
+ 		: undefined;
+ 	let executorScheduled: ((id: string, params: SubagentParamsLike, signal: AbortSignal, ctx: ExtensionContext) => Promise<AgentToolResult<Details>>) | undefined;
+ 	let goalTurnId = 0;
+diff --git a/src/shared/types.ts b/src/shared/types.ts
+index caa5944..082e81c 100644
+--- a/src/shared/types.ts
++++ b/src/shared/types.ts
+@@ -1781,10 +1781,10 @@ export interface ScheduledRunsConfig {
+-export type FleetViewPlacement = "aboveEditor" | "belowEditor";
++export type FleetViewPlacement = "aboveEditor" | "belowEditor" | "prompt";
+ 
+ export interface ExtensionConfig {
+ 	asyncByDefault?: boolean;
+ 	/** Show the Claude Code-style navigable fleet. Defaults to true. */
+ 	fleetView?: boolean;
+-	/** Place the persistent FleetView above or below the editor. Defaults to belowEditor. */
++	/** Place FleetView above/below the editor or collapse it into a prompt integration. */
+ 	fleetViewPlacement?: FleetViewPlacement;
+ 	/** Show the under-editor async runs widget. Defaults to true, including when FleetView is enabled. */
+ 	asyncWidget?: boolean;
+diff --git a/src/tui/fleet-status.ts b/src/tui/fleet-status.ts
+index ffd105e..c4c8260 100644
+--- a/src/tui/fleet-status.ts
++++ b/src/tui/fleet-status.ts
+@@ -38,14 +38,19 @@ type FleetTreeRow =
+ 	| { kind: "owner"; entry: FleetStatusEntry }
+ 	| { kind: "nested"; ownerKey: string; row: FleetNestedRow; last: boolean };
+ 
++export interface FleetStatusSummary {
++	activeAgents: number;
++}
++
+ export interface FleetStatusOptions {
+ 	refreshMs?: number;
+ 	maxAgentRows?: number;
+ 	placement?: FleetViewPlacement;
++	publishSummary?: (summary: FleetStatusSummary | undefined) => void;
+ }
+ 
+ export function resolveFleetViewPlacement(value: unknown): FleetViewPlacement {
+-	return value === "aboveEditor" ? "aboveEditor" : "belowEditor";
++	return value === "aboveEditor" || value === "prompt" ? value : "belowEditor";
+ }
+ 
+ export function formatFleetElapsed(ms: number): string {
+@@ -256,6 +263,8 @@ export class SubagentFleetStatus {
+ 	private readonly refreshMs: number;
+ 	private readonly maxAgentRows: number;
+ 	private readonly placement: FleetViewPlacement;
++	private readonly publishSummary: ((summary: FleetStatusSummary | undefined) => void) | undefined;
++	private lastPublishedSummary = "";
+ 
+ 	constructor(
+ 		state: SubagentState,
+@@ -266,6 +274,7 @@ export class SubagentFleetStatus {
+ 		this.refreshMs = options.refreshMs ?? REFRESH_MS;
+ 		this.maxAgentRows = options.maxAgentRows ?? MAX_AGENT_ROWS;
+ 		this.placement = options.placement ?? "belowEditor";
++		this.publishSummary = options.publishSummary;
+ 	}
+ 
+ 	setContext(ctx: ExtensionContext): void {
+@@ -290,6 +300,7 @@ export class SubagentFleetStatus {
+ 		this.selectedKey = "main";
+ 		this.inspectorOpen = false;
+ 		this.lastRenderKey = "";
++		this.updatePublishedSummary(undefined);
+ 	}
+ 
+ 	refresh(): void {
+@@ -297,6 +308,9 @@ export class SubagentFleetStatus {
+ 		if (!ctx) return;
+ 		this.entries = collectFleetStatusEntries(this.state);
+ 		this.clampSelection();
++		this.updatePublishedSummary(this.entries.length === 0 ? undefined : {
++			activeAgents: this.entries.length,
++		});
+ 		if (this.inspectorOpen || this.state.fleetInspectorOpen) {
+ 			this.lastRenderKey = "";
+ 			if (this.widgetRegistered) {
+@@ -342 +356 @@ export class SubagentFleetStatus {
+-			}, { placement: this.placement });
++			}, { placement: this.placement === "prompt" ? "aboveEditor" : this.placement });
+@@ -411,6 +426,7 @@ export class SubagentFleetStatus {
+ 
+ 	render(width: number, theme: Theme): string[] {
+ 		if (this.entries.length === 0) return [];
++		if (!this.active && this.placement === "prompt") return [];
+ 		if (!this.active) {
+ 			const tokens = this.entries.reduce((total, entry) => total + entry.tokens, 0);
+ 			const label = `${this.entries.length} active ${this.entries.length === 1 ? "agent" : "agents"}`;
+@@ -456,6 +472,13 @@ export class SubagentFleetStatus {
+ 		this.refresh();
+ 	}
+ 
++	private updatePublishedSummary(summary: FleetStatusSummary | undefined): void {
++		const key = summary ? String(summary.activeAgents) : "none";
++		if (key === this.lastPublishedSummary) return;
++		this.lastPublishedSummary = key;
++		this.publishSummary?.(summary);
++	}
++
+ 	private editorHasFocus(): boolean {
+ 		// pi-tui exposes focus mutation but no focus getter, so inspect the focused
+ 		// component structurally. instanceof is unreliable across jiti module boundaries.
