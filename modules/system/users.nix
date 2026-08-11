@@ -11,6 +11,7 @@ delib.module {
   options.system.users = with delib; {
     enable = boolOption false;
     extraGroups = listOption [];
+    linger = boolOption false;
   };
 
   nixos.ifEnabled = {myconfig, ...}: {
@@ -20,6 +21,7 @@ delib.module {
       users.${myconfig.constants.username} =
         {
           isNormalUser = true;
+          linger = myconfig.system.users.linger;
           shell = pkgs.fish;
 
           extraGroups =

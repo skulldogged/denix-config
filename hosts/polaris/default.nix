@@ -53,7 +53,11 @@ delib.host {
       services.enable = true;
       stateversion.version = "23.11";
 
-      boot.enable = true;
+      boot = {
+        disableFirmwareFramebuffer = true;
+        enable = true;
+        enableIommu = true;
+      };
 
       networking = {
         enable = true;
@@ -62,7 +66,8 @@ delib.host {
 
       users = {
         enable = true;
-        extraGroups = ["kvm" "podman" "media"];
+        extraGroups = ["incus-admin" "kvm" "podman" "media"];
+        linger = true;
       };
     };
 

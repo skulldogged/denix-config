@@ -1,0 +1,20 @@
+diff --git a/internal/server/instance/drivers/driver_qemu.go b/internal/server/instance/drivers/driver_qemu.go
+index 9bc30db..edc8e12 100644
+--- a/internal/server/instance/drivers/driver_qemu.go
++++ b/internal/server/instance/drivers/driver_qemu.go
+@@ -11841,6 +11841,15 @@ func (d *qemu) needsFullRestart() bool {
+ 		return true
+ 	}
+ 
++	// Nix wraps QEMU with a small executable that sets its runtime environment
++	// and then execs a hidden sibling binary. Compare /proc/<pid>/exe against
++	// that real binary when present, otherwise every guest reboot is mistaken
++	// for a QEMU package change and Incus performs an unnecessary full restart.
++	wrappedExePath := filepath.Join(filepath.Dir(exePath), "."+filepath.Base(exePath)+"-wrapped")
++	if util.PathExists(wrappedExePath) {
++		exePath = wrappedExePath
++	}
++
+ 	var curExe unix.Stat_t
+ 	err = unix.Stat(fmt.Sprintf("/proc/%d/exe", pid), &curExe)
+ 	if err != nil {

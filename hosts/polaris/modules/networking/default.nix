@@ -12,28 +12,32 @@ in
         dhcpcd.extraConfig = "nohook resolv.conf";
         resolvconf.enable = false;
         nameservers = ["127.0.0.1" "::1"];
+        nftables.enable = true;
 
         firewall = {
+          backend = "nftables";
           checkReversePath = "loose";
 
           # LAN services are deliberately IPv4-only here. enX0 also has
           # globally routable IPv6 addresses, so interface-scoped rules would
           # expose these ports to the internet.
-          extraCommands = ''
-            iptables -w -A nixos-fw -s ${lanIPv4} -p tcp -m multiport \
-              --dports 22,139,445,1883,2022,8096,8123,8920 \
-              -j nixos-fw-accept
-            iptables -w -A nixos-fw -s ${lanIPv4} -p udp -m multiport \
-              --dports 137,138,1900,7359 \
-              -j nixos-fw-accept
-            iptables -w -A nixos-fw -s ${lanIPv4} -p udp \
-              --dport 60000:61000 \
-              -j nixos-fw-accept
+          extraInputRules = ''
+            ip saddr ${lanIPv4} tcp dport { 22, 139, 445, 1883, 2022, 8096, 8123, 8443, 8920 } accept
+            ip saddr ${lanIPv4} udp dport { 137, 138, 1900, 7359, 60000-61000 } accept
           '';
 
-          interfaces.tailscale0 = {
-            allowedTCPPorts = [53];
-            allowedUDPPorts = [53];
+          interfaces = {
+            # Incus guests need the host-side dnsmasq listener for DNS and
+            # DHCP, but do not otherwise get blanket access to host services.
+            incusbr0 = {
+              allowedTCPPorts = [53];
+              allowedUDPPorts = [53 67];
+            };
+
+            tailscale0 = {
+              allowedTCPPorts = [53 8443];
+              allowedUDPPorts = [53];
+            };
           };
         };
       };

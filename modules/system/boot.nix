@@ -14,10 +14,22 @@ delib.module {
       description
       (boolOption false)
       "Enable the Intel graphics driver instead of blacklisting i915";
+
+    enableIommu =
+      description
+      (boolOption false)
+      "Enable the IOMMU for device passthrough";
+
+    disableFirmwareFramebuffer =
+      description
+      (boolOption false)
+      "Prevent the firmware framebuffer from reserving GPU memory needed for passthrough";
   };
 
   nixos.ifEnabled = {myconfig, ...}: let
     enableIntelGraphics = myconfig.system.boot.enableIntelGraphics;
+    enableIommu = myconfig.system.boot.enableIommu;
+    disableFirmwareFramebuffer = myconfig.system.boot.disableFirmwareFramebuffer;
   in {
     boot = {
       kernelPackages = lib.mkIf myconfig.host.isDesktop pkgs.linuxPackages_zen;
@@ -50,13 +62,17 @@ delib.module {
         ]
       );
 
-      kernelParams = lib.optionals myconfig.host.isDesktop [
-        "intel_iommu=on"
-        "iommu=pt"
-        "kvm.ignore_msrs=1"
-        "modprobe.blacklist=nouveau${lib.optionalString (!enableIntelGraphics) ",i915"}"
-        "nvidia_drm.fbdev=1"
-      ];
+      kernelParams =
+        lib.optionals (myconfig.host.isDesktop || enableIommu) [
+          "intel_iommu=on"
+          "iommu=pt"
+        ]
+        ++ lib.optionals myconfig.host.isDesktop [
+          "kvm.ignore_msrs=1"
+          "modprobe.blacklist=nouveau${lib.optionalString (!enableIntelGraphics) ",i915"}"
+          "nvidia_drm.fbdev=1"
+        ]
+        ++ lib.optional disableFirmwareFramebuffer "initcall_blacklist=sysfb_init";
 
       loader.efi.canTouchEfiVariables = true;
     };
