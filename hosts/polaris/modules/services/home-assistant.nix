@@ -50,7 +50,6 @@ delib.module {
 
     services.home-assistant = {
       enable = true;
-      openFirewall = false;
       extraComponents = [
         "google_assistant"
         "mqtt"
