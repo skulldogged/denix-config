@@ -2,7 +2,120 @@
 +++ b/extensions/index.ts
 @@ -21 +20,0 @@
 -	createEditTool,
-@@ -5192,99 +5191,2 @@
+@@ -26,0 +26 @@
++	renderDiff,
+@@ -1444,0 +1445,3 @@
++		if (toolName === "edit") {
++			return (args: any, theme: Theme, ctx: any) => renderUnifiedEditCall(args, theme, ctx);
++		}
+@@ -1456,0 +1460,4 @@
++		if (toolName === "edit") {
++			return (result: any, options: any, theme: Theme, ctx: any) =>
++				renderUnifiedEditResult({ content: result.content, details: result.details }, options, theme, ctx);
++		}
+@@ -4197,0 +4205,101 @@
++type UnifiedEditRenderFile = {
++	path?: unknown;
++	kind?: unknown;
++	details?: { diff?: unknown };
++};
++
++type UnifiedEditRenderDetails = {
++	diff?: unknown;
++	files?: unknown;
++};
++
++function unifiedEditPathsFromArgs(args: any): string[] {
++	const text = typeof args?.text === "string" ? args.text : "";
++	const paths: string[] = [];
++	for (const line of text.replace(/\r\n?/g, "\n").split("\n")) {
++		const trimmed = line.trim();
++		const row = /^\[([^\]]+)]$/.exec(trimmed);
++		const patch = /^\*\*\* (?:Add|Delete|Update) File: (.+)$/.exec(trimmed);
++		const path = row?.[1] ?? patch?.[1];
++		if (path && !paths.includes(path)) paths.push(path);
++	}
++	return paths;
++}
++
++function unifiedEditFiles(details: UnifiedEditRenderDetails | undefined): UnifiedEditRenderFile[] {
++	if (!Array.isArray(details?.files)) return [];
++	return details.files.filter((file): file is UnifiedEditRenderFile => !!file && typeof file === "object");
++}
++
++function linkedUnifiedEditPath(cwd: string, path: string): string {
++	const absolutePath = resolve(cwd, path);
++	const display = shortPath(cwd, absolutePath);
++	if (!path || !claudeChromeEnabled()) return display;
++	return linkedPath(cwd, display, absolutePath);
++}
++
++function renderUnifiedEditCall(args: any, theme: Theme, ctx: any): Text {
++	syncToolCallStatus(ctx);
++	const paths = unifiedEditPathsFromArgs(args);
++	const cwd = ctx.cwd ?? process.cwd();
++	const summary = stableCallSummary(ctx, "_callSummary", () => {
++		if (paths.length === 1) return linkedUnifiedEditPath(cwd, paths[0]);
++		if (paths.length > 1) return `${paths.length} files`;
++		return "";
++	});
++	return makeText(ctx.lastComponent, toolHeader("Update", summary, theme, toolStatusDot(ctx, theme)));
++}
++
++function unifiedEditDiffCounts(files: UnifiedEditRenderFile[], fallbackDiff: string): { added: number; removed: number } {
++	const diffs = files.length > 0
++		? files.map((file) => typeof file.details?.diff === "string" ? file.details.diff : "")
++		: [fallbackDiff];
++	let added = 0;
++	let removed = 0;
++	for (const diff of diffs) {
++		for (const line of diff.split("\n")) {
++			if (/^\+\d+\s/.test(line)) added++;
++			else if (/^-\d+\s/.test(line)) removed++;
++		}
++	}
++	return { added, removed };
++}
++
++function renderUnifiedEditResult(result: any, options: any, theme: Theme, ctx: any): Text {
++	if (options.isPartial) {
++		setupBlinkTimer(ctx);
++		return makeText(ctx.lastComponent, withBranch(theme.fg("dim", "Editing..."), theme));
++	}
++	clearBlinkTimer(ctx);
++	setToolStatus(ctx, ctx.isError ? "error" : "success");
++	if (ctx.isError) {
++		const raw = getTextContent(result).trim() || "Edit failed";
++		return makeText(ctx.lastComponent, withBranch(theme.fg("error", raw), theme));
++	}
++
++	const details = result.details as UnifiedEditRenderDetails | undefined;
++	const diff = typeof details?.diff === "string" ? details.diff : "";
++	const files = unifiedEditFiles(details);
++	if (!diff) return makeText(ctx.lastComponent, withBranch(theme.fg("success", "Applied"), theme));
++
++	const cwd = ctx.cwd ?? process.cwd();
++	const argumentPaths = unifiedEditPathsFromArgs(ctx.args);
++	const target = files.length === 1 && typeof files[0].path === "string"
++		? linkedUnifiedEditPath(cwd, files[0].path)
++		: files.length > 1
++			? `${files.length} files`
++			: argumentPaths.length === 1
++				? linkedUnifiedEditPath(cwd, argumentPaths[0])
++				: argumentPaths.length > 1 ? `${argumentPaths.length} files` : "changes";
++	const { added, removed } = unifiedEditDiffCounts(files, diff);
++	const summary = `${theme.fg("success", "Applied")} ${target} ${diffSummaryWithMeta(added, removed, 0, "")}`;
++	let rendered: string;
++	try {
++		rendered = renderDiff(diff);
++	} catch {
++		rendered = diff;
++	}
++	const preview = buildPreviewText(rendered.split("\n"), options.expanded, theme, diffCollapsedLimit());
++	return makeText(ctx.lastComponent, withBranch(`${summary}\n${preview}`, theme));
++}
++
+@@ -5192,99 +5300,2 @@
 -	const editTool = createEditTool(cwd);
 -	pi.registerTool({
 -		name: "edit",
@@ -102,5 +215,5 @@
 -			return makeText(ctx.lastComponent, indentBranchBlock(withBranch(theme.fg("success", "Applied"), theme)));
 -		},
 -	});
-+	// Unified Edit owns the edit tool execution and rendering. Claudify keeps
-+	// styling every other built-in/OpenAI/MCP tool without registering a conflict.
++	// Unified Edit owns execution and the native preview; Claudify styles it through
++	// the ToolExecutionComponent adapter above without registering a conflict.

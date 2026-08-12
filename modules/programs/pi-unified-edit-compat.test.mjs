@@ -19,10 +19,15 @@ const guard = await readFile(join(lspRoot, "lsp-guard.ts"), "utf8");
 const undo = await readFile(join(undoRoot, "src/extension.ts"), "utf8");
 
 describe("Unified Edit lightweight compatibility patches", () => {
-	test("Claudify keeps other tool chrome without registering edit", () => {
-		expect(claudify).toContain("Unified Edit owns the edit tool");
+	test("Claudify styles Unified Edit without competing for execution", () => {
+		expect(claudify).toContain("Unified Edit owns execution");
 		expect(claudify).not.toContain('name: "edit",');
 		expect(claudify).toContain('name: "write",');
+		expect(claudify).toContain('toolName === "edit"');
+		expect(claudify).toContain("renderUnifiedEditCall");
+		expect(claudify).toContain("renderUnifiedEditResult");
+		expect(claudify).toContain("renderDiff(diff)");
+		expect(claudify).toContain("diffCollapsedLimit()");
 	});
 
 	test("lsp-pi consumes Unified manifests/results and fails closed through the guard marker", () => {
