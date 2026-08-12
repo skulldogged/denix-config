@@ -20,7 +20,6 @@ in
 
       programs.codexDesktopLinux = {
         enable = true;
-        cliPackage = codexPackage;
       };
     };
   }
