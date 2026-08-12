@@ -19,7 +19,23 @@
           printf 'Invalid SSH target in this Herdr space: %s\n' "$host" >&2
           exit 2
         fi
-        exec ${pkgs.lib.getExe pkgs.openssh} "$host"
+
+        # Reuse one authenticated SSH connection per Herdr space. The first
+        # pane may prompt for a password; later tabs and splits open channels
+        # through that master connection instead of authenticating again.
+        workspace_id="''${HERDR_WORKSPACE_ID:-standalone}"
+        if [[ ! "$workspace_id" =~ ^[A-Za-z0-9_-]+$ ]]; then
+          printf 'Invalid Herdr workspace ID: %s\n' "$workspace_id" >&2
+          exit 2
+        fi
+        control_root="''${XDG_RUNTIME_DIR:-$HOME/.cache}/herdr/ssh-control"
+        ${pkgs.lib.getExe' pkgs.coreutils "install"} -d -m 700 "$control_root"
+
+        exec ${pkgs.lib.getExe pkgs.openssh} \
+          -o ControlMaster=auto \
+          -o ControlPersist=10m \
+          -o "ControlPath=$control_root/$workspace_id-%C" \
+          "$host"
       fi
       exec ${pkgs.lib.getExe pkgs.fish} "$@"
     '';
@@ -226,6 +242,9 @@ in
             focus_pane_right = ["prefix+l" "ctrl+shift+l"];
             previous_tab = ["prefix+p" "ctrl+shift+tab"];
             next_tab = ["prefix+n" "ctrl+tab"];
+            previous_workspace = ["prefix+shift+k" "ctrl+alt+k"];
+            next_workspace = ["prefix+shift+j" "ctrl+alt+j"];
+            switch_workspace = ["prefix+shift+1..9" "ctrl+alt+1..9"];
             new_workspace = ["prefix+shift+n" "ctrl+shift+s"];
             new_tab = ["prefix+c" "ctrl+shift+t"];
             switch_tab = ["prefix+1..9" "ctrl+shift+1..9"];
