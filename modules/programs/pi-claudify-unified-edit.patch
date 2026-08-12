@@ -1,0 +1,106 @@
+--- a/extensions/index.ts
++++ b/extensions/index.ts
+@@ -21 +20,0 @@
+-	createEditTool,
+@@ -5192,99 +5191,2 @@
+-	const editTool = createEditTool(cwd);
+-	pi.registerTool({
+-		name: "edit",
+-		label: "edit",
+-		description: editTool.description,
+-		parameters: editTool.parameters,
+-		async execute(toolCallId, params, signal, onUpdate, _ctx) {
+-			const fp = params.path ?? (params as any).file_path ?? "";
+-			const operations = getEditOperations(params);
+-			const localizedDiffs = operations.length === 1 ? await computeLocalizedEditDiffs(fp, operations, cwd) : null;
+-			const result = await editTool.execute(toolCallId, params, signal, onUpdate);
+-			if (operations.length === 0) return result;
+-			const { diffs, summary, totalLines, totalHunks } = summarizeEditOperations(operations);
+-			const baseDetails = (((result as any).details ?? {}) as Record<string, unknown>);
+-			if (operations.length === 1) {
+-				const localized = localizedDiffs?.[0];
+-				const editLine = localized?.line ?? (typeof baseDetails.firstChangedLine === "number" ? baseDetails.firstChangedLine : 0);
+-				const diff = localized?.diff ?? diffs[0];
+-				(result as any).details = {
+-					...baseDetails,
+-					_type: "editInfo",
+-					summary,
+-					editLine,
+-					hunks: countDiffHunks(diff),
+-					added: diff?.added ?? 0,
+-					removed: diff?.removed ?? 0,
+-				};
+-				return result;
+-			}
+-			(result as any).details = {
+-				...baseDetails,
+-				_type: "multiEditInfo",
+-				summary,
+-				editCount: operations.length,
+-				diffLineCount: totalLines,
+-				hunks: totalHunks,
+-				totalAdded: diffs.reduce((sum, diff) => sum + diff.added, 0),
+-				totalRemoved: diffs.reduce((sum, diff) => sum + diff.removed, 0),
+-			};
+-			return result;
+-		},
+-		renderCall(args, theme, ctx) {
+-			const fp = args?.path ?? (args as any)?.file_path ?? "";
+-			const operations = getEditOperations(args);
+-			const revealSummary = shouldRevealCallArgs(ctx) || (!!fp && hasOwnArg(args, "edits"));
+-			const summary = stableCallSummary(ctx, "_callSummary", () => shouldRevealCallArgs(ctx) && operations.length > 1 ? `${spl(fp)} ${theme.fg("muted", `(${operations.length} edits)`)}` : spl(fp), revealSummary);
+-			syncToolCallStatus(ctx);
+-			const hdr = toolHeader("Update", summary, theme, toolStatusDot(ctx, theme));
+-			if (!(ctx.argsComplete && operations.length > 0)) return makeText(ctx.lastComponent, hdr);
+-			const diffWidth = branchDiffWidth();
+-			const key = `edit:${fp}:${hashText(operations.map((edit) => `${edit.oldText}\u0000${edit.newText}`).join("\u0001"))}:${diffWidth}:${ctx.expanded ? 1 : 0}`;
+-			const { diffs: fallbackDiffs, summary: editSummary } = getCachedEditOperationSummary(ctx, key, operations);
+-			if (ctx.state._pk !== key) {
+-				ctx.state._pk = key;
+-				ctx.state._ptBody = theme.fg("muted", "(rendering…)");
+-				ctx.state._ptDisplay = indentBranchBlock(withBranch(ctx.state._ptBody, theme, false, true));
+-				const lg = lang(fp);
+-				void computeLocalizedEditDiffs(fp, operations, cwd)
+-					.then((localizedDiffs) => {
+-						if (ctx.state._pk !== key) return;
+-						const diffs = localizedDiffs?.map((entry) => entry.diff) ?? fallbackDiffs;
+-						const lines = localizedDiffs?.map((entry) => entry.line) ?? diffs.map((diff) => getFirstChangedNewLine(diff));
+-						renderEditPreviewBody(ctx, key, theme, lg, operations, diffs, lines, editSummary);
+-					})
+-					.catch(() => {
+-						if (ctx.state._pk !== key) return;
+-						renderEditPreviewBody(ctx, key, theme, lg, operations, fallbackDiffs, fallbackDiffs.map((diff) => getFirstChangedNewLine(diff)), editSummary);
+-					});
+-			}
+-			const body = ctx.state._ptDisplay as string | undefined;
+-			return makeText(ctx.lastComponent, body ? `${hdr}\n${body}` : hdr);
+-		},
+-		renderResult(result, { isPartial }, theme, ctx) {
+-			if (isPartial) {
+-				setupBlinkTimer(ctx);
+-				return makeText(ctx.lastComponent, indentBranchBlock(withBranch(theme.fg("dim", "Editing..."), theme)));
+-			}
+-			clearBlinkTimer(ctx);
+-			setToolStatus(ctx, ctx.isError ? "error" : "success");
+-			if (ctx.isError) {
+-				const e =
+-					result.content
+-						?.filter((c: any) => c.type === "text")
+-						.map((c: any) => c.text || "")
+-						.join("\n") ?? "Error";
+-				return makeText(ctx.lastComponent, indentBranchBlock(withBranch(theme.fg("error", e), theme)));
+-			}
+-			// renderCall already emitted "Added N lines, removed M lines" above the diff.
+-			// Repeating it here is what produced a duplicate ⎿ row.
+-			if ((result as any).details?._type === "editInfo") {
+-				return makeText(ctx.lastComponent, "");
+-			}
+-			if ((result as any).details?._type === "multiEditInfo") {
+-				const { editCount } = (result as any).details;
+-				return makeText(ctx.lastComponent, editCount > 1 ? withBranch(theme.fg("muted", `${editCount} edits`), theme) : "");
+-			}
+-			return makeText(ctx.lastComponent, indentBranchBlock(withBranch(theme.fg("success", "Applied"), theme)));
+-		},
+-	});
++	// Unified Edit owns the edit tool execution and rendering. Claudify keeps
++	// styling every other built-in/OpenAI/MCP tool without registering a conflict.

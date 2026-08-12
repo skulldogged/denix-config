@@ -1,0 +1,446 @@
+--- a/lsp-core.ts
++++ b/lsp-core.ts
+@@ -60 +60 @@
+-  ".swift": "swift",
++  ".swift": "swift", ".nix": "nix",
+@@ -416,0 +417 @@
++  { id: "nixd", extensions: [".nix"], findRoot: (f, cwd) => findRoot(f, cwd, ["flake.nix", "default.nix"]) || cwd, spawn: simpleSpawn("nixd", []) },
+@@ -452,0 +454 @@
++  private closed = false;
+@@ -495,0 +498,4 @@
++      if (this.closed) {
++        handle.process.kill("SIGTERM");
++        return undefined;
++      }
+@@ -578,0 +585,6 @@
++      if (this.closed) {
++        client.closed = true;
++        conn.dispose();
++        handle.process.kill("SIGTERM");
++        return undefined;
++      }
+@@ -587,0 +600 @@
++    if (this.closed) return [];
+@@ -608 +621 @@
+-      if (client) { this.clients.set(k, client); clients.push(client); }
++      if (client && !this.closed) { this.clients.set(k, client); clients.push(client); }
+@@ -1061,0 +1075 @@
++    this.closed = true;
+@@ -1062,0 +1077,2 @@
++    await Promise.allSettled([...this.spawning.values()]);
++    this.spawning.clear();
+--- a/lsp-guard.ts
++++ b/lsp-guard.ts
+@@ -0,0 +1,220 @@
++import { createHash } from "node:crypto";
++import { lstat, readFile, realpath } from "node:fs/promises";
++import * as path from "node:path";
++import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
++
++type Snapshot = { digest: string; dev: number; ino: number };
++type SnapshotWithBytes = Snapshot & { bytes: Buffer };
++type ManifestFile = { absolutePath?: unknown; kind?: unknown };
++type Manifest = { version?: unknown; files?: unknown };
++type Reservation = { paths: string[] };
++
++const COMPAT = Symbol.for("pi-unified-edit:lsp-guard-compat");
++(globalThis as Record<symbol, unknown>)[COMPAT] = 1;
++
++function within(cwd: string, candidate: string): boolean {
++  const rel = path.relative(cwd, candidate);
++  return rel === "" || (!rel.startsWith(`..${path.sep}`) && rel !== ".." && !path.isAbsolute(rel));
++}
++
++async function canonicalExisting(cwd: string, rawPath: string): Promise<string> {
++  const root = await realpath(cwd);
++  const resolved = path.resolve(root, rawPath.replace(/^@/, ""));
++  if (!within(root, resolved)) throw new Error(`path escapes workspace: ${rawPath}`);
++  const canonical = await realpath(resolved);
++  if (!within(root, canonical)) throw new Error(`path escapes workspace through a symlink: ${rawPath}`);
++  const info = await lstat(resolved);
++  if (info.isSymbolicLink() || !info.isFile()) throw new Error(`not a regular file: ${rawPath}`);
++  return canonical;
++}
++
++async function canonicalTarget(cwd: string, rawPath: string): Promise<{ path: string; exists: boolean }> {
++  try {
++    return { path: await canonicalExisting(cwd, rawPath), exists: true };
++  } catch (error: any) {
++    if (error?.code !== "ENOENT") throw error;
++    const root = await realpath(cwd);
++    const resolved = path.resolve(root, rawPath.replace(/^@/, ""));
++    if (!within(root, resolved)) throw new Error(`path escapes workspace: ${rawPath}`);
++    let cursor = path.dirname(resolved);
++    while (true) {
++      try {
++        const parent = await realpath(cursor);
++        if (!within(root, parent)) throw new Error(`path escapes workspace through a symlink: ${rawPath}`);
++        break;
++      } catch (parentError: any) {
++        if (parentError?.code !== "ENOENT") throw parentError;
++        const next = path.dirname(cursor);
++        if (next === cursor) throw parentError;
++        cursor = next;
++      }
++    }
++    return { path: resolved, exists: false };
++  }
++}
++
++async function snapshotWithBytes(filePath: string): Promise<SnapshotWithBytes> {
++  const before = await lstat(filePath);
++  if (before.isSymbolicLink() || !before.isFile()) throw new Error(`not a regular file: ${filePath}`);
++  const bytes = await readFile(filePath);
++  const after = await lstat(filePath);
++  if (after.isSymbolicLink() || !after.isFile() || before.dev !== after.dev || before.ino !== after.ino ||
++      before.size !== after.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs) {
++    throw new Error(`file changed while snapshotting: ${filePath}`);
++  }
++  return {
++    digest: createHash("sha256").update(bytes).digest("hex"),
++    dev: after.dev,
++    ino: after.ino,
++    bytes,
++  };
++}
++
++async function snapshot(filePath: string): Promise<Snapshot> {
++  const { digest, dev, ino } = await snapshotWithBytes(filePath);
++  return { digest, dev, ino };
++}
++
++function same(a: Snapshot, b: Snapshot): boolean {
++  return a.digest === b.digest && a.dev === b.dev && a.ino === b.ino;
++}
++
++function manifest(input: unknown): Manifest | undefined {
++  if (!input || typeof input !== "object") return undefined;
++  const value = (input as any).__piUnifiedEdit;
++  return value?.version === 1 && Array.isArray(value.files) ? value : undefined;
++}
++
++function manifestFiles(value: Manifest): ManifestFile[] {
++  return value.files as ManifestFile[];
++}
++
++export function createReadGuardState() {
++  const authorized = new Map<string, Snapshot>();
++  const reservations = new Map<string, string>();
++  const byCall = new Map<string, Reservation>();
++
++  async function authorizeRead(event: any, cwd: string): Promise<void> {
++    if (event.toolName !== "read" || event.isError) return;
++    if (event.input?.offset !== undefined || event.input?.limit !== undefined) return;
++    if (event.details?.truncation?.truncated) return;
++    if (typeof event.input?.path !== "string" || !Array.isArray(event.content)) return;
++    const textBlocks = event.content.filter((item: any) => item?.type === "text" && typeof item.text === "string");
++    if (textBlocks.length !== 1 || event.content.length !== 1) return;
++    try {
++      const filePath = await canonicalExisting(cwd, event.input.path);
++      const current = await snapshotWithBytes(filePath);
++      if (current.bytes.toString("utf8") !== textBlocks[0].text) return;
++      authorized.set(filePath, { digest: current.digest, dev: current.dev, ino: current.ino });
++    } catch {
++      // Failed, non-text, incoherent, or non-regular reads never grant authorization.
++    }
++  }
++
++  function release(toolCallId: string): void {
++    const reservation = byCall.get(toolCallId);
++    if (!reservation) return;
++    for (const filePath of reservation.paths) {
++      if (reservations.get(filePath) === toolCallId) reservations.delete(filePath);
++    }
++    byCall.delete(toolCallId);
++  }
++
++  async function reserve(event: any, cwd: string): Promise<{ block: true; reason: string } | undefined> {
++    const targets: Array<{ rawPath: string; requireRead: boolean }> = [];
++    const value = manifest(event.input);
++    if (event.toolName === "edit" && value) {
++      for (const file of manifestFiles(value)) {
++        if (typeof file.absolutePath !== "string") return { block: true, reason: "Unified Edit guard manifest contains an invalid path." };
++        targets.push({ rawPath: file.absolutePath, requireRead: file.kind !== "add" });
++      }
++    } else if (event.toolName === "write" && typeof event.input?.path === "string") {
++      targets.push({ rawPath: event.input.path, requireRead: true });
++    } else {
++      return undefined;
++    }
++
++    const checked: Array<{ path: string; exists: boolean; requireRead: boolean }> = [];
++    try {
++      for (const target of targets) {
++        const resolved = await canonicalTarget(cwd, target.rawPath);
++        checked.push({ ...resolved, requireRead: target.requireRead });
++      }
++    } catch (error: any) {
++      return { block: true, reason: `Read guard rejected mutation: ${error?.message ?? String(error)}` };
++    }
++
++    const unique = [...new Map(checked.map((target) => [target.path, target])).values()];
++    for (const target of unique) {
++      const owner = reservations.get(target.path);
++      if (owner && owner !== event.toolCallId) {
++        return { block: true, reason: `Read guard rejected overlapping mutation: ${target.path}` };
++      }
++      if (!target.exists) continue;
++      if (!target.requireRead) {
++        return { block: true, reason: `Read guard expected a new file but target exists: ${target.path}` };
++      }
++      const prior = authorized.get(target.path);
++      if (!prior) return { block: true, reason: `Read guard requires a full current read before editing: ${target.path}` };
++      const current = await snapshot(target.path);
++      if (!same(prior, current)) {
++        return { block: true, reason: `Read guard found stale contents or changed file identity: ${target.path}` };
++      }
++    }
++
++    const paths = unique.map((target) => target.path);
++    for (const filePath of paths) reservations.set(filePath, event.toolCallId);
++    byCall.set(event.toolCallId, { paths });
++    return undefined;
++  }
++
++  async function finish(event: any, cwd: string): Promise<void> {
++    const reservation = byCall.get(event.toolCallId);
++    try {
++      if (!reservation || event.isError) return;
++      const value = manifest(event.input);
++      if (event.toolName === "edit" && value && Array.isArray(event.details?.files)) {
++        for (const file of event.details.files as any[]) {
++          if (typeof file?.absolutePath !== "string") continue;
++          if (file.kind === "delete") {
++            authorized.delete(file.absolutePath);
++            continue;
++          }
++          const canonical = await canonicalExisting(cwd, file.absolutePath);
++          authorized.set(canonical, await snapshot(canonical));
++        }
++      } else if (event.toolName === "write" && typeof event.input?.path === "string") {
++        const canonical = await canonicalExisting(cwd, event.input.path);
++        authorized.set(canonical, await snapshot(canonical));
++      }
++    } finally {
++      release(event.toolCallId);
++    }
++  }
++
++  function clear(): void {
++    authorized.clear();
++    reservations.clear();
++    byCall.clear();
++  }
++
++  return { authorizeRead, reserve, finish, release, clear, authorized, reservations };
++}
++
++export default function readGuard(pi: ExtensionAPI): void {
++  const state = createReadGuardState();
++  pi.on("tool_call", (event, ctx) => state.reserve(event, ctx.cwd));
++  pi.on("tool_result", async (event, ctx) => {
++    await state.authorizeRead(event, ctx.cwd);
++    await state.finish(event, ctx.cwd);
++  });
++  pi.on("turn_end", () => {
++    // Every tool in the batch has settled by turn_end. Release any reservation
++    // left behind by a later extension blocking execution or an exceptional
++    // path that did not produce the usual result middleware callback.
++    for (const toolCallId of new Set(state.reservations.values())) state.release(toolCallId);
++  });
++  pi.on("session_shutdown", () => state.clear());
++}
++
++export const __test = { createReadGuardState, canonicalExisting, canonicalTarget, snapshot };
+--- a/lsp.ts
++++ b/lsp.ts
+@@ -54,0 +55 @@
++  "flake.nix": ".nix",
+@@ -73,0 +75,33 @@
++export function createTouchedBatchState() {
++  const touchedFiles = new Map<string, boolean>();
++
++  function add(filePath: string, includeWarnings: boolean): void {
++    touchedFiles.set(filePath, (touchedFiles.get(filePath) ?? false) || includeWarnings);
++  }
++
++  async function flush(
++    isSafe: () => boolean,
++    collect: (filePath: string, includeWarnings: boolean) => Promise<string | undefined>,
++    send: (content: string) => void,
++  ): Promise<boolean> {
++    if (touchedFiles.size === 0) return true;
++    if (!isSafe()) return false;
++    const files = Array.from(touchedFiles.entries());
++    const outputs: string[] = [];
++    for (const [filePath, includeWarnings] of files) {
++      if (!isSafe()) return false;
++      const output = await collect(filePath, includeWarnings);
++      if (!isSafe()) return false;
++      if (output) outputs.push(output);
++    }
++    if (!isSafe()) return false;
++    if (outputs.length) send(outputs.join("\n"));
++    for (const [filePath, includeWarnings] of files) {
++      if (touchedFiles.get(filePath) === includeWarnings) touchedFiles.delete(filePath);
++    }
++    return true;
++  }
++
++  return { touchedFiles, add, flush };
++}
++
+@@ -86 +120,2 @@
+-  const touchedFiles: Map<string, boolean> = new Map();
++  const diagnosticsBatch = createTouchedBatchState();
++  const touchedFiles = diagnosticsBatch.touchedFiles;
+@@ -318 +353 @@
+-      return `${sev}[${e.range.start.line + 1}] ${e.message.split("\n")[0]}`;
++      return `${sev}[${e.range.start.line + 1}] ${String(e.message).split("\n")[0]}`;
+@@ -452,15 +486,0 @@
+-  pi.on("session_switch", async (_event, ctx) => {
+-    restoreHookState(ctx);
+-    updateLspStatus();
+-  });
+-
+-  pi.on("session_tree", async (_event, ctx) => {
+-    restoreHookState(ctx);
+-    updateLspStatus();
+-  });
+-
+-  pi.on("session_fork", async (_event, ctx) => {
+-    restoreHookState(ctx);
+-    updateLspStatus();
+-  });
+-
+@@ -496,7 +516,8 @@
+-    const filePath = typeof input.path === "string" ? input.path : undefined;
+-    if (!filePath) return;
+-
+-    const absPath = ensureActiveClientForFile(filePath, ctx.cwd);
+-    if (!absPath) return;
+-
+-    void getOrCreateManager(ctx.cwd).getClientsForFile(absPath).catch(() => {});
++    const manifest = (input as any).__piUnifiedEdit;
++    const filePaths = event.toolName === "edit" && manifest?.version === 1 && Array.isArray(manifest.files)
++      ? manifest.files.map((file: any) => file?.absolutePath).filter((filePath: unknown): filePath is string => typeof filePath === "string")
++      : typeof input.path === "string" ? [input.path] : [];
++    for (const filePath of filePaths) {
++      const absPath = ensureActiveClientForFile(filePath, ctx.cwd);
++      if (absPath) void getOrCreateManager(ctx.cwd).getClientsForFile(absPath).catch(() => {});
++    }
+@@ -510 +531,2 @@
+-    touchedFiles.clear();
++    // Keep any files deferred by an earlier unsafe agent_end; successful files
++    // are deduplicated and delivered at the next settled boundary.
+@@ -512,0 +535,21 @@
++  async function flushTouchedFiles(
++    ctx: ExtensionContext,
++    abort: AbortController,
++  ): Promise<boolean> {
++    if (touchedFiles.size === 0) return true;
++    if (shuttingDown || abort.signal.aborted || !ctx.isIdle() || ctx.hasPendingMessages()) return false;
++
++    return diagnosticsBatch.flush(
++      () => !shuttingDown && !abort.signal.aborted && ctx.isIdle() && !ctx.hasPendingMessages(),
++      (filePath, includeWarnings) => collectDiagnostics(filePath, ctx, includeWarnings, true, false),
++      (content) => pi.sendMessage({
++        customType: "lsp-diagnostics",
++        content,
++        display: true,
++      }, {
++        triggerTurn: true,
++        deliverAs: "followUp",
++      }),
++    );
++  }
++
+@@ -528,2 +571,2 @@
+-        // Don't run diagnostics on aborted/error runs.
+-        touchedFiles.clear();
++        // This boundary is unsafe for follow-up delivery. Successful tool
++        // results remain queued and deduplicated for the next settled boundary.
+@@ -533,0 +577,2 @@
++      // A queued follow-up means this is not the final safe agent boundary. Keep
++      // the touched set intact so the next settled agent_end can deliver it.
+@@ -541,3 +586,2 @@
+-      const files = Array.from(touchedFiles.entries());
+-      touchedFiles.clear();
+-
++      // flushTouchedFiles leaves the complete snapshot queued until one combined
++      // follow-up is successfully scheduled.
+@@ -545,25 +589 @@
+-        const outputs: string[] = [];
+-        for (const [filePath, includeWarnings] of files) {
+-          if (shuttingDown || abort.signal.aborted) return;
+-          if (!ctx.isIdle() || ctx.hasPendingMessages()) {
+-            abort.abort();
+-            return;
+-          }
+-
+-          const output = await collectDiagnostics(filePath, ctx, includeWarnings, true, false);
+-          if (abort.signal.aborted) return;
+-          if (output) outputs.push(output);
+-        }
+-
+-        if (shuttingDown || abort.signal.aborted) return;
+-
+-        if (outputs.length) {
+-          pi.sendMessage({
+-            customType: "lsp-diagnostics",
+-            content: outputs.join("\n"),
+-            display: true,
+-          }, {
+-            triggerTurn: true,
+-            deliverAs: "followUp",
+-          });
+-        }
++        await flushTouchedFiles(ctx, abort);
+@@ -580,0 +601 @@
++    if (event.isError) return;
+@@ -582,7 +603,18 @@
+-    const filePath = event.input.path as string;
+-    if (!filePath) return;
+-
+-    const absPath = ensureActiveClientForFile(filePath, ctx.cwd);
+-    if (!absPath) return;
+-
+-    if (hookMode === "disabled") return;
++    const manifest = (event.input as any)?.__piUnifiedEdit;
++    const files: Array<{ path: string; includeWarnings: boolean }> = [];
++    if (event.toolName === "edit" && manifest?.version === 1 && Array.isArray((event.details as any)?.files)) {
++      for (const file of (event.details as any).files) {
++        if (file?.kind === "delete" || typeof file?.absolutePath !== "string") continue;
++        files.push({ path: file.absolutePath, includeWarnings: file.kind === "add" || file.kind === "write" });
++      }
++    } else if (typeof (event.input as any)?.path === "string") {
++      files.push({ path: (event.input as any).path, includeWarnings: event.toolName === "write" });
++    }
++    if (!files.length || hookMode === "disabled") return;
++
++    const unique = new Map<string, boolean>();
++    for (const file of files) {
++      const absPath = ensureActiveClientForFile(file.path, ctx.cwd);
++      if (!absPath) continue;
++      unique.set(absPath, (unique.get(absPath) ?? false) || file.includeWarnings);
++    }
+@@ -591,3 +623,3 @@
+-      const includeWarnings = event.toolName === "write";
+-      const existing = touchedFiles.get(absPath) ?? false;
+-      touchedFiles.set(absPath, existing || includeWarnings);
++      for (const [absPath, includeWarnings] of unique) {
++        diagnosticsBatch.add(absPath, includeWarnings);
++      }
+@@ -597,5 +629,7 @@
+-    const includeWarnings = event.toolName === "write";
+-    const output = await collectDiagnostics(absPath, ctx, includeWarnings, false);
+-    if (!output) return;
+-
+-    return { content: [...event.content, { type: "text" as const, text: output }] as Array<{ type: "text"; text: string }> };
++    const outputs: string[] = [];
++    for (const [absPath, includeWarnings] of unique) {
++      const output = await collectDiagnostics(absPath, ctx, includeWarnings, false);
++      if (output) outputs.push(output);
++    }
++    if (!outputs.length) return;
++    return { content: [...event.content, { type: "text" as const, text: outputs.join("\n") }] as Array<{ type: "text"; text: string }> };

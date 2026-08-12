@@ -1,0 +1,541 @@
+--- a/extensions/unified-edit.ts
++++ b/extensions/unified-edit.ts
+@@ -18,0 +19 @@
++import { diffLines } from "diff";
+@@ -20 +21,2 @@
+-import { access, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
++import { randomUUID } from "node:crypto";
++import { access, chmod, link, lstat, mkdir, readFile, realpath, rename, rm, rmdir, writeFile } from "node:fs/promises";
+@@ -22 +24 @@
+-import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
++import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from "node:path";
+@@ -105,0 +108 @@
++		absolutePath: string;
+@@ -110,0 +114,10 @@
++type RawSnapshot = {
++	bytes?: Buffer;
++	mode?: number;
++	dev?: number;
++	ino?: number;
++	bom: string;
++	ending: "\r\n" | "\n";
++	content: string | null;
++};
++
+@@ -116,0 +130,2 @@
++	raw: RawSnapshot;
++	guardEdits: Edit[];
+@@ -120,0 +136 @@
++	cwd: string;
+@@ -157,0 +174 @@
++	raw: RawSnapshot;
+@@ -161,0 +179,15 @@
++type UnifiedMutationManifest = {
++	version: 1;
++	files: Array<{
++		path: string;
++		absolutePath: string;
++		kind: PlannedFileChange["kind"];
++		edits: Edit[];
++		content?: string;
++	}>;
++};
++
++type InternalUnifiedInput = UnifiedEditParams & {
++	__piUnifiedEdit?: UnifiedMutationManifest;
++};
++
+@@ -532,3 +564,25 @@
+-function resolveToCwd(cwd: string, path: string): string {
+-	const normalized = normalizePath(path);
+-	return isAbsolute(normalized) ? resolvePath(normalized) : resolvePath(cwd, normalized);
++function isContained(root: string, candidate: string): boolean {
++	const rel = relative(root, candidate);
++	return rel !== "" && rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
++}
++
++async function resolveWorkspacePath(cwd: string, rawPath: string): Promise<string> {
++	const normalized = normalizePath(rawPath);
++	if (normalized.includes("\0")) throw new Error(`Path contains a NUL byte: ${rawPath}`);
++	const root = await realpath(cwd);
++	const lexical = isAbsolute(normalized) ? resolvePath(normalized) : resolvePath(root, normalized);
++	if (!isContained(root, lexical)) throw new Error(`Path escapes the workspace: ${rawPath}`);
++
++	const rel = relative(root, lexical);
++	let cursor = root;
++	for (const part of rel.split(sep)) {
++		cursor = resolvePath(cursor, part);
++		try {
++			const info = await lstat(cursor);
++			if (info.isSymbolicLink()) throw new Error(`Symlink paths are not supported: ${rawPath}`);
++		} catch (err: any) {
++			if (err?.code === "ENOENT") break;
++			throw err;
++		}
++	}
++	return lexical;
+@@ -537,7 +591,7 @@
+-async function readExistingNormalized(path: string, absolutePath: string): Promise<string> {
+-	try {
+-		return normalizeToLF(stripBom(await readFile(absolutePath, "utf-8")).text);
+-	} catch (err: any) {
+-		const code = err && typeof err === "object" && "code" in err ? ` (${err.code})` : "";
+-		throw new Error(`Could not read ${path}${code}.`);
+-	}
++function detectUniformEnding(text: string, path: string): "\r\n" | "\n" {
++	const withoutCrLf = text.replace(/\r\n/g, "");
++	if (withoutCrLf.includes("\r")) throw new Error(`Bare CR line ending is not supported in ${path}.`);
++	const hasCrLf = text.includes("\r\n");
++	const hasLf = /(^|[^\r])\n/.test(text);
++	if (hasCrLf && hasLf) throw new Error(`Mixed line endings are not supported in ${path}.`);
++	return hasCrLf ? "\r\n" : "\n";
+@@ -546 +600 @@
+-async function maybeReadNormalized(absolutePath: string): Promise<string | null> {
++async function readRawSnapshot(path: string, absolutePath: string, allowMissing: boolean): Promise<RawSnapshot> {
+@@ -548 +602,14 @@
+-		return normalizeToLF(stripBom(await readFile(absolutePath, "utf-8")).text);
++		const info = await lstat(absolutePath);
++		if (info.isSymbolicLink() || !info.isFile()) throw new Error(`Target is not a regular file: ${path}`);
++		const bytes = await readFile(absolutePath);
++		const decoded = bytes.toString("utf-8");
++		const { bom, text } = stripBom(decoded);
++		return {
++			bytes,
++			mode: info.mode & 0o7777,
++			dev: info.dev,
++			ino: info.ino,
++			bom,
++			ending: detectUniformEnding(text, path),
++			content: normalizeToLF(text),
++		};
+@@ -550,2 +617,4 @@
+-		if (err?.code === "ENOENT") return null;
+-		throw err;
++		if (allowMissing && err?.code === "ENOENT") return { bom: "", ending: "\n", content: null };
++		const code = err && typeof err === "object" && "code" in err ? ` (${err.code})` : "";
++		if (err instanceof Error && !code) throw err;
++		throw new Error(`Could not read ${path}${code}.`);
+@@ -859 +928,39 @@
+-function createUpdatePlan(path: string, absolutePath: string, oldText: string, newText: string): PlannedFileChange | undefined {
++function lastLine(text: string): string {
++	const lines = text.match(/[^\n]*\n|[^\n]+/g) ?? [];
++	return lines.at(-1) ?? "";
++}
++
++function firstLine(text: string): string {
++	return (text.match(/[^\n]*\n|[^\n]+/g) ?? [""])[0];
++}
++
++function guardEditsForChange(oldText: string, newText: string): Edit[] {
++	if (oldText === newText) return [];
++	const changes = diffLines(oldText, newText);
++	const edits: Edit[] = [];
++	let previousContext = "";
++	for (let i = 0; i < changes.length; ) {
++		const change = changes[i];
++		if (!change.added && !change.removed) {
++			previousContext = lastLine(change.value);
++			i++;
++			continue;
++		}
++		let removed = "";
++		let added = "";
++		while (i < changes.length && (changes[i].added || changes[i].removed)) {
++			if (changes[i].removed) removed += changes[i].value;
++			if (changes[i].added) added += changes[i].value;
++			i++;
++		}
++		const nextContext = i < changes.length ? firstLine(changes[i].value) : "";
++		const before = previousContext;
++		const oldChunk = before + removed + nextContext;
++		const newChunk = before + added + nextContext;
++		edits.push({ oldText: oldChunk || removed, newText: newChunk || added });
++	}
++	return edits;
++}
++
++function createUpdatePlan(snapshot: FileSnapshot, newText: string): PlannedFileChange | undefined {
++	const oldText = snapshot.original!;
+@@ -861 +968,9 @@
+-	return { kind: oldText.length === 0 ? "write" : "update", path, absolutePath, oldText, newText };
++	return {
++		kind: oldText.length === 0 ? "write" : "update",
++		path: snapshot.path,
++		absolutePath: snapshot.absolutePath,
++		oldText,
++		newText,
++		raw: snapshot.raw,
++		guardEdits: guardEditsForChange(oldText, newText),
++	};
+@@ -864 +979 @@
+-function createSnapshotStore(cwd: string, read: (path: string, absolutePath: string) => Promise<string | null>) {
++function createSnapshotStore(cwd: string) {
+@@ -870 +985 @@
+-			const absolutePath = resolveToCwd(cwd, path);
++			const absolutePath = await resolveWorkspacePath(cwd, path);
+@@ -873,2 +988,3 @@
+-				const original = await read(path, absolutePath);
+-				snapshot = { path, absolutePath, original, current: original };
++				const raw = await readRawSnapshot(path, absolutePath, true);
++				const original = raw.content;
++				snapshot = { path, absolutePath, raw, original, current: original };
+@@ -882 +998,2 @@
+-			for (const { path, absolutePath, original, current } of ordered) {
++			for (const snapshot of ordered) {
++				const { path, absolutePath, raw, original, current } = snapshot;
+@@ -885 +1002 @@
+-					changes.push({ kind: "add", path, absolutePath, oldText: "", newText: current });
++					changes.push({ kind: "add", path, absolutePath, oldText: "", newText: current, raw, guardEdits: [] });
+@@ -887 +1004 @@
+-					changes.push({ kind: "delete", path, absolutePath, oldText: original, newText: "" });
++					changes.push({ kind: "delete", path, absolutePath, oldText: original, newText: "", raw, guardEdits: guardEditsForChange(original, "") });
+@@ -889 +1006 @@
+-					const plan = createUpdatePlan(path, absolutePath, original, current);
++					const plan = createUpdatePlan(snapshot, current);
+@@ -901 +1018 @@
+-	const store = createSnapshotStore(cwd, readExistingNormalized);
++	const store = createSnapshotStore(cwd);
+@@ -909 +1026 @@
+-	return { mode: "rows", changes: store.collectChanges("The row edit script produced no changes.") };
++	return { mode: "rows", cwd, changes: store.collectChanges("The row edit script produced no changes.") };
+@@ -1052,0 +1170 @@
++		const matches: number[] = [];
+@@ -1061 +1179 @@
+-			if (ok) return i;
++			if (ok) matches.push(i);
+@@ -1062,0 +1181,2 @@
++		if (matches.length > 1) throw new Error(`Patch hunk is ambiguous: ${matches.length} matching locations.`);
++		if (matches.length === 1) return matches[0];
+@@ -1106 +1226 @@
+-	const store = createSnapshotStore(cwd, (_path, absolutePath) => maybeReadNormalized(absolutePath));
++	const store = createSnapshotStore(cwd);
+@@ -1110,0 +1231 @@
++			if (snapshot.current !== null) throw new Error(`Failed to add ${op.path}: file already exists.`);
+@@ -1124 +1245 @@
+-	return { mode: "patch", changes: store.collectChanges("The patch produced no changes.") };
++	return { mode: "patch", cwd, changes: store.collectChanges("The patch produced no changes.") };
+@@ -1157 +1278,25 @@
+-async function preflightPlan(plan: ParsedPlan, signal?: AbortSignal): Promise<void> {
++function detailsForChange(path: string, oldText: string, newText: string): EditDetailsLike {
++	const { diff, firstChangedLine } = generateDiffString(oldText, newText);
++	return { diff, patch: generateUnifiedPatch(path, oldText, newText), firstChangedLine };
++}
++
++let testCommitFailureAfter: number | undefined;
++let testFailureAfterBackup = false;
++let testRollbackRestoreFailure = false;
++let testStageFailureAfterWrite = false;
++let testAfterStage: (() => void | Promise<void>) | undefined;
++
++type StagedChange = {
++	change: PlannedFileChange;
++	stagePath?: string;
++	backupPath: string;
++	createdDirectory?: string;
++	state: "staged" | "backed-up" | "committed";
++};
++
++async function withAllMutationQueues<T>(paths: string[], fn: () => Promise<T>, index = 0): Promise<T> {
++	if (index >= paths.length) return fn();
++	return withFileMutationQueue(paths[index], () => withAllMutationQueues(paths, fn, index + 1));
++}
++
++async function validatePlanUnderLock(plan: ParsedPlan, signal?: AbortSignal): Promise<void> {
+@@ -1159,0 +1305,2 @@
++		const resolved = await resolveWorkspacePath(plan.cwd, change.path);
++		if (resolved !== change.absolutePath) throw new Error(`Path identity changed since planning: ${change.path}`);
+@@ -1161,0 +1309,6 @@
++			try {
++				await lstat(change.absolutePath);
++				throw new Error(`Could not add ${change.path}: file already exists.`);
++			} catch (err: any) {
++				if (err?.code !== "ENOENT") throw err;
++			}
+@@ -1164,3 +1316,0 @@
+-		if (change.kind === "update") {
+-			applyEditsToNormalizedContent(change.oldText, [{ oldText: change.oldText, newText: change.newText }], change.path);
+-		}
+@@ -1167,0 +1318,13 @@
++		const info = await lstat(change.absolutePath);
++		if (info.isSymbolicLink() || !info.isFile()) throw new Error(`Target is not a regular file: ${change.path}`);
++		if ((change.raw.dev !== undefined && info.dev !== change.raw.dev) ||
++			(change.raw.ino !== undefined && info.ino !== change.raw.ino)) {
++			throw new Error(`Could not edit ${change.path}: target identity changed since planning.`);
++		}
++		if (change.raw.mode !== undefined && (info.mode & 0o7777) !== change.raw.mode) {
++			throw new Error(`Could not edit ${change.path}: file mode changed since planning.`);
++		}
++		const current = await readFile(change.absolutePath);
++		if (!change.raw.bytes || !current.equals(change.raw.bytes)) {
++			throw new Error(`Could not edit ${change.path}: raw file contents changed since planning.`);
++		}
+@@ -1171,3 +1334,4 @@
+-function detailsForChange(path: string, oldText: string, newText: string): EditDetailsLike {
+-	const { diff, firstChangedLine } = generateDiffString(oldText, newText);
+-	return { diff, patch: generateUnifiedPatch(path, oldText, newText), firstChangedLine };
++function outputBytes(change: PlannedFileChange): Buffer | undefined {
++	if (change.kind === "delete") return undefined;
++	if (change.kind === "add") return Buffer.from(change.newText, "utf-8");
++	return Buffer.from(change.raw.bom + restoreLineEndings(change.newText, change.raw.ending), "utf-8");
+@@ -1176,4 +1340,13 @@
+-async function readFileForMutation(absolutePath: string): Promise<{ bom: string; ending: "\r\n" | "\n"; content: string }> {
+-	await access(absolutePath, constants.R_OK | constants.W_OK);
+-	const { bom, text } = stripBom(await readFile(absolutePath, "utf-8"));
+-	return { bom, ending: detectLineEnding(text), content: normalizeToLF(text) };
++async function removeCreatedDirectories(item: StagedChange): Promise<void> {
++	if (!item.createdDirectory) return;
++	const stopParent = dirname(item.createdDirectory);
++	let cursor = dirname(item.change.absolutePath);
++	while (cursor !== stopParent) {
++		try {
++			await rmdir(cursor);
++		} catch {
++			// Never recursively remove: external contents intentionally keep the directory.
++			break;
++		}
++		cursor = dirname(cursor);
++	}
+@@ -1182,16 +1355,6 @@
+-async function applyUpdateChange(change: PlannedFileChange, signal?: AbortSignal): Promise<EditDetailsLike> {
+-	return withFileMutationQueue(change.absolutePath, async () => {
+-		throwIfAborted(signal);
+-		const file = await readFileForMutation(change.absolutePath);
+-		throwIfAborted(signal);
+-
+-		const { baseContent, newContent } = applyEditsToNormalizedContent(
+-			file.content,
+-			[{ oldText: change.oldText, newText: change.newText }],
+-			change.path,
+-		);
+-
+-		await writeFile(change.absolutePath, file.bom + restoreLineEndings(newContent, file.ending), "utf-8");
+-		throwIfAborted(signal);
+-		return detailsForChange(change.path, baseContent, newContent);
+-	});
++async function cleanupArtifacts(staged: StagedChange[], preserveBackups = new Set<string>()): Promise<void> {
++	for (const item of [...staged].reverse()) {
++		if (item.stagePath) await rm(item.stagePath, { force: true }).catch(() => undefined);
++		if (!preserveBackups.has(item.backupPath)) await rm(item.backupPath, { force: true }).catch(() => undefined);
++		await removeCreatedDirectories(item);
++	}
+@@ -1200,6 +1363,16 @@
+-async function applyWriteChange(change: PlannedFileChange, signal?: AbortSignal): Promise<EditDetailsLike> {
+-	return withFileMutationQueue(change.absolutePath, async () => {
+-		throwIfAborted(signal);
+-		const file = await readFileForMutation(change.absolutePath);
+-		if (file.content !== change.oldText) {
+-			throw new Error(`Could not edit ${change.path}: file changed since preflight.`);
++async function stagePlan(plan: ParsedPlan, signal?: AbortSignal): Promise<StagedChange[]> {
++	const staged: StagedChange[] = [];
++	try {
++		for (const change of plan.changes) {
++			throwIfAborted(signal);
++			const token = randomUUID();
++			const stagePath = change.kind === "delete" ? undefined : resolvePath(dirname(change.absolutePath), `.pi-unified-edit-${token}.stage`);
++			const backupPath = resolvePath(dirname(change.absolutePath), `.pi-unified-edit-${token}.backup`);
++			const item: StagedChange = { change, stagePath, backupPath, state: "staged" };
++			staged.push(item);
++			item.createdDirectory = (await mkdir(dirname(change.absolutePath), { recursive: true })) ?? undefined;
++			if (stagePath) {
++				await writeFile(stagePath, outputBytes(change)!, { flag: "wx", mode: change.raw.mode ?? 0o666 });
++				if (testStageFailureAfterWrite) throw new Error("Injected staging failure after write");
++				if (change.raw.mode !== undefined) await chmod(stagePath, change.raw.mode);
++			}
+@@ -1207,3 +1380,5 @@
+-		await writeFile(change.absolutePath, file.bom + restoreLineEndings(change.newText, file.ending), "utf-8");
+-		return detailsForChange(change.path, file.content, change.newText);
+-	});
++		return staged;
++	} catch (err) {
++		await cleanupArtifacts(staged);
++		throw err;
++	}
+@@ -1212,9 +1387,23 @@
+-async function applyAddChange(change: PlannedFileChange, signal?: AbortSignal): Promise<EditDetailsLike> {
+-	return withFileMutationQueue(change.absolutePath, async () => {
+-		throwIfAborted(signal);
+-		const existing = await maybeReadNormalized(change.absolutePath);
+-		if (existing !== null) throw new Error(`Could not add ${change.path}: file already exists.`);
+-		await mkdir(dirname(change.absolutePath), { recursive: true });
+-		await writeFile(change.absolutePath, change.newText, "utf-8");
+-		return detailsForChange(change.path, "", change.newText);
+-	});
++async function rollback(staged: StagedChange[]): Promise<{ failures: string[]; retainedBackups: Set<string> }> {
++	const failures: string[] = [];
++	const retainedBackups = new Set<string>();
++	for (const item of [...staged].reverse()) {
++		try {
++			if (item.change.kind === "add") {
++				if (item.state === "committed") await rm(item.change.absolutePath, { force: true });
++			} else if (item.state === "backed-up" || item.state === "committed") {
++				if (item.state === "committed" && item.change.kind !== "delete") await rm(item.change.absolutePath, { force: true });
++				if (testRollbackRestoreFailure) throw new Error("Injected rollback restore failure");
++				await rename(item.backupPath, item.change.absolutePath);
++			}
++		} catch (err: any) {
++			if (item.change.kind !== "add" && (item.state === "backed-up" || item.state === "committed")) {
++				retainedBackups.add(item.backupPath);
++				failures.push(`${item.change.path}: ${err?.message ?? String(err)}; original retained at ${item.backupPath}`);
++			} else {
++				failures.push(`${item.change.path}: ${err?.message ?? String(err)}`);
++			}
++		}
++	}
++	await cleanupArtifacts(staged, retainedBackups);
++	return { failures, retainedBackups };
+@@ -1223,9 +1412,25 @@
+-async function applyDeleteChange(change: PlannedFileChange, signal?: AbortSignal): Promise<EditDetailsLike> {
+-	return withFileMutationQueue(change.absolutePath, async () => {
+-		throwIfAborted(signal);
+-		await access(change.absolutePath, constants.R_OK | constants.W_OK);
+-		const current = await readExistingNormalized(change.path, change.absolutePath);
+-		if (current !== change.oldText) throw new Error(`Could not delete ${change.path}: file changed since preflight.`);
+-		await unlink(change.absolutePath);
+-		return detailsForChange(change.path, change.oldText, "");
+-	});
++async function commitStaged(staged: StagedChange[]): Promise<void> {
++	try {
++		let commitIndex = 0;
++		for (const item of staged) {
++			if (testCommitFailureAfter === commitIndex++) throw new Error("Injected commit failure");
++			const { change, stagePath, backupPath } = item;
++			if (change.kind === "add") {
++				await link(stagePath!, change.absolutePath);
++				item.state = "committed";
++				await rm(stagePath!, { force: true });
++				continue;
++			}
++			await rename(change.absolutePath, backupPath);
++			item.state = "backed-up";
++			if (testFailureAfterBackup) throw new Error("Injected failure after backup rename");
++			if (change.kind !== "delete") await rename(stagePath!, change.absolutePath);
++			item.state = "committed";
++		}
++	} catch (err: any) {
++		const { failures } = await rollback(staged);
++		const suffix = failures.length ? `\nRollback failures:\n${failures.join("\n")}` : "";
++		throw new Error(`Unified edit transaction failed: ${err?.message ?? String(err)}${suffix}`);
++	}
++	// Cleanup cannot make a successfully committed transaction look like a failed edit.
++	await cleanupArtifacts(staged);
+@@ -1235,14 +1440,24 @@
+-	const appliers = {
+-		update: applyUpdateChange,
+-		write: applyWriteChange,
+-		add: applyAddChange,
+-		delete: applyDeleteChange,
+-	} as const;
+-
+-	const files: UnifiedEditDetails["files"] = [];
+-	for (const change of plan.changes) {
+-		throwIfAborted(signal);
+-		const details = await appliers[change.kind](change, signal);
+-		files.push({ path: change.path, kind: change.kind, details });
+-	}
+-	return combineDetails(files);
++	const paths = [...new Set(plan.changes.map((change) => change.absolutePath))].sort();
++	return withAllMutationQueues(paths, async () => {
++		await validatePlanUnderLock(plan, signal);
++		const staged = await stagePlan(plan, signal);
++		try {
++			await testAfterStage?.();
++			throwIfAborted(signal);
++			// Recheck after every stage write to narrow stale-write/path-swap races.
++			await validatePlanUnderLock(plan, signal);
++			throwIfAborted(signal);
++		} catch (err) {
++			await cleanupArtifacts(staged);
++			throw err;
++		}
++		// Once commit starts, cancellation is intentionally deferred until commit or rollback settles.
++		await commitStaged(staged);
++		const files = plan.changes.map((change) => ({
++			path: change.path,
++			absolutePath: change.absolutePath,
++			kind: change.kind,
++			details: detailsForChange(change.path, change.oldText, change.newText),
++		}));
++		return combineDetails(files);
++	});
+@@ -1276,0 +1492 @@
++			absolutePath: change.absolutePath,
+@@ -1530,0 +1747,41 @@
++function manifestForPlan(plan: ParsedPlan): UnifiedMutationManifest {
++	return {
++		version: 1,
++		files: plan.changes.map((change) => ({
++			path: change.path,
++			absolutePath: change.absolutePath,
++			kind: change.kind,
++			edits: change.guardEdits,
++			content: change.kind === "add" || change.kind === "write" ? change.newText : undefined,
++		})),
++	};
++}
++
++const LSP_GUARD_COMPAT = Symbol.for("pi-unified-edit:lsp-guard-compat");
++const UNDO_COMPAT = Symbol.for("pi-unified-edit:undo-compat");
++
++export const __test = {
++	buildPlan,
++	applyPlan,
++	manifestForPlan,
++	parsePatch,
++	parseRowScript,
++	resolveWorkspacePath,
++	seekSequence,
++	setCommitFailureAfter(value?: number) {
++		testCommitFailureAfter = value;
++	},
++	setFailureAfterBackup(value = false) {
++		testFailureAfterBackup = value;
++	},
++	setRollbackRestoreFailure(value = false) {
++		testRollbackRestoreFailure = value;
++	},
++	setStageFailureAfterWrite(value = false) {
++		testStageFailureAfterWrite = value;
++	},
++	setAfterStage(hook?: () => void | Promise<void>) {
++		testAfterStage = hook;
++	},
++};
++
+@@ -1531,0 +1789,25 @@
++	const plans = new Map<string, ParsedPlan>();
++
++	pi.on("tool_call", async (event, ctx) => {
++		if (event.toolName !== "edit") return;
++		const input = event.input as InternalUnifiedInput;
++		if (typeof input?.text !== "string") return;
++		const globals = globalThis as Record<symbol, unknown>;
++		if (globals[LSP_GUARD_COMPAT] !== 1 || globals[UNDO_COMPAT] !== 1) {
++			return { block: true, reason: "Unified Edit compatibility bridges for lightweight LSP/read-guard and pi-undo-redo are not loaded." };
++		}
++		try {
++			const plan = await buildPlan(input.text, ctx.cwd);
++			plans.set(event.toolCallId, plan);
++			input.__piUnifiedEdit = manifestForPlan(plan);
++		} catch (err: any) {
++			return { block: true, reason: `Unified Edit planning failed before mutation: ${err?.message ?? String(err)}` };
++		}
++	});
++
++	pi.on("tool_result", (event) => {
++		if (event.toolName === "edit") plans.delete(event.toolCallId);
++	});
++	pi.on("turn_end", () => plans.clear());
++	pi.on("session_shutdown", () => plans.clear());
++
+@@ -1542 +1824 @@
+-		async execute(_toolCallId, params: UnifiedEditParams, signal, _onUpdate, ctx) {
++		async execute(toolCallId, params: UnifiedEditParams, signal, _onUpdate, ctx) {
+@@ -1545,6 +1827,2 @@
+-			const plan = await buildPlan(text, ctx.cwd);
+-			try {
+-				await preflightPlan(plan, signal);
+-			} catch (err: any) {
+-				throw new Error(`Preflight failed before mutating files.\n${err?.message ?? String(err)}`);
+-			}
++			const plan = plans.get(toolCallId) ?? (await buildPlan(text, ctx.cwd));
++			plans.delete(toolCallId);

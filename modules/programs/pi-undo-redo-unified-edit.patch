@@ -1,0 +1,17 @@
+--- a/src/extension.ts
++++ b/src/extension.ts
+@@ -6,0 +7,3 @@
++
++globalThis[Symbol.for("pi-unified-edit:undo-compat")] = 1;
++
+@@ -179 +182,9 @@
+-        await captureExplicitToolPath(snap, event.input?.path, event.toolName === "write" ? event.input?.content : undefined, ctx);
++        const manifest = event.input?.__piUnifiedEdit;
++        if (event.toolName === "edit" && manifest?.version === 1 && Array.isArray(manifest.files)) {
++          const paths = [...new Set(manifest.files
++            .map((file: any) => file?.absolutePath)
++            .filter((filePath: unknown): filePath is string => typeof filePath === "string"))];
++          for (const filePath of paths) await captureExplicitToolPath(snap, filePath, undefined, ctx);
++        } else {
++          await captureExplicitToolPath(snap, event.input?.path, event.toolName === "write" ? event.input?.content : undefined, ctx);
++        }

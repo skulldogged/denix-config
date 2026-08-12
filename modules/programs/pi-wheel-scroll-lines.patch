@@ -1,15 +1,5 @@
 diff --git a/packages/coding-agent/src/modes/interactive/interactive-mode.ts b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
 --- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
 +++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
-@@ -342,7 +342,10 @@
- export function createInteractiveTui(options: InteractiveTuiOptions): TuiMainScreen | TuiAltScreen {
- 	const terminal = options.terminal ?? new ProcessTerminal();
- 	if (options.tuiMode === "fullscreen") {
--		return new TuiAltScreen(terminal, options.showHardwareCursor, options.logDirectory, { openUrl: openBrowser });
-+		return new TuiAltScreen(terminal, options.showHardwareCursor, options.logDirectory, {
-+			openUrl: openBrowser,
+@@ -348,0 +349 @@
 +			wheelScrollLines: 3,
-+		});
- 	}
- 	return new TuiMainScreen(terminal, options.showHardwareCursor, options.logDirectory);
- }
