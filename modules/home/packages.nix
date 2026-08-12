@@ -16,11 +16,11 @@ delib.module {
     inherit (pkgs.stdenv.hostPlatform) system;
 
     t3CodeNightly = let
-      # pingdotgg/t3code main 65b005f1 with PR #5882 replayed through d4573805.
-      version = "0.0.35-main65b005f1.pi.d4573805";
+      # pingdotgg/t3code main ac1264e2 with PR #5882 replayed through c0c28110.
+      version = "0.0.36-mainac1264e2.pi.c0c28110";
       appImage = pkgs.fetchurl {
         url = "https://github.com/skulldogged/denix-config/releases/download/t3code-${version}/T3-Code-${version}-x86_64.AppImage";
-        hash = "sha256-L5Sat2dWGLO+Aj9YZvsy6fFzahPDFYOL89mUqs+eMic=";
+        hash = "sha256-jiQGpmo+Zu45oaskzJ0mSIETv3oYe8XNsULEiN3Cq+s=";
       };
       package = inputs.t3code-flake.packages.${system}.t3-code-nightly.overrideAttrs {
         inherit version;
