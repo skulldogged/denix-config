@@ -95,6 +95,19 @@
       }
 
       candidates="$({
+        # Host aliases declared in the SSH client config. NixOS writes
+        # programs.ssh.extraConfig to the system-wide file, and user-level
+        # includes live under ~/.ssh. Only named Host aliases are listed
+        # (the Host * catch-all and wildcard patterns are filtered below),
+        # never the raw known_hosts entries.
+        if [[ -r /etc/ssh/ssh_config ]]; then
+          awk '
+            tolower($1) == "host" {
+              for (field = 2; field <= NF; field++) print $field
+            }
+          ' /etc/ssh/ssh_config
+        fi
+
         if [[ -d "$HOME/.ssh" ]]; then
           while IFS= read -r -d "" file; do
             awk '
@@ -105,18 +118,6 @@
           done < <(
             find "$HOME/.ssh" -maxdepth 3 -type f \
               \( -name config -o -name "*.conf" \) -print0
-          )
-
-          while IFS= read -r -d "" file; do
-            awk '
-              NF > 0 && $1 !~ /^#/ {
-                hosts = ($1 ~ /^@/) ? $2 : $1
-                if (hosts != "") print hosts
-              }
-            ' "$file"
-          done < <(
-            find "$HOME/.ssh" -maxdepth 1 -type f \
-              -name "known_hosts*" -print0
           )
         fi
       } | awk '

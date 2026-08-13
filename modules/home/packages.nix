@@ -76,7 +76,6 @@ delib.module {
         lm_sensors
         loupe
         meteor-git
-        moonlight-qt
         nicotine-plus
         nodejs
         obsidian

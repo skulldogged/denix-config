@@ -648,6 +648,24 @@ delib.module {
       file = {
         ".pi/agent/bin/pi".source = "${piOpaque}/bin/pi";
         ".pi/agent/AGENTS.md".text = ''
+          # Progress updates
+
+          For any task that will use tools, start with a brief one- or two-sentence
+          update explaining what you understand and what you will inspect or do first.
+          Skip this only for a genuinely trivial single-step action where an update would
+          add no value.
+
+          During longer tasks, keep the user informed at reasonable intervals. Do not
+          leave the user without a visible progress update for more than 60 seconds while
+          work is ongoing. Briefly connect what you have learned or completed to what you
+          will do next instead of repeating raw tool output.
+
+          Send an update before edits, builds, tests, waits, or other work likely to take
+          noticeable time. Group related tool calls behind one preamble rather than
+          narrating every trivial command. Treat these as intermediate working updates,
+          continue working after sending them, and finish with a self-contained final
+          answer.
+
           # Subagents
 
           Use subagents selectively. Delegate when parallel reconnaissance or research, a
@@ -686,6 +704,11 @@ delib.module {
         ".pi/agent/extensions/more-below.ts".source = piMoreBelowExtension;
         ".pi/agent/themes/catppuccin-mocha.json".source =
           ../../files/pi/themes/catppuccin-mocha.json;
+        # Return web search results directly to Pi without opening the curator
+        # browser or waiting for manual approval.
+        ".pi/web-search.json".text = builtins.toJSON {
+          workflow = "none";
+        };
       };
 
       # Claudify's settings screen rewrites ~/.pi/settings.json. Seed a regular,
