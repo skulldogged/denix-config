@@ -373,6 +373,8 @@ delib.module {
               | map(if .id == "battery" then .enabled = false else . end)
             )
           | .background.enabled = false
+          | .general.idle.lockBeforeSleep = false
+          | .general.idle.timeouts = []
         ' "$seedPath" "$configPath" > "$tempPath"
       else
         errorEcho "Caelestia config is not a regular file: $configPath"
@@ -690,23 +692,9 @@ delib.module {
           };
 
           idle = {
-            lockBeforeSleep = true;
+            lockBeforeSleep = false;
             inhibitWhenAudio = true;
-            timeouts = [
-              {
-                timeout = 1800; # 30min
-                idleAction = "lock";
-              }
-              {
-                timeout = 2700; # 45min
-                idleAction = "dpms off";
-                returnAction = "dpms on";
-              }
-              {
-                timeout = 3600; # 60min
-                idleAction = ["systemctl" "suspend-then-hibernate"];
-              }
-            ];
+            timeouts = [];
           };
         };
 

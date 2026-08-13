@@ -18,6 +18,10 @@ delib.host {
       distributed-builds = {
         enable = true;
         hostName = "builder";
+        systems = [
+          "x86_64-linux"
+          "i686-linux"
+        ];
         sshKey = "/persist/root/.ssh/id_ed25519";
         publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUVlOHJ0eTl4L0sxS1kvU2srOHQyQ1FTeE41amVLa3p0SW9USUt6dG5OSHogcm9vdEBidWlsZGVyCg==";
         speedFactor = 20;
