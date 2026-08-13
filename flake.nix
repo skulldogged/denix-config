@@ -208,7 +208,7 @@
           inherit inputs;
         };
       };
-  in {
+  in rec {
     nixosConfigurations =
       inputs.nixpkgs.lib.getAttrs ["navis" "polaris"]
       (mkConfigurations "nixos")
@@ -231,6 +231,120 @@
       (mkConfigurations "darwin");
 
     formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
+
+    packages.x86_64-linux.pi = let
+      pkgs = import inputs.nixpkgs {system = "x86_64-linux";};
+      homeConfig = nixosConfigurations.navis.config.home-manager.users.marshall;
+      piConfig = homeConfig.programs.pi-coding-agent;
+      piPackage = piConfig.package;
+      piFiles = homeConfig.home.file;
+      standaloneSettings =
+        piConfig.settings
+        // {
+          packages = piConfig.settings.packages ++ ["npm:pi-mcp-adapter"];
+        };
+
+      settings = pkgs.writeText "pi-denix-settings.json" (builtins.toJSON standaloneSettings);
+      claudifyDefaults = pkgs.writeText "pi-claudify-defaults.json" (builtins.toJSON {
+        accentColor = "theme";
+        bashSemanticDisplay = true;
+        diffPalette = "theme";
+        editorBorder = "thinking";
+        footerStyle = "pi";
+        messageStyle = "classic";
+        readOnlyToolGrouping = true;
+        themeAdaptive = true;
+        toolBackground = "outlines";
+        toolChrome = "theme";
+        userMessageBox = "theme";
+      });
+      blackholeDefaults = pkgs.writeText "pi-blackhole-defaults.json" (builtins.toJSON {
+        compactAfterTokens = 150000;
+        compaction = "auto";
+        compactionEngine = "blackhole";
+        debug = false;
+        debugLog = false;
+        memory = true;
+        midRunCompaction = "off";
+        tailBehavior = "pi-default";
+      });
+
+      setup = pkgs.writeShellScript "pi-denix-setup" ''
+        set -eu
+
+        link_managed() {
+          target="$1"
+          source="$2"
+          ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$target")"
+          if [ -L "$target" ]; then
+            ${pkgs.coreutils}/bin/ln -sfn "$source" "$target"
+          elif [ -e "$target" ]; then
+            echo "pi-denix: preserving unmanaged file $target" >&2
+          else
+            ${pkgs.coreutils}/bin/ln -s "$source" "$target"
+          fi
+        }
+
+        seed_mutable() {
+          target="$1"
+          seed="$2"
+          directory="$(${pkgs.coreutils}/bin/dirname "$target")"
+          ${pkgs.coreutils}/bin/mkdir -p "$directory"
+          temporary="$(${pkgs.coreutils}/bin/mktemp "$directory/.pi-denix.XXXXXX")"
+          trap '${pkgs.coreutils}/bin/rm -f "$temporary"' EXIT
+
+          if [ -L "$target" ] || [ ! -e "$target" ]; then
+            ${pkgs.coreutils}/bin/cp "$seed" "$temporary"
+          elif [ -f "$target" ]; then
+            ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$seed" "$target" > "$temporary"
+          else
+            echo "pi-denix: expected a regular file at $target" >&2
+            exit 1
+          fi
+
+          ${pkgs.coreutils}/bin/chmod 0600 "$temporary"
+          if [ -L "$target" ] || ! ${pkgs.diffutils}/bin/cmp -s "$temporary" "$target"; then
+            ${pkgs.coreutils}/bin/rm -f "$target"
+            ${pkgs.coreutils}/bin/mv "$temporary" "$target"
+          fi
+          trap - EXIT
+          [ ! -e "$temporary" ] || ${pkgs.coreutils}/bin/rm -f "$temporary"
+        }
+
+        ${pkgs.coreutils}/bin/mkdir -p "$HOME/.pi/agent"
+        ${pkgs.coreutils}/bin/chmod 0700 "$HOME/.pi" "$HOME/.pi/agent"
+
+        link_managed "$HOME/.pi/agent/bin/pi" "${piPackage}/bin/pi"
+        link_managed "$HOME/.pi/agent/settings.json" "${settings}"
+        link_managed "$HOME/.pi/agent/AGENTS.md" "${piFiles.".pi/agent/AGENTS.md".source}"
+        link_managed "$HOME/.pi/agent/skills/unslop/SKILL.md" "${piFiles.".pi/agent/skills/unslop/SKILL.md".source}"
+        link_managed "$HOME/.codex/skills/unslop/SKILL.md" "${piFiles.".codex/skills/unslop/SKILL.md".source}"
+        link_managed "$HOME/.pi/agent/extensions/subagent/config.json" "${piFiles.".pi/agent/extensions/subagent/config.json".source}"
+        link_managed "$HOME/.pi/agent/extensions/more-below.ts" "${piFiles.".pi/agent/extensions/more-below.ts".source}"
+        link_managed "$HOME/.pi/agent/themes/catppuccin-mocha.json" "${piFiles.".pi/agent/themes/catppuccin-mocha.json".source}"
+
+        seed_mutable "$HOME/.pi/settings.json" "${claudifyDefaults}"
+        seed_mutable "$HOME/.pi/agent/pi-blackhole/pi-blackhole-config.json" "${blackholeDefaults}"
+      '';
+
+      setupCommand = pkgs.writeShellScriptBin "pi-denix-setup" ''
+        exec ${setup} "$@"
+      '';
+      launcher = pkgs.writeShellScriptBin "pi" ''
+        ${setup}
+        export PI_SKIP_VERSION_CHECK=1
+        export PATH="${pkgs.lib.makeBinPath piConfig.extraPackages}:$PATH"
+        exec ${piPackage}/bin/pi "$@"
+      '';
+    in
+      pkgs.symlinkJoin {
+        name = "pi-denix-0.84.0";
+        paths = [launcher setupCommand] ++ piConfig.extraPackages;
+        passthru = {
+          inherit piPackage settings;
+        };
+        meta.mainProgram = "pi";
+      };
 
     checks = forAllSystems (system: {
       formatting = treefmtEval.${system}.config.build.check inputs.self;

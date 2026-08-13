@@ -29,6 +29,10 @@ delib.module {
       PI_CACHE_RETENTION = "long";
       PI_SKIP_VERSION_CHECK = "1";
     };
+    unslopSkill = pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/cursor/plugins/6dbbdd50cef1bdbfb540f80df8b598d0a546e3aa/pstack/skills/unslop/SKILL.md";
+      hash = "sha256-GBiD5TnK7IJY7JEp47pfEzQJFEosvyqjYRWKuUz8NEE=";
+    };
     blackholeDefaults = {
       compactAfterTokens = 150000;
       compaction = "auto";
@@ -646,6 +650,7 @@ delib.module {
       sessionPath = ["${piOpaque}/bin"];
 
       file = {
+        ".codex/skills/unslop/SKILL.md".source = unslopSkill;
         ".pi/agent/bin/pi".source = "${piOpaque}/bin/pi";
         ".pi/agent/AGENTS.md".text = ''
           # Progress updates
@@ -692,6 +697,7 @@ delib.module {
           relevant files or build inputs changed. Do not impose hard turn or tool limits on
           mutation-capable workers; narrow or steer an unexpectedly long run instead.
         '';
+        ".pi/agent/skills/unslop/SKILL.md".source = unslopSkill;
         ".pi/agent/extensions/subagent/config.json".text = builtins.toJSON {
           artifactDir = "session";
           asyncWidget = false;
