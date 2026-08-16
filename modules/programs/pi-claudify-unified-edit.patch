@@ -5,11 +5,11 @@
 @@ -26,0 +26 @@
 +	renderDiff,
 @@ -1444,0 +1445,3 @@
-+		if (toolName === "edit") {
++		if (toolName === "write") {
 +			return (args: any, theme: Theme, ctx: any) => renderUnifiedEditCall(args, theme, ctx);
 +		}
 @@ -1456,0 +1460,4 @@
-+		if (toolName === "edit") {
++		if (toolName === "write") {
 +			return (result: any, options: any, theme: Theme, ctx: any) =>
 +				renderUnifiedEditResult({ content: result.content, details: result.details }, options, theme, ctx);
 +		}
@@ -59,7 +59,7 @@
 +		if (paths.length > 1) return `${paths.length} files`;
 +		return "";
 +	});
-+	return makeText(ctx.lastComponent, toolHeader("Update", summary, theme, toolStatusDot(ctx, theme)));
++	return makeText(ctx.lastComponent, toolHeader("Write", summary, theme, toolStatusDot(ctx, theme)));
 +}
 +
 +function unifiedEditDiffCounts(files: UnifiedEditRenderFile[], fallbackDiff: string): { added: number; removed: number } {

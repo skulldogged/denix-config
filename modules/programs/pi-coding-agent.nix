@@ -29,10 +29,6 @@ delib.module {
       PI_CACHE_RETENTION = "long";
       PI_SKIP_VERSION_CHECK = "1";
     };
-    unslopSkill = pkgs.fetchurl {
-      url = "https://raw.githubusercontent.com/cursor/plugins/6dbbdd50cef1bdbfb540f80df8b598d0a546e3aa/pstack/skills/unslop/SKILL.md";
-      hash = "sha256-GBiD5TnK7IJY7JEp47pfEzQJFEosvyqjYRWKuUz8NEE=";
-    };
     blackholeDefaults = {
       compactAfterTokens = 150000;
       compaction = "auto";
@@ -184,6 +180,7 @@ delib.module {
         cp -R ${claudifySource}/. "$out"
         chmod -R u+w "$out"
         patch --directory="$out" -p1 < ${./pi-claudify-unified-edit.patch}
+        patch --directory="$out" -p1 < ${./pi-claudify-disable-write.patch}
         jq '.name = "pi-claudify-unified-edit-compat"' \
           "$out/package.json" > "$out/package.json.new"
         mv "$out/package.json.new" "$out/package.json"
@@ -217,6 +214,9 @@ delib.module {
         }/extensions/unified-edit.ts "$out/extensions/unified-edit.ts"
         chmod -R u+w "$out"
         patch --directory="$out" -p1 < ${./pi-unified-edit.patch}
+        substituteInPlace "$out/extensions/unified-edit.ts" \
+          --replace-fail 'name: "edit"' 'name: "write"' \
+          --replace-fail 'label: "edit"' 'label: "write"'
         ln -s ${diffSource} "$out/node_modules/diff"
         ln -s ${piOpaque}/lib/node_modules/pi-monorepo \
           "$out/node_modules/@earendil-works/pi-coding-agent"
@@ -285,7 +285,7 @@ delib.module {
               "@earendil-works/pi-coding-agent": "*",
               "@earendil-works/pi-tui": "*"
             }
-          | .pi = { extensions: ["./lsp-guard.ts", "./lsp.ts", "./lsp-tool.ts"] }' \
+          | .pi = { extensions: ["./lsp.ts", "./lsp-tool.ts"] }' \
           "$out/package.json" > "$out/package.json.new"
         mv "$out/package.json.new" "$out/package.json"
         PATH=${pkgs.nixd}/bin:$PATH PI_LSP_SOURCE="$out" \
@@ -606,6 +606,7 @@ delib.module {
           ./pi-wheel-scroll-lines.patch
           ./pi-starship-default-prompt.patch
           ./pi-fullscreen-scrollable-prompt.patch
+          ./pi-unified-write.patch
         ];
       buildPhase = ''
         runHook preBuild
@@ -650,7 +651,6 @@ delib.module {
       sessionPath = ["${piOpaque}/bin"];
 
       file = {
-        ".codex/skills/unslop/SKILL.md".source = unslopSkill;
         ".pi/agent/bin/pi".source = "${piOpaque}/bin/pi";
         ".pi/agent/AGENTS.md".text = ''
           # Progress updates
@@ -673,18 +673,15 @@ delib.module {
 
           # Subagents
 
-          For every non-trivial task, load and apply the `delegate-wave` skill before
-          performing broad repository reads or implementation. Delegate broad discovery,
-          research, repetitive edits, and well-scoped implementation work to the scout,
-          delegate, researcher, and worker roles. The parent's direct inspection should be
-          limited to the minimum needed to split work, resolve conflicting evidence, review
-          material diffs, and validate the result; do not duplicate discovery or edits that
-          a child is already performing.
+          Work directly by default. Use a subagent only when there is a genuinely
+          independent, bounded lane that can save time or supply expertise the parent
+          lacks. Do not delegate diagnostics, small repository audits, or questions about
+          Pi itself merely because they use tools.
 
-          Handle trivial single-step work directly when delegation would add more overhead
-          than value. Keep security-sensitive, architectural, ambiguous, and user-owned
-          decisions with the parent, while still delegating supporting evidence gathering
-          when safe.
+          Start with one child. Give it a focused task, fresh context, and set
+          `timeoutMs = 300000`. If it times out, errors, or returns no useful evidence,
+          continue directly instead of retrying or waiting indefinitely. Use parallel
+          children only when the lanes are clearly independent.
 
           Before using an unfamiliar subagent workflow or execution control, read the
           relevant `pi-subagents` skill section; do not reread it for every child in the
@@ -698,66 +695,10 @@ delib.module {
           fresh context with a focused handoff; use forked context only when the child
           genuinely needs the parent session's decisions or history.
 
-          Use one bounded initial delegation wave. Use one child for a narrow seam; for
-          broad comparisons across independent apps, services, or subsystems, use two to
-          four read-only children with genuinely distinct lanes. Do not send cloned prompts
-          with only paths or item numbers changed. Default to one fresh reviewer for
-          material multi-file, risky, or user-requested changes and one review round unless
-          a concrete unresolved risk justifies more.
-
-          Writers should run the narrowest relevant checks first. The parent owns at most
-          one final full validation gate and should not repeat a passing full build unless
-          relevant files or build inputs changed. Do not impose hard turn or tool limits on
-          mutation-capable workers; narrow or steer an unexpectedly long run instead.
-        '';
-".pi/agent/skills/unslop/SKILL.md".source = unslopSkill;
-        ".pi/agent/skills/delegate-wave/SKILL.md".text = ''
-          ---
-          name: delegate-wave
-          description: Delegate broad codebase discovery, research, repetitive edits, and well-scoped implementation to a bounded wave of inexpensive Pi subagents while the parent orchestrates, reviews, and validates. Use for every non-trivial tool-based task, especially cross-app or cross-subsystem analysis.
-          ---
-
-          # Delegate Wave
-
-          Use Pi's native `subagent` workflow. Do not launch nested Pi sessions in tmux or
-          ask ordinary children to orchestrate other children.
-
-          ## Controller contract
-
-          1. Inspect only enough context to identify independent lanes and write precise
-             child contracts. Do not perform repo-wide discovery before delegating.
-          2. Call `subagent({ action: "list" })` before the first execution in a session.
-          3. Launch the initial wave with `workflowScript`, stable keys, fresh context, and
-             distinct tasks. Use `runs.run` for one lane and `runs.all` for parallel lanes.
-          4. While children run, do not duplicate their reads or edits. Prepare synthesis,
-             inspect only load-bearing files, or handle decisions reserved for the parent.
-          5. Require concise evidence: findings with paths, changed files, commands and
-             validation results, unresolved risks, and decisions needing escalation.
-          6. The parent synthesizes results, reviews material diffs, owns the final
-             validation strategy, and answers the user.
-
-          ## Wave sizing and roles
-
-          - Narrow lookup or one implementation seam: one scout or delegate.
-          - Broad comparison across apps, services, or subsystems: two to four read-only
-            scouts/delegates with distinct analytical lanes, launched together with
-            `runs.all`.
-          - External evidence: researcher in a separate lane from local repository scouts.
-          - Approved changes: one worker as the sole writer for a working directory. Use
-            isolated worktrees only when parallel writers are genuinely independent.
-          - Material or risky changes: one fresh reviewer after implementation by default.
-
-          Never create nominal fanout by cloning the same prompt and changing only a path
-          or item number. Each lane must have a distinct question, evidence boundary, and
-          expected decision contribution.
-
-          ## Direct-work exceptions
-
-          Work directly only when the task is a trivial single-step action, delegation
-          overhead clearly exceeds the work, or the decision is security-sensitive,
-          architectural, ambiguous, or user-owned. Supporting read-only evidence may still
-          be delegated when safe. If a task expands beyond a few direct tool calls, stop and
-          delegate the remaining work instead of continuing a parent-led exploration.
+          After two failed attempts based on the same hypothesis, summarize the evidence
+          and change approach or ask the user. After roughly five tool calls without a
+          user-visible result, send a concise progress update and reconsider whether the
+          investigation is still bounded.
         '';
         ".pi/agent/extensions/subagent/config.json".text = builtins.toJSON {
           artifactDir = "session";

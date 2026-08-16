@@ -47,11 +47,11 @@ export default function probe(pi) {
   pi.on("session_start", () => {
     const tools = pi.getAllTools();
     writeFileSync(process.env.PI_UNIFIED_PROBE_OUTPUT, JSON.stringify({
-      edits: tools.filter((tool) => tool.name === "edit"),
+      writes: tools.filter((tool) => tool.name === "write"),
+      activeTools: pi.getActiveTools(),
       lsps: tools.filter((tool) => tool.name === "lsp"),
       toolSources: tools.map((tool) => tool.sourceInfo),
       commandSources: pi.getCommands().map((command) => command.sourceInfo),
-      lspGuard: globalThis[Symbol.for("pi-unified-edit:lsp-guard-compat")],
       undo: globalThis[Symbol.for("pi-unified-edit:undo-compat")],
     }));
   });
@@ -108,17 +108,22 @@ try {
 		);
 	}
 	const state = JSON.parse(await readFile(output, "utf8"));
-	if (state.edits.length !== 1)
-		throw new Error(`Expected one edit tool, got ${state.edits.length}`);
-	const edit = state.edits[0];
-	if (!edit.parameters?.properties?.text || edit.parameters?.properties?.path) {
+	if (state.writes.length !== 1)
+		throw new Error(`Expected one write tool, got ${state.writes.length}`);
+	const write = state.writes[0];
+	if (!write.parameters?.properties?.text || write.parameters?.properties?.path) {
 		throw new Error(
-			`Unexpected edit schema: ${JSON.stringify(edit.parameters)}`,
+			`Unexpected write schema: ${JSON.stringify(write.parameters)}`,
 		);
 	}
-	const source = JSON.stringify(edit.sourceInfo ?? {});
+	const source = JSON.stringify(write.sourceInfo ?? {});
 	if (!source.includes(process.env.PI_UNIFIED_EDIT_ROOT)) {
-		throw new Error(`Unified Edit did not own edit: ${source}`);
+		throw new Error(`Unified Edit did not own write: ${source}`);
+	}
+	if (!state.activeTools.includes("write") || state.activeTools.includes("edit")) {
+		throw new Error(
+			`Expected write, but not edit, to be active: ${JSON.stringify(state.activeTools)}`,
+		);
 	}
 	if (state.lsps.length !== 1)
 		throw new Error(`Expected one lsp tool, got ${state.lsps.length}`);
@@ -133,7 +138,7 @@ try {
 			`Pi Lens source unexpectedly loaded: ${loadedSources.join("\n")}`,
 		);
 	}
-	if (state.lspGuard !== 1 || state.undo !== 1) {
+	if (state.undo !== 1) {
 		throw new Error(
 			`Compatibility markers unexpected: ${JSON.stringify(state)}`,
 		);
@@ -141,12 +146,12 @@ try {
 
 	process.stdout.write(
 		`${JSON.stringify({
-			editCount: state.edits.length,
-			editSource: edit.sourceInfo,
-			schema: Object.keys(edit.parameters.properties),
+			writeCount: state.writes.length,
+			writeSource: write.sourceInfo,
+			schema: Object.keys(write.parameters.properties),
+			activeTools: state.activeTools,
 			lspCount: state.lsps.length,
 			lspSource: state.lsps[0].sourceInfo,
-			lspGuardCompat: state.lspGuard,
 			undoCompat: state.undo,
 			filteredPackages: filtered,
 		})}\n`,

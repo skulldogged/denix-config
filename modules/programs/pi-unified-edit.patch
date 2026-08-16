@@ -459,7 +459,7 @@
 +	});
 @@ -1276,0 +1492 @@
 +			absolutePath: change.absolutePath,
-@@ -1530,0 +1747,41 @@
+@@ -1530,0 +1747,40 @@
 +function manifestForPlan(plan: ParsedPlan): UnifiedMutationManifest {
 +	return {
 +		version: 1,
@@ -473,7 +473,6 @@
 +	};
 +}
 +
-+const LSP_GUARD_COMPAT = Symbol.for("pi-unified-edit:lsp-guard-compat");
 +const UNDO_COMPAT = Symbol.for("pi-unified-edit:undo-compat");
 +
 +export const __test = {
@@ -505,12 +504,12 @@
 +	const plans = new Map<string, ParsedPlan>();
 +
 +	pi.on("tool_call", async (event, ctx) => {
-+		if (event.toolName !== "edit") return;
++		if (event.toolName !== "write") return;
 +		const input = event.input as InternalUnifiedInput;
 +		if (typeof input?.text !== "string") return;
 +		const globals = globalThis as Record<symbol, unknown>;
-+		if (globals[LSP_GUARD_COMPAT] !== 1 || globals[UNDO_COMPAT] !== 1) {
-+			return { block: true, reason: "Unified Edit compatibility bridges for lightweight LSP/read-guard and pi-undo-redo are not loaded." };
++		if (globals[UNDO_COMPAT] !== 1) {
++			return { block: true, reason: "Unified Edit compatibility bridge for pi-undo-redo is not loaded." };
 +		}
 +		try {
 +			const plan = await buildPlan(input.text, ctx.cwd);
@@ -522,7 +521,7 @@
 +	});
 +
 +	pi.on("tool_result", (event) => {
-+		if (event.toolName === "edit") plans.delete(event.toolCallId);
++		if (event.toolName === "write") plans.delete(event.toolCallId);
 +	});
 +	pi.on("turn_end", () => plans.clear());
 +	pi.on("session_shutdown", () => plans.clear());

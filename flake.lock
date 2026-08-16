@@ -607,6 +607,22 @@
         "type": "github"
       }
     },
+    "grok-build-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786825290,
+        "narHash": "sha256-Z3/M2gc0XdMrFZNnXbVouxx3mVyXvqP8GJEGhncxTj4=",
+        "owner": "xai-org",
+        "repo": "grok-build",
+        "rev": "5163763e703c319e4554c2f455535c5adb6e51e8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xai-org",
+        "repo": "grok-build",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -1544,6 +1560,7 @@
         "draconisplusplus-plugins": "draconisplusplus-plugins",
         "fish-git-abbr": "fish-git-abbr",
         "gloview": "gloview",
+        "grok-build-src": "grok-build-src",
         "home-manager": "home-manager",
         "hyprglass": "hyprglass",
         "hyprland": "hyprland",

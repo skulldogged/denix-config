@@ -1,0 +1,10 @@
+--- a/packages/coding-agent/src/core/agent-session.ts
++++ b/packages/coding-agent/src/core/agent-session.ts
+@@ -2595,1 +2595,1 @@
+-			: ["read", "bash", "edit", "write"];
++			: ["read", "bash", "write"];
+--- a/packages/coding-agent/src/core/sdk.ts
++++ b/packages/coding-agent/src/core/sdk.ts
+@@ -245,1 +245,1 @@
+-	const defaultActiveToolNames: ToolName[] = ["read", "bash", "edit", "write"];
++	const defaultActiveToolNames: ToolName[] = ["read", "bash", "write"];

@@ -1,0 +1,123 @@
+--- a/extensions/index.ts
++++ b/extensions/index.ts
+@@ -5182,120 +5182,6 @@
+ 		},
+ 	});
+ 
+-	const writeTool = createWriteTool(cwd);
+-	pi.registerTool({
+-		name: "write",
+-		label: "write",
+-		description: writeTool.description,
+-		parameters: writeTool.parameters,
+-		async execute(toolCallId, params, signal, onUpdate, _ctx) {
+-			const fp = params.path ?? (params as any).file_path ?? "";
+-			const fullPath = fp ? resolve(cwd, fp) : "";
+-			const existedBefore = !!fullPath && fileExistsForTool(cwd, fp);
+-			WRITE_EXISTED_BEFORE.set(toolCallId, existedBefore);
+-			let old: string | null = null;
+-			try {
+-				if (fullPath && existedBefore) old = readFileSync(fullPath, "utf-8");
+-			} catch {
+-				old = null;
+-			}
+-			const result = await writeTool.execute(toolCallId, params, signal, onUpdate);
+-			const content = params.content ?? "";
+-			if (old !== null && old !== content) {
+-				const diff = parseDiff(old, content);
+-				(result as any).details = { _type: "diff", summary: summarizeDiff(diff.added, diff.removed), diff, language: lang(fp) };
+-			} else if (old === null) {
+-				(result as any).details = { _type: "new", lines: lineCount(content), filePath: fp };
+-			} else if (old === content) {
+-				(result as any).details = { _type: "noChange" };
+-			}
+-			return result;
+-		},
+-		renderCall(args, theme, ctx) {
+-			const fp = args?.path ?? (args as any)?.file_path ?? "";
+-			const revealSummary = shouldRevealCallArgs(ctx) || (!!fp && hasOwnArg(args, "content"));
+-			syncToolCallStatus(ctx);
+-			// Claude Code labels both new and existing files "Write" — no "Create".
+-			const summary = stableCallSummary(ctx, "_callSummary", () => spl(fp), revealSummary);
+-			const hdr = toolHeader("Write", summary, theme, toolStatusDot(ctx, theme));
+-			return makeText(ctx.lastComponent, hdr);
+-		},
+-		renderResult(result, { isPartial }, theme, ctx) {
+-			if (isPartial) {
+-				setupBlinkTimer(ctx);
+-				return makeText(ctx.lastComponent, withBranch(theme.fg("dim", "Writing..."), theme));
+-			}
+-			clearBlinkTimer(ctx);
+-			setToolStatus(ctx, ctx.isError ? "error" : "success");
+-			if (typeof ctx?.toolCallId === "string") WRITE_EXISTED_BEFORE.delete(ctx.toolCallId);
+-			if (ctx.isError) {
+-				const e =
+-					result.content
+-						?.filter((c: any) => c.type === "text")
+-						.map((c: any) => c.text || "")
+-						.join("\n") ?? "Error";
+-				return makeText(ctx.lastComponent, withBranch(theme.fg("error", e), theme));
+-			}
+-			const d = (result as any).details;
+-			if (d?._type === "diff") {
+-				const previewLines = ctx.expanded ? MAX_RENDER_LINES : diffCollapsedLimit();
+-				const hunks = d.diff?.lines?.filter((l: any) => l.type === "sep").length + (d.diff?.lines?.length ? 1 : 0);
+-				const diffWidth = branchDiffWidth();
+-				const mode = shouldUseSplit(d.diff, diffWidth, previewLines) ? "split" : "unified";
+-				const richSummary = resultSentence(theme, describeWrite(writtenLineCount(ctx.args?.content ?? ""), spl(ctx.args?.path ?? (ctx.args as any)?.file_path ?? ""), ccEmphasis()));
+-				const key = `wd:${diffWidth}:${d.summary}:${d.diff?.lines?.length ?? 0}:${d.language ?? ""}:${ctx.expanded ? 1 : 0}`;
+-				if (ctx.state._wdk !== key) {
+-					ctx.state._wdk = key;
+-					ctx.state._wdt = withFinalBranchBlock(`${richSummary}\n${theme.fg("muted", "rendering diff…")}`, theme);
+-					const dc = resolveDiffColors(theme);
+-					renderSplit(d.diff, d.language, previewLines, dc, diffWidth)
+-						.then((rendered) => {
+-							if (ctx.state._wdk !== key) return;
+-							ctx.state._wdt = withFinalBranchBlock(`${richSummary}\n${rendered}`, theme);
+-							ctx.invalidate();
+-						})
+-						.catch(() => {
+-							if (ctx.state._wdk !== key) return;
+-							ctx.state._wdt = withBranch(richSummary, theme);
+-							ctx.invalidate();
+-						});
+-				}
+-				return makeText(ctx.lastComponent, ctx.state._wdt ?? withBranch(richSummary, theme));
+-			}
+-			if (d?._type === "noChange") return makeText(ctx.lastComponent, withBranch(theme.fg("muted", "✓ no changes"), theme));
+-			if (d?._type === "new") {
+-				const content = typeof ctx.args?.content === "string" ? ctx.args.content : "";
+-				const lineTotal = writtenLineCount(content);
+-				const contentHash = hashText(content);
+-				const syntheticDiff = getCachedParsedDiff(ctx, `nf-diff:${d.filePath}:${contentHash}`, "", content);
+-				const richSummary = resultSentence(theme, describeWrite(lineTotal, spl(d.filePath ?? ""), ccEmphasis()));
+-				const previewLines = ctx.expanded ? MAX_RENDER_LINES : diffCollapsedLimit();
+-				const diffWidth = branchDiffWidth();
+-				const pk = `nf:${d.filePath}:${contentHash}:${diffWidth}:${ctx.expanded ? 1 : 0}`;
+-				if (ctx.state._nfk !== pk) {
+-					ctx.state._nfk = pk;
+-					ctx.state._nft = withFinalBranchBlock(`${richSummary}\n${theme.fg("muted", "rendering diff…")}`, theme);
+-					const dc = resolveDiffColors(theme);
+-					const body = claudeDiffPaletteEnabled()
+-						? renderFileListing(content, lang(d.filePath), previewLines, diffWidth)
+-						: renderUnified(syntheticDiff, lang(d.filePath), previewLines, dc, diffWidth);
+-					body
+-						.then((rendered) => {
+-							if (ctx.state._nfk !== pk) return;
+-							ctx.state._nft = withFinalBranchBlock(`${richSummary}\n${rendered}`, theme);
+-							ctx.invalidate();
+-						})
+-						.catch(() => {
+-							if (ctx.state._nfk !== pk) return;
+-							ctx.state._nft = withBranch(richSummary, theme);
+-							ctx.invalidate();
+-						});
+-				}
+-				return makeText(ctx.lastComponent, ctx.state._nft ?? withBranch(richSummary, theme));
+-			}
+-			return makeText(ctx.lastComponent, withBranch(theme.fg("success", "Written"), theme));
+-		},
+-	});
+ 
+ 	// Unified Edit owns execution and the native preview; Claudify styles it through
+ 	// the ToolExecutionComponent adapter above without registering a conflict.

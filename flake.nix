@@ -121,6 +121,11 @@
       inputs.hyprland.follows = "hyprland";
     };
 
+    grok-build-src = {
+      url = "github:xai-org/grok-build";
+      flake = false;
+    };
+
     hyprglass = {
       url = "github:hyprnux/hyprglass";
       flake = false;
@@ -317,8 +322,6 @@
         link_managed "$HOME/.pi/agent/bin/pi" "${piPackage}/bin/pi"
         link_managed "$HOME/.pi/agent/settings.json" "${settings}"
         link_managed "$HOME/.pi/agent/AGENTS.md" "${piFiles.".pi/agent/AGENTS.md".source}"
-        link_managed "$HOME/.pi/agent/skills/unslop/SKILL.md" "${piFiles.".pi/agent/skills/unslop/SKILL.md".source}"
-        link_managed "$HOME/.codex/skills/unslop/SKILL.md" "${piFiles.".codex/skills/unslop/SKILL.md".source}"
         link_managed "$HOME/.pi/agent/extensions/subagent/config.json" "${piFiles.".pi/agent/extensions/subagent/config.json".source}"
         link_managed "$HOME/.pi/agent/extensions/more-below.ts" "${piFiles.".pi/agent/extensions/more-below.ts".source}"
         link_managed "$HOME/.pi/agent/themes/catppuccin-mocha.json" "${piFiles.".pi/agent/themes/catppuccin-mocha.json".source}"

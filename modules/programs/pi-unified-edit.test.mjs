@@ -33,7 +33,6 @@ afterEach(async () => {
 	__test.setRollbackRestoreFailure();
 	__test.setStageFailureAfterWrite();
 	__test.setAfterStage();
-	delete globalThis[Symbol.for("pi-unified-edit:lsp-guard-compat")];
 	delete globalThis[Symbol.for("pi-unified-edit:undo-compat")];
 	await Promise.all(
 		roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -318,16 +317,13 @@ describe("Unified Edit hardening", () => {
 			},
 		});
 		const input = { text: "[a.txt]\n@REPLACE\n-one\n+ONE\n" };
-		const event = { toolName: "edit", toolCallId: "call-1", input };
-		const lspGuard = Symbol.for("pi-unified-edit:lsp-guard-compat");
+		const event = { toolName: "write", toolCallId: "call-1", input };
 		const undo = Symbol.for("pi-unified-edit:undo-compat");
-		delete globalThis[lspGuard];
 		delete globalThis[undo];
 		expect((await handlers.get("tool_call")(event, { cwd: root })).block).toBe(
 			true,
 		);
 
-		globalThis[lspGuard] = 1;
 		globalThis[undo] = 1;
 		expect(
 			await handlers.get("tool_call")(event, { cwd: root }),
@@ -342,17 +338,16 @@ describe("Unified Edit hardening", () => {
 		await writeFile(path, "one\n");
 		const input2 = { text: input.text };
 		await handlers.get("tool_call")(
-			{ toolName: "edit", toolCallId: "call-2", input: input2 },
+			{ toolName: "write", toolCallId: "call-2", input: input2 },
 			{ cwd: root },
 		);
 		await tool.execute("call-2", input2, undefined, undefined, { cwd: root });
 		expect(await readFile(path, "utf8")).toBe("ONE\n");
 		await handlers.get("tool_result")({
-			toolName: "edit",
+			toolName: "write",
 			toolCallId: "call-2",
 		});
 		await handlers.get("session_shutdown")();
-		delete globalThis[lspGuard];
 		delete globalThis[undo];
 	});
 
