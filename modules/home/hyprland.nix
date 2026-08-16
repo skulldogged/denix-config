@@ -38,36 +38,54 @@ delib.module {
       hyprlandPlugins = pkgs.hyprlandPlugins.override {inherit hyprland;};
       enableHyprglass = false;
 
-      gloview = inputs.gloview.packages.${system}.gloview.overrideAttrs (old: {
-        postPatch =
-          (old.postPatch or "")
-          + ''
-            # Hyprland 0.56 moved hyprctl commands to the Socket1 API.
-            substituteInPlace src/main.cpp \
-              --replace-fail 'SHyprCtlCommand{' 'IPC::Socket1::SCommand{' \
-              --replace-fail '.exact = true,' '.match = IPC::Socket1::COMMAND_MATCH_EXACT,' \
-              --replace-fail '.fn    = [](eHyprCtlOutputFormat, std::string) -> std::string {' \
-                '.handler = [](const IPC::Socket1::SRequest&) -> IPC::Socket1::SResponse {'
+      # Build against this flake's Hyprland. gloview's own package rebuilds
+      # Hyprland just to `--replace-fail "glaze 7...<8" "glaze"`, but git
+      # Hyprland dropped that pin, so the substitute now fails in patchPhase.
+      gloview = hyprlandPlugins.mkHyprlandPlugin {
+        pluginName = "gloview";
+        version = "0.3.0";
+        src = inputs.gloview.outPath;
 
-            # Hyprland now exposes keyboard modifiers as a scoped enum. Keep
-            # GloView's matching masks integral and cast only at the ABI edge.
-            substituteInPlace src/overview.cpp \
-              --replace-fail 'return HL_MODIFIER_SHIFT;' \
-                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT);' \
-              --replace-fail 'return HL_MODIFIER_CTRL;' \
-                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL);' \
-              --replace-fail 'return HL_MODIFIER_ALT;' \
-                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT);' \
-              --replace-fail 'return HL_MODIFIER_META;' \
-                'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);' \
-              --replace-fail \
-                'uint32_t mods = g_pInputManager ? g_pInputManager->getModsFromAllKBs() : 0;' \
-                'uint32_t mods = g_pInputManager ? static_cast<uint32_t>(g_pInputManager->getModsFromAllKBs()) : 0;' \
-              --replace-fail \
-                'constexpr uint32_t STRICTMODS = HL_MODIFIER_SHIFT | HL_MODIFIER_CTRL | HL_MODIFIER_ALT | HL_MODIFIER_META;' \
-                'constexpr uint32_t STRICTMODS = static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);'
-          '';
-      });
+        nativeBuildInputs = [pkgs.cmake];
+        buildInputs = [pkgs.luajit];
+
+        postPatch = ''
+          # Hyprland 0.56 moved hyprctl commands to the Socket1 API.
+          substituteInPlace src/main.cpp \
+            --replace-fail 'SHyprCtlCommand{' 'IPC::Socket1::SCommand{' \
+            --replace-fail '.exact = true,' '.match = IPC::Socket1::COMMAND_MATCH_EXACT,' \
+            --replace-fail '.fn    = [](eHyprCtlOutputFormat, std::string) -> std::string {' \
+              '.handler = [](const IPC::Socket1::SRequest&) -> IPC::Socket1::SResponse {'
+
+          # Hyprland now exposes keyboard modifiers as a scoped enum. Keep
+          # GloView's matching masks integral and cast only at the ABI edge.
+          substituteInPlace src/overview.cpp \
+            --replace-fail 'return HL_MODIFIER_SHIFT;' \
+              'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT);' \
+            --replace-fail 'return HL_MODIFIER_CTRL;' \
+              'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL);' \
+            --replace-fail 'return HL_MODIFIER_ALT;' \
+              'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT);' \
+            --replace-fail 'return HL_MODIFIER_META;' \
+              'return static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);' \
+            --replace-fail \
+              'uint32_t mods = g_pInputManager ? g_pInputManager->getModsFromAllKBs() : 0;' \
+              'uint32_t mods = g_pInputManager ? static_cast<uint32_t>(g_pInputManager->getModsFromAllKBs()) : 0;' \
+            --replace-fail \
+              'constexpr uint32_t STRICTMODS = HL_MODIFIER_SHIFT | HL_MODIFIER_CTRL | HL_MODIFIER_ALT | HL_MODIFIER_META;' \
+              'constexpr uint32_t STRICTMODS = static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_SHIFT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_CTRL) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_ALT) | static_cast<uint32_t>(Input::eKeyboardModifiers::HL_MODIFIER_META);'
+        '';
+
+        postInstall = ''
+          ln -sf gloview.so "$out/lib/libgloview.so"
+        '';
+
+        meta = {
+          description = "macOS Mission Control-style overview for Hyprland";
+          homepage = "https://github.com/fedsfarm/gloview";
+          license = lib.licenses.gpl3Plus;
+        };
+      };
 
       hyprglass = hyprlandPlugins.mkHyprlandPlugin {
         pluginName = "hyprglass";

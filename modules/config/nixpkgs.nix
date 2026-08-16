@@ -20,6 +20,10 @@ delib.module {
           ranni-wallpaper = prev.callPackage ../../pkgs/ranni-wallpaper/package.nix {};
           slskd = prev.callPackage ../../pkgs/slskd/package.nix {};
         };
+
+        # moonlight-qt 6.1.0 still reads AVCodec.pix_fmts, which FFmpeg 8+
+        # removed. Keep it on 7.x until nixpkgs ships a newer Moonlight.
+        moonlight-qt = prev.moonlight-qt.override {ffmpeg = prev.ffmpeg_7;};
       })
     ];
   };

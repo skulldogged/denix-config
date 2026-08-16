@@ -71,6 +71,7 @@ delib.module {
           "kvm.ignore_msrs=1"
           "modprobe.blacklist=nouveau${lib.optionalString (!enableIntelGraphics) ",i915"}"
           "nvidia_drm.fbdev=1"
+          "nvidia_drm.vblank=1"
         ]
         ++ lib.optional disableFirmwareFramebuffer "initcall_blacklist=sysfb_init";
 
