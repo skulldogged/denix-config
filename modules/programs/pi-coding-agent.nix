@@ -673,31 +673,92 @@ delib.module {
 
           # Subagents
 
-          Use subagents selectively. Delegate when parallel reconnaissance or research, a
-          separate writer, or an independent review is expected to materially improve
-          correctness or wall-clock time. Handle focused work directly when it can be
-          inspected, completed, and verified in one linear pass.
+          For every non-trivial task, load and apply the `delegate-wave` skill before
+          performing broad repository reads or implementation. Delegate broad discovery,
+          research, repetitive edits, and well-scoped implementation work to the scout,
+          delegate, researcher, and worker roles. The parent's direct inspection should be
+          limited to the minimum needed to split work, resolve conflicting evidence, review
+          material diffs, and validate the result; do not duplicate discovery or edits that
+          a child is already performing.
+
+          Handle trivial single-step work directly when delegation would add more overhead
+          than value. Keep security-sensitive, architectural, ambiguous, and user-owned
+          decisions with the parent, while still delegating supporting evidence gathering
+          when safe.
 
           Before using an unfamiliar subagent workflow or execution control, read the
           relevant `pi-subagents` skill section; do not reread it for every child in the
           same session.
 
-          Keep the parent responsible for orchestration and the final answer. Use one
-          writer per working directory and give parallel children distinct, self-contained
-          assignments. Prefer fresh context with a focused handoff; use forked context only
-          when the child genuinely needs the parent session's decisions or history.
+          Keep the parent responsible for task decomposition, orchestration, material diff
+          review, final validation strategy, and the final answer. Ask children for concise
+          findings, changed-file lists, and validation results so the parent does not need
+          to reconstruct their work from verbose transcripts. Use one writer per working
+          directory and give parallel children distinct, self-contained assignments. Prefer
+          fresh context with a focused handoff; use forked context only when the child
+          genuinely needs the parent session's decisions or history.
 
-          Default to at most one scout when reconnaissance is needed and one fresh reviewer
-          for material multi-file, risky, or user-requested changes. Use one review round by
-          default. Do not launch duplicate reviews or sequential review loops without a
-          concrete unresolved risk.
+          Use one bounded initial delegation wave. Use one child for a narrow seam; for
+          broad comparisons across independent apps, services, or subsystems, use two to
+          four read-only children with genuinely distinct lanes. Do not send cloned prompts
+          with only paths or item numbers changed. Default to one fresh reviewer for
+          material multi-file, risky, or user-requested changes and one review round unless
+          a concrete unresolved risk justifies more.
 
           Writers should run the narrowest relevant checks first. The parent owns at most
           one final full validation gate and should not repeat a passing full build unless
           relevant files or build inputs changed. Do not impose hard turn or tool limits on
           mutation-capable workers; narrow or steer an unexpectedly long run instead.
         '';
-        ".pi/agent/skills/unslop/SKILL.md".source = unslopSkill;
+".pi/agent/skills/unslop/SKILL.md".source = unslopSkill;
+        ".pi/agent/skills/delegate-wave/SKILL.md".text = ''
+          ---
+          name: delegate-wave
+          description: Delegate broad codebase discovery, research, repetitive edits, and well-scoped implementation to a bounded wave of inexpensive Pi subagents while the parent orchestrates, reviews, and validates. Use for every non-trivial tool-based task, especially cross-app or cross-subsystem analysis.
+          ---
+
+          # Delegate Wave
+
+          Use Pi's native `subagent` workflow. Do not launch nested Pi sessions in tmux or
+          ask ordinary children to orchestrate other children.
+
+          ## Controller contract
+
+          1. Inspect only enough context to identify independent lanes and write precise
+             child contracts. Do not perform repo-wide discovery before delegating.
+          2. Call `subagent({ action: "list" })` before the first execution in a session.
+          3. Launch the initial wave with `workflowScript`, stable keys, fresh context, and
+             distinct tasks. Use `runs.run` for one lane and `runs.all` for parallel lanes.
+          4. While children run, do not duplicate their reads or edits. Prepare synthesis,
+             inspect only load-bearing files, or handle decisions reserved for the parent.
+          5. Require concise evidence: findings with paths, changed files, commands and
+             validation results, unresolved risks, and decisions needing escalation.
+          6. The parent synthesizes results, reviews material diffs, owns the final
+             validation strategy, and answers the user.
+
+          ## Wave sizing and roles
+
+          - Narrow lookup or one implementation seam: one scout or delegate.
+          - Broad comparison across apps, services, or subsystems: two to four read-only
+            scouts/delegates with distinct analytical lanes, launched together with
+            `runs.all`.
+          - External evidence: researcher in a separate lane from local repository scouts.
+          - Approved changes: one worker as the sole writer for a working directory. Use
+            isolated worktrees only when parallel writers are genuinely independent.
+          - Material or risky changes: one fresh reviewer after implementation by default.
+
+          Never create nominal fanout by cloning the same prompt and changing only a path
+          or item number. Each lane must have a distinct question, evidence boundary, and
+          expected decision contribution.
+
+          ## Direct-work exceptions
+
+          Work directly only when the task is a trivial single-step action, delegation
+          overhead clearly exceeds the work, or the decision is security-sensitive,
+          architectural, ambiguous, or user-owned. Supporting read-only evidence may still
+          be delegated when safe. If a task expands beyond a few direct tool calls, stop and
+          delegate the remaining work instead of continuing a parent-led exploration.
+        '';
         ".pi/agent/extensions/subagent/config.json".text = builtins.toJSON {
           artifactDir = "session";
           asyncWidget = false;
@@ -792,26 +853,26 @@ delib.module {
         enableInstallTelemetry = false;
         lsp.hookMode = "agent_end";
         subagents = {
-          # Keep routine child work off the expensive parent model. Roles can still be
-          # overridden explicitly per run when a task needs a different capability tier.
-          defaultModel = "openai-codex/gpt-5.6-terra";
-          defaultThinking = "medium";
+          # Route routine child work through the inexpensive OpenCode Go subscription.
+          # Roles can still be overridden explicitly when a task needs another tier.
+          defaultModel = "opencode-go/deepseek-v4-pro";
+          defaultThinking = "high";
           agentOverrides = {
             scout = {
-              model = "openai-codex/gpt-5.6-luna";
-              thinking = "low";
+              model = "opencode-go/deepseek-v4-flash";
+              thinking = "high";
               extensions = [];
               defaultContext = "fresh";
             };
             delegate = {
-              model = "openai-codex/gpt-5.6-luna";
-              thinking = "low";
+              model = "opencode-go/deepseek-v4-flash";
+              thinking = "high";
               extensions = [];
               defaultContext = "fresh";
             };
             worker = {
-              model = "openai-codex/gpt-5.6-terra";
-              thinking = "medium";
+              model = "opencode-go/deepseek-v4-pro";
+              thinking = "high";
               extensions = [];
               defaultContext = "fresh";
             };
@@ -822,8 +883,8 @@ delib.module {
               defaultContext = "fresh";
             };
             researcher = {
-              model = "openai-codex/gpt-5.6-terra";
-              thinking = "medium";
+              model = "opencode-go/deepseek-v4-flash";
+              thinking = "high";
               defaultContext = "fresh";
             };
             oracle = {
