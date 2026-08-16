@@ -16,11 +16,11 @@ delib.module {
     inherit (pkgs.stdenv.hostPlatform) system;
 
     t3CodeNightly = let
-      # pingdotgg/t3code main 8c628f14 with PR #5882 and async pi-subagents support through 160ef6c1.
-      version = "0.0.38-main8c628f14.pi.160ef6c1";
+      # pingdotgg/t3code main fee10def with PR #5882 and local Pi client fixes through 8c06b768.
+      version = "0.0.39-mainfee10def.pi.8c06b768";
       appImage = pkgs.fetchurl {
         url = "https://github.com/skulldogged/denix-config/releases/download/t3code-${version}/T3-Code-${version}-x86_64.AppImage";
-        hash = "sha256-srvdXzv07ASrQcLiBP6gBk+KivqFFsFYqDeWgXtRi7A=";
+        hash = "sha256-XJtMC0diUFjEF9QhCr8CyWhwkyOVvIDKVUz2S/q/0hA=";
       };
       package = inputs.t3code-flake.packages.${system}.t3-code-nightly.overrideAttrs {
         inherit version;
