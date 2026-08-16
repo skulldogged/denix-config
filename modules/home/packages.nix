@@ -20,7 +20,7 @@ delib.module {
       version = "0.0.39-mainfee10def.pi.8c06b768";
       appImage = pkgs.fetchurl {
         url = "https://github.com/skulldogged/denix-config/releases/download/t3code-${version}/T3-Code-${version}-x86_64.AppImage";
-        hash = "sha256-6M2fMgwmwAjdklLrC7U0Iy/Ob6rLcJeZOFryi5F3Ucs=";
+        hash = "sha256-1mQhI9E8zjjXWvqiOol5LchdIMpSggc3Qp8f3B0JBRM=";
       };
       package = inputs.t3code-flake.packages.${system}.t3-code-nightly.overrideAttrs {
         inherit version;
