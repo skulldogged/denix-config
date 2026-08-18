@@ -75,17 +75,29 @@ describe("Unified Edit hardening", () => {
 		).rejects.toThrow("already exists");
 	});
 
-	test("rejects lexical escapes and symlink components", async () => {
+	test("allows out-of-workspace paths and rejects symlink components", async () => {
 		const root = await workspace();
 		const outside = await workspace();
-		await writeFile(join(outside, "x.txt"), "x\n");
+		const outsidePath = join(outside, "x.txt");
+		await writeFile(outsidePath, "x\n");
 		await symlink(outside, join(root, "link"));
-		await expect(
-			__test.buildPlan("[../escape.txt]\n@APPEND\n+x\n", root),
-		).rejects.toThrow("escapes the workspace");
+		const plan = await __test.buildPlan(
+			`[${outsidePath}]\n@APPEND\n+y\n`,
+			root,
+		);
+		await __test.applyPlan(plan);
+		expect(await readFile(outsidePath, "utf8")).toBe("x\ny\n");
 		await expect(
 			__test.buildPlan("[link/x.txt]\n@APPEND\n+x\n", root),
 		).rejects.toThrow("Symlink paths");
+	});
+
+	test("creates a new file from a row script", async () => {
+		const root = await workspace();
+		const path = join(root, "new.txt");
+		const plan = await __test.buildPlan("[new.txt]\n@APPEND\n+new\n", root);
+		await __test.applyPlan(plan);
+		expect(await readFile(path, "utf8")).toBe("new\n");
 	});
 
 	test("requires unique patch matches", async () => {

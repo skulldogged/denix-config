@@ -8,7 +8,7 @@
 +import { access, chmod, link, lstat, mkdir, readFile, realpath, rename, rm, rmdir, writeFile } from "node:fs/promises";
 @@ -22 +24 @@
 -import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
-+import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from "node:path";
++import { basename, dirname, isAbsolute, parse, relative, resolve as resolvePath, sep } from "node:path";
 @@ -105,0 +108 @@
 +		absolutePath: string;
 @@ -110,0 +114,10 @@
@@ -45,24 +45,19 @@
 +	__piUnifiedEdit?: UnifiedMutationManifest;
 +};
 +
-@@ -532,3 +564,25 @@
+@@ -532,3 +564,20 @@
 -function resolveToCwd(cwd: string, path: string): string {
 -	const normalized = normalizePath(path);
 -	return isAbsolute(normalized) ? resolvePath(normalized) : resolvePath(cwd, normalized);
-+function isContained(root: string, candidate: string): boolean {
-+	const rel = relative(root, candidate);
-+	return rel !== "" && rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
-+}
-+
 +async function resolveWorkspacePath(cwd: string, rawPath: string): Promise<string> {
 +	const normalized = normalizePath(rawPath);
 +	if (normalized.includes("\0")) throw new Error(`Path contains a NUL byte: ${rawPath}`);
 +	const root = await realpath(cwd);
 +	const lexical = isAbsolute(normalized) ? resolvePath(normalized) : resolvePath(root, normalized);
-+	if (!isContained(root, lexical)) throw new Error(`Path escapes the workspace: ${rawPath}`);
++	const anchor = parse(lexical).root;
 +
-+	const rel = relative(root, lexical);
-+	let cursor = root;
++	const rel = relative(anchor, lexical);
++	let cursor = anchor;
 +	for (const part of rel.split(sep)) {
 +		cursor = resolvePath(cursor, part);
 +		try {
@@ -195,6 +190,10 @@
 @@ -901 +1018 @@
 -	const store = createSnapshotStore(cwd, readExistingNormalized);
 +	const store = createSnapshotStore(cwd);
+@@ -905,2 +1022 @@
+-		if (snapshot.current === null) throw new Error(`Cannot edit deleted file ${script.path}.`);
+-		snapshot.current = applyRowOperations(script.path, snapshot.current, script.ops);
++		snapshot.current = applyRowOperations(script.path, snapshot.current ?? "", script.ops);
 @@ -909 +1026 @@
 -	return { mode: "rows", changes: store.collectChanges("The row edit script produced no changes.") };
 +	return { mode: "rows", cwd, changes: store.collectChanges("The row edit script produced no changes.") };

@@ -59,7 +59,7 @@ delib.module {
         grc
         grok-build
       ])
-      ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
         mullvad-vpn
         wl-clipboard
         xclip

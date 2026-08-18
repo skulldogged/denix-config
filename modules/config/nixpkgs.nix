@@ -12,6 +12,7 @@
       };
       ranni-wallpaper = prev.callPackage ../../pkgs/ranni-wallpaper/package.nix {};
       slskd = prev.callPackage ../../pkgs/slskd/package.nix {};
+      visor-bootmanager = prev.callPackage ../../pkgs/visor-bootmanager/package.nix {};
     };
 
     grok-build = prev.callPackage ../../pkgs/grok-build/package.nix {

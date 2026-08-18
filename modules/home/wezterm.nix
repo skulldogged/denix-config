@@ -14,7 +14,7 @@ delib.module {
     programs.wezterm = {
       enable = true;
       extraConfig =
-        if pkgs.stdenv.isDarwin
+        if pkgs.stdenv.hostPlatform.isDarwin
         then builtins.readFile ../../files/wezterm/wezterm-darwin.lua
         else builtins.readFile ../../files/wezterm/wezterm.lua;
     };

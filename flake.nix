@@ -368,7 +368,7 @@
             (writeScriptBin "build" ''
               nix fmt
               nh ${
-                if stdenv.isDarwin
+                if stdenv.hostPlatform.isDarwin
                 then "darwin"
                 else "os"
               } switch

@@ -116,7 +116,7 @@ in
           };
         }
 
-        (pkgs.lib.mkIf pkgs.stdenv.isLinux {
+        (pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
           # Keep the public Nix configuration in the store while loading the
           # GitHub credential from a private, runtime-generated sibling file.
           xdg.configFile."nix/nix.conf".text = ''

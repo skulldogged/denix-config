@@ -94,8 +94,9 @@ delib.module {
 
     hardware.logitech.wireless = {
       enable = true;
-      enableGraphical = true;
     };
+
+    programs.solaar.enable = true;
 
     services = {
       gnome.gcr-ssh-agent.enable = pkgs.lib.mkForce false;
