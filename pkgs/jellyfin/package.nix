@@ -21,12 +21,12 @@
           packageLock
           // {
             packages =
-              builtins.removeAttrs packageLock.packages ["node_modules/pdfjs-dist/node_modules/canvas"]
+              removeAttrs packageLock.packages ["node_modules/pdfjs-dist/node_modules/canvas"]
               // pkgs.lib.optionalAttrs (pdfjs != null) {
                 ${pdfjsPath} =
                   pdfjs
                   // {
-                    optionalDependencies = builtins.removeAttrs (pdfjs.optionalDependencies or {}) ["canvas"];
+                    optionalDependencies = removeAttrs (pdfjs.optionalDependencies or {}) ["canvas"];
                   };
               };
           };

@@ -64,7 +64,7 @@
     '';
 
     passthru = {
-      tests.version = testers.testVersion {package = package;};
+      tests.version = testers.testVersion {inherit package;};
       updateScript = nix-update-script {};
     };
 

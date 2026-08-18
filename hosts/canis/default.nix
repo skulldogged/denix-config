@@ -61,20 +61,28 @@ delib.host {
 
   myconfig = {
     # System modules
-    system.nix.enable = true;
-    system.programs.enable = true;
+    system = {
+      nix.enable = true;
+      programs.enable = true;
+    };
 
     # Home modules
-    home.shell.enable = true;
-    home.fish.enable = true;
-    home.packages.enable = true;
-    home.wezterm.enable = true;
+    home = {
+      shell.enable = true;
+      fish.enable = true;
+      packages.enable = true;
+      wezterm.enable = true;
+    };
 
     # Programs
-    programs.bun.enable = true;
-    programs.git.enable = true;
-    programs.git.credentialHelper = "osxkeychain";
-    programs.git.signingKey = "54EAB4F200CE30C2";
-    programs.draconisplusplus.enable = true;
+    programs = {
+      bun.enable = true;
+      git = {
+        enable = true;
+        credentialHelper = "osxkeychain";
+        signingKey = "54EAB4F200CE30C2";
+      };
+      draconisplusplus.enable = true;
+    };
   };
 }

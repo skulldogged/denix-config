@@ -34,7 +34,7 @@ delib.module {
             rubik
 
             (twitter-color-emoji.overrideAttrs {
-              version = (builtins.fromJSON (builtins.readFile "${inputs.twemoji-src}/package.json")).version;
+              inherit ((builtins.fromJSON (builtins.readFile "${inputs.twemoji-src}/package.json"))) version;
               __intentionallyOverridingVersion = true;
 
               srcs = [

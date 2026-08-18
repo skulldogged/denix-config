@@ -240,7 +240,7 @@ delib.module {
       '';
     piLsp =
       pkgs.runCommand "lsp-pi-1.0.5-unified-edit-compat" {
-        nativeBuildInputs = [pkgs.bun pkgs.jq pkgs.patch];
+        nativeBuildInputs = [pkgs.bun pkgs.jq pkgs.patch pkgs.typescript-go];
       } ''
         cp -R ${lspSource}/. "$out"
         chmod -R u+w "$out"
@@ -290,7 +290,7 @@ delib.module {
         mv "$out/package.json.new" "$out/package.json"
         PATH=${pkgs.nixd}/bin:$PATH PI_LSP_SOURCE="$out" \
           bun test ${./lsp-pi-unified-edit.test.mjs}
-        ${piOpaque}/lib/node_modules/pi-monorepo/node_modules/.bin/tsgo \
+        ${pkgs.typescript-go}/bin/tsgo \
           -p "$out/tsconfig.json"
       '';
     piUndoRedo =

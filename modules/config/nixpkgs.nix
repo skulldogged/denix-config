@@ -3,7 +3,7 @@
   inputs,
   ...
 }: let
-  overlay = _final: prev: {
+  overlay = _: prev: {
     local = {
       cobalt = prev.callPackage ../../pkgs/cobalt/package.nix {};
       jellyfin = prev.callPackage ../../pkgs/jellyfin/package.nix {
@@ -15,13 +15,7 @@
       visor-bootmanager = prev.callPackage ../../pkgs/visor-bootmanager/package.nix {};
     };
 
-    grok-build = prev.callPackage ../../pkgs/grok-build/package.nix {
-      grok-build-src = inputs.grok-build-src;
-    };
-
-    # moonlight-qt 6.1.0 still reads AVCodec.pix_fmts, which FFmpeg 8+
-    # removed. Keep it on 7.x until nixpkgs ships a newer Moonlight.
-    moonlight-qt = prev.moonlight-qt.override {ffmpeg = prev.ffmpeg_7;};
+    grok-build = prev.callPackage ../../pkgs/grok-build/package.nix {inherit (inputs) grok-build-src;};
   };
 in
   delib.module {
