@@ -10,8 +10,13 @@ delib.module {
   nixos.ifEnabled = {
     sops.secrets = {
       bsky_pds = {};
+      searxng_secret = {};
       zipline_secret = {};
     };
+
+    sops.templates."searxng.env".content = ''
+      SEARX_SECRET_KEY=${config.sops.placeholder.searxng_secret}
+    '';
 
     services = {
       bluesky-pds = {
@@ -24,6 +29,35 @@ delib.module {
           PDS_DATA_DIRECTORY = "/mnt/pds";
           PDS_HOSTNAME = "sky.skulldogged.dev";
           PDS_PORT = 6969;
+        };
+      };
+
+      searx = {
+        enable = true;
+        environmentFile = config.sops.templates."searxng.env".path;
+        redisCreateLocally = true;
+
+        settings = {
+          search.formats = [
+            "html"
+            "json"
+          ];
+
+          server = {
+            bind_address = "127.0.0.1";
+            limiter = true;
+            port = 8888;
+            secret_key = "$SEARX_SECRET_KEY";
+          };
+        };
+
+        limiterSettings.botdetection = {
+          ipv4_prefix = 32;
+          ipv6_prefix = 56;
+          trusted_proxies = [
+            "127.0.0.0/8"
+            "::1"
+          ];
         };
       };
 

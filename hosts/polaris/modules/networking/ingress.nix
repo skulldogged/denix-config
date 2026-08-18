@@ -23,6 +23,7 @@ delib.module {
             "glance.skulldogged.dev".service = "http://localhost:5678";
             "home.skulldogged.dev".service = "http://127.0.0.1:8123";
             "cobalt.skulldogged.dev".service = "http://localhost:9001";
+            "search.skulldogged.dev".service = "http://127.0.0.1:8888";
           };
           default = "http_status:404";
         };

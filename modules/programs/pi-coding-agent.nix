@@ -28,6 +28,7 @@ delib.module {
     piEnvironment = {
       PI_CACHE_RETENTION = "long";
       PI_SKIP_VERSION_CHECK = "1";
+      SEARXNG_URL = "https://search.skulldogged.dev";
     };
     blackholeDefaults = {
       compactAfterTokens = 150000;
@@ -712,10 +713,10 @@ delib.module {
         ".pi/agent/extensions/more-below.ts".source = piMoreBelowExtension;
         ".pi/agent/themes/catppuccin-mocha.json".source =
           ../../files/pi/themes/catppuccin-mocha.json;
-        # Return web search results directly to Pi without opening the curator
-        # browser or waiting for manual approval.
-        ".pi/web-search.json".text = builtins.toJSON {
-          workflow = "none";
+        ".pi/searxng.json".text = builtins.toJSON {
+          maxResults = 10;
+          searxngUrl = "https://search.skulldogged.dev";
+          timeoutMs = 30000;
         };
       };
 
@@ -879,7 +880,7 @@ delib.module {
             extensions = [];
           }
           "${piUndoRedo}"
-          "npm:pi-web-access"
+          "npm:pi-searxng"
         ];
       };
     };
