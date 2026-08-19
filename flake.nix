@@ -63,6 +63,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    cua.url = "github:trycua/cua/cua-driver-rs-v0.21.0";
+
     t3code-flake = {
       url = "github:omarcresp/t3code-flake";
       inputs.nixpkgs.follows = "nixpkgs";

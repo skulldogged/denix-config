@@ -1,8 +1,7 @@
 diff --git a/src/app/creation.rs b/src/app/creation.rs
-index 2e978ee..a09bee7 100644
 --- a/src/app/creation.rs
 +++ b/src/app/creation.rs
-@@ -77,6 +77,30 @@ impl App {
+@@ -97,6 +97,30 @@ impl App {
      }
  
      pub(super) fn begin_tui_workspace_create(&mut self, request_id: &'static str) {
@@ -33,96 +32,48 @@ index 2e978ee..a09bee7 100644
          if self.state.prompt_new_workspace_name {
              let follow_cwd = self.workspace_creation_source().and_then(|ws_idx| {
                  self.focused_pane_cwd_in_workspace(ws_idx)
-diff --git a/src/app/input/navigate.rs b/src/app/input/navigate.rs
-index d151b94..2b9da6e 100644
---- a/src/app/input/navigate.rs
-+++ b/src/app/input/navigate.rs
-@@ -804,7 +804,7 @@ impl App {
-         )
-     }
- 
--    fn custom_command_env(&self) -> (Vec<(String, String)>, Option<std::path::PathBuf>) {
-+    pub(crate) fn custom_command_env(&self) -> (Vec<(String, String)>, Option<std::path::PathBuf>) {
-         let mut env = vec![(
-             crate::api::SOCKET_PATH_ENV_VAR.to_string(),
-             crate::api::socket_path().display().to_string(),
 diff --git a/src/app/mod.rs b/src/app/mod.rs
-index 8a9e738..2fc7ce5 100644
 --- a/src/app/mod.rs
 +++ b/src/app/mod.rs
-@@ -621,6 +621,7 @@ impl App {
+@@ -648,6 +648,7 @@ impl App {
              confirm_close: config.ui.confirm_close,
              prompt_new_tab_name: config.ui.prompt_new_tab_name,
              prompt_new_workspace_name: config.ui.prompt_new_workspace_name,
 +            new_workspace_command: config.ui.new_workspace_command.clone(),
              pane_borders: config.ui.pane_borders,
-             pane_gaps: config.ui.pane_gaps,
-             show_agent_labels_on_pane_borders: config.ui.show_agent_labels_on_pane_borders,
-@@ -1413,6 +1414,7 @@ impl App {
+             pane_outer_borders: config.ui.pane_outer_borders,
+             pane_scrollbars: config.ui.pane_scrollbars,
+@@ -1493,6 +1494,7 @@ impl App {
                  self.state.confirm_close = config.ui.confirm_close;
                  self.state.prompt_new_tab_name = config.ui.prompt_new_tab_name;
                  self.state.prompt_new_workspace_name = config.ui.prompt_new_workspace_name;
 +                self.state.new_workspace_command = config.ui.new_workspace_command.clone();
                  self.state.pane_borders = config.ui.pane_borders;
-                 self.state.pane_gaps = config.ui.pane_gaps;
-                 self.state.show_agent_labels_on_pane_borders =
-@@ -2410,6 +2412,31 @@ mod tests {
-         assert!(app.state.pending_workspace_create_cwd.is_none());
-     }
- 
-+    #[tokio::test]
-+    async fn workspace_create_command_opens_popup_when_workspace_is_active() {
-+        let mut app = test_app();
-+        app.state.workspaces.push(Workspace::test_new("one"));
-+        app.state.ensure_test_terminals();
-+        app.state.active = Some(0);
-+        app.state.new_workspace_command = exiting_test_command().to_string();
-+
-+        app.begin_tui_workspace_create("test.workspace.create.command");
-+
-+        assert!(app.state.popup_pane.is_some());
-+        assert_eq!(app.state.workspaces.len(), 1);
-+    }
-+
-+    #[test]
-+    fn startup_uses_workspace_create_command_config() {
-+        let mut config = Config::default();
-+        config.ui.new_workspace_command = "workspace-picker".to_string();
-+        let (_api_tx, api_rx) = tokio::sync::mpsc::unbounded_channel();
-+
-+        let app = App::new(&config, true, None, api_rx, crate::api::EventHub::default());
-+
-+        assert_eq!(app.state.new_workspace_command, "workspace-picker");
-+    }
-+
-     #[test]
-     fn startup_uses_workspace_name_prompt_config() {
-         let mut config = Config::default();
+                 self.state.pane_outer_borders = config.ui.pane_outer_borders;
+                 self.state.pane_scrollbars = config.ui.pane_scrollbars;
 diff --git a/src/app/state.rs b/src/app/state.rs
-index f8395cb..0f5220b 100644
 --- a/src/app/state.rs
 +++ b/src/app/state.rs
-@@ -1507,6 +1507,7 @@ pub struct AppState {
+@@ -1482,6 +1482,7 @@ pub struct AppState {
      pub confirm_close: bool,
      pub prompt_new_tab_name: bool,
      pub prompt_new_workspace_name: bool,
 +    pub new_workspace_command: String,
      pub pane_borders: bool,
-     pub pane_gaps: bool,
-     pub show_agent_labels_on_pane_borders: bool,
-@@ -1883,6 +1884,7 @@ impl AppState {
+     pub pane_outer_borders: bool,
+     pub pane_scrollbars: bool,
+@@ -1873,6 +1874,7 @@ impl AppState {
              confirm_close: true,
              prompt_new_tab_name: true,
              prompt_new_workspace_name: false,
 +            new_workspace_command: String::new(),
              pane_borders: true,
-             pane_gaps: false,
-             show_agent_labels_on_pane_borders: false,
+             pane_outer_borders: true,
+             pane_scrollbars: true,
 diff --git a/src/config/model.rs b/src/config/model.rs
-index 9fbca3a..0afd2de 100644
 --- a/src/config/model.rs
 +++ b/src/config/model.rs
-@@ -804,6 +804,9 @@ pub struct UiConfig {
+@@ -877,6 +877,9 @@ pub struct UiConfig {
      pub prompt_new_tab_name: bool,
      /// Ask for a workspace name before interactive creation. Default: false.
      pub prompt_new_workspace_name: bool,
@@ -131,20 +82,19 @@ index 9fbca3a..0afd2de 100644
 +    pub new_workspace_command: String,
      /// Draw borders around split panes. Default: true.
      pub pane_borders: bool,
-     /// Keep split panes visually separated instead of sharing divider borders. Default: true.
-@@ -1006,6 +1009,7 @@ impl Default for UiConfig {
+     /// Draw borders along the outside edge of the pane area. Default: true.
+@@ -1116,6 +1119,7 @@ impl Default for UiConfig {
              confirm_close: true,
              prompt_new_tab_name: true,
              prompt_new_workspace_name: false,
 +            new_workspace_command: String::new(),
              pane_borders: true,
-             pane_gaps: true,
-             show_agent_labels_on_pane_borders: false,
+             pane_outer_borders: true,
+             pane_scrollbars: true,
 diff --git a/src/main.rs b/src/main.rs
-index a73423b..cf5b2e0 100644
 --- a/src/main.rs
 +++ b/src/main.rs
-@@ -300,6 +300,10 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
+@@ -316,6 +316,10 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
  # Ask for a workspace name before interactive creation.
  # prompt_new_workspace_name = false
  
@@ -155,208 +105,3 @@ index a73423b..cf5b2e0 100644
  # Draw borders around split panes.
  # pane_borders = true
  
-diff --git a/src/persist/restore.rs b/src/persist/restore.rs
-index e442ac1..61f3902 100644
---- a/src/persist/restore.rs
-+++ b/src/persist/restore.rs
-@@ -360,6 +360,7 @@ fn restore_workspace(
-             history.and_then(|history| history.tabs.get(idx)),
-             tab_number,
-             &workspace_id,
-+            &snap.launch_env,
-             rows,
-             cols,
-             runtime_context,
-@@ -413,6 +414,7 @@ fn restore_workspace(
-             cached_git_ahead_behind: None,
-             cached_git_space: crate::workspace::git_space_metadata(&snap.identity_cwd),
-             worktree_space,
-+            launch_env: snap.launch_env.clone(),
-             metadata_tokens: crate::metadata_tokens::MetadataTokens::default(),
-             metadata_token_sequences: HashMap::new(),
-             public_pane_numbers,
-@@ -443,6 +445,7 @@ fn restore_tab(
-     history: Option<&TabHistorySnapshot>,
-     number: usize,
-     workspace_id: &str,
-+    workspace_launch_env: &[(String, String)],
-     rows: u16,
-     cols: u16,
-     runtime_context: &RestoreRuntimeContext<'_>,
-@@ -514,7 +517,7 @@ fn restore_tab(
-             .map(String::as_str);
-         let launch_env = public_pane_id
-             .map(|pane_id| {
--                PaneLaunchEnv::from_extra(Vec::new()).with_identity(
-+                PaneLaunchEnv::from_extra(workspace_launch_env.to_vec()).with_identity(
-                     workspace_id.to_string(),
-                     crate::workspace::public_tab_id_for_number(workspace_id, number),
-                     pane_id.to_string(),
-@@ -1169,6 +1172,7 @@ mod tests {
-                 custom_name: None,
-                 identity_cwd: cwd.clone(),
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::new(),
-                 next_public_pane_number: 0,
-                 public_tab_numbers: Vec::new(),
-@@ -1249,6 +1253,7 @@ mod tests {
-                 custom_name: None,
-                 identity_cwd: cwd.clone(),
-                 worktree_space: None,
-+                launch_env: vec![("HERDR_SSH_HOST".into(), "navis".into())],
-                 public_pane_numbers: HashMap::from([(10, 1), (20, 3)]),
-                 next_public_pane_number: 4,
-                 public_tab_numbers: vec![5],
-@@ -1314,6 +1319,10 @@ mod tests {
-         );
- 
-         let workspace = workspaces.first().expect("workspace should restore");
-+        assert_eq!(
-+            workspace.launch_env,
-+            vec![("HERDR_SSH_HOST".into(), "navis".into())]
-+        );
-         let mut public_numbers: Vec<_> = workspace.public_pane_numbers.values().copied().collect();
-         public_numbers.sort_unstable();
-         assert_eq!(public_numbers, vec![1, 3]);
-@@ -1358,6 +1367,7 @@ mod tests {
-                 custom_name: None,
-                 identity_cwd: cwd.clone(),
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::from([(10, 1), (11, 2), (12, 3), (13, 4)]),
-                 next_public_pane_number: 5,
-                 public_tab_numbers: vec![1, 3, 4, 5],
-@@ -1441,6 +1451,7 @@ mod tests {
-             custom_name: None,
-             identity_cwd: cwd,
-             worktree_space: None,
-+            launch_env: Vec::new(),
-             public_pane_numbers: HashMap::new(),
-             next_public_pane_number: 0,
-             public_tab_numbers: Vec::new(),
-@@ -1480,6 +1491,7 @@ mod tests {
-                 custom_name: None,
-                 identity_cwd: cwd.clone(),
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::new(),
-                 next_public_pane_number: 0,
-                 public_tab_numbers: Vec::new(),
-@@ -1689,6 +1701,7 @@ mod tests {
-                 custom_name: None,
-                 identity_cwd: cwd,
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::new(),
-                 next_public_pane_number: 0,
-                 public_tab_numbers: Vec::new(),
-diff --git a/src/persist/snapshot.rs b/src/persist/snapshot.rs
-index e1e112a..e97d992 100644
---- a/src/persist/snapshot.rs
-+++ b/src/persist/snapshot.rs
-@@ -55,6 +55,8 @@ pub struct WorkspaceSnapshot {
-     pub identity_cwd: PathBuf,
-     #[serde(default, skip_serializing_if = "Option::is_none")]
-     pub worktree_space: Option<crate::workspace::WorktreeSpaceMembership>,
-+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-+    pub launch_env: Vec<(String, String)>,
-     #[serde(default)]
-     pub public_pane_numbers: HashMap<u32, usize>,
-     #[serde(default)]
-@@ -158,6 +160,7 @@ impl From<LegacyWorkspaceSnapshot> for WorkspaceSnapshot {
-             custom_name: snap.custom_name,
-             identity_cwd,
-             worktree_space: None,
-+            launch_env: Vec::new(),
-             public_pane_numbers: HashMap::new(),
-             next_public_pane_number: 0,
-             public_tab_numbers: Vec::new(),
-@@ -291,6 +294,7 @@ fn capture_workspace(
-             .resolved_identity_cwd_from(terminals, terminal_runtimes)
-             .unwrap_or_else(|| ws.identity_cwd.clone()),
-         worktree_space: ws.worktree_space.clone(),
-+        launch_env: ws.launch_env.clone(),
-         public_pane_numbers: ws
-             .public_pane_numbers
-             .iter()
-@@ -668,6 +672,7 @@ mod tests {
-                 custom_name: Some("pi-mono".to_string()),
-                 identity_cwd: PathBuf::from("/home/can/Projects/herdr"),
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::from([(0, 1), (1, 2)]),
-                 next_public_pane_number: 3,
-                 public_tab_numbers: vec![1],
-@@ -1187,6 +1192,7 @@ mod tests {
-         let json = r#"{"custom_name":"test","identity_cwd":"/tmp","tabs":[]}"#;
-         let ws: WorkspaceSnapshot = serde_json::from_str(json).unwrap();
-         assert_eq!(ws.active_tab, 0);
-+        assert!(ws.launch_env.is_empty());
-     }
- 
-     #[test]
-@@ -1224,6 +1230,7 @@ mod tests {
-                 custom_name: Some("fallback test".to_string()),
-                 identity_cwd: PathBuf::from("/tmp"),
-                 worktree_space: None,
-+                launch_env: Vec::new(),
-                 public_pane_numbers: HashMap::new(),
-                 next_public_pane_number: 0,
-                 public_tab_numbers: Vec::new(),
-diff --git a/src/workspace.rs b/src/workspace.rs
-index e90bd35..8e70686 100644
---- a/src/workspace.rs
-+++ b/src/workspace.rs
-@@ -157,6 +157,8 @@ pub struct Workspace {
-     pub(crate) cached_git_space: Option<GitSpaceMetadata>,
-     /// Explicit Herdr-managed worktree grouping provenance.
-     pub worktree_space: Option<WorktreeSpaceMembership>,
-+    /// Environment inherited by every pane created in this workspace.
-+    pub(crate) launch_env: Vec<(String, String)>,
-     pub(crate) metadata_tokens: crate::metadata_tokens::MetadataTokens,
-     pub(crate) metadata_token_sequences: HashMap<String, u64>,
-     /// Public pane numbers within this workspace. Closed pane numbers are not reused.
-@@ -218,6 +220,7 @@ impl Workspace {
-             cached_git_ahead_behind: None,
-             cached_git_space: git_space_metadata(&identity_cwd),
-             worktree_space: None,
-+            launch_env: Vec::new(),
-             metadata_tokens: crate::metadata_tokens::MetadataTokens::default(),
-             metadata_token_sequences: HashMap::new(),
-             public_pane_numbers,
-@@ -356,6 +359,7 @@ impl Workspace {
-         extra_env: Vec<(String, String)>,
-     ) -> std::io::Result<(Self, TerminalState, TerminalRuntime)> {
-         let id = generate_workspace_id();
-+        let workspace_launch_env = extra_env.clone();
-         let launch_env = PaneLaunchEnv::from_extra(extra_env).with_identity(
-             id.clone(),
-             public_tab_id_for_number(&id, 1),
-@@ -401,6 +405,7 @@ impl Workspace {
-                 cached_git_ahead_behind: None,
-                 cached_git_space: None,
-                 worktree_space: None,
-+                launch_env: workspace_launch_env,
-                 metadata_tokens: crate::metadata_tokens::MetadataTokens::default(),
-                 metadata_token_sequences: HashMap::new(),
-                 public_pane_numbers,
-@@ -1015,7 +1020,9 @@ impl Workspace {
-         pane_number: usize,
-         extra_env: Vec<(String, String)>,
-     ) -> PaneLaunchEnv {
--        PaneLaunchEnv::from_extra(extra_env).with_identity(
-+        let mut launch_env = self.launch_env.clone();
-+        launch_env.extend(extra_env);
-+        PaneLaunchEnv::from_extra(launch_env).with_identity(
-             self.id.clone(),
-             public_tab_id_for_number(&self.id, tab_number),
-             public_pane_id_for_number(&self.id, pane_number),
-@@ -1214,6 +1221,7 @@ impl Workspace {
-             cached_git_ahead_behind: None,
-             cached_git_space: None,
-             worktree_space: None,
-+            launch_env: Vec::new(),
-             metadata_tokens: crate::metadata_tokens::MetadataTokens::default(),
-             metadata_token_sequences: HashMap::new(),
-             public_pane_numbers,
