@@ -35,7 +35,6 @@ delib.module {
       searx = {
         enable = true;
         environmentFile = config.sops.templates."searxng.env".path;
-        redisCreateLocally = true;
 
         settings = {
           search.formats = [
@@ -45,19 +44,14 @@ delib.module {
 
           server = {
             bind_address = "127.0.0.1";
-            limiter = true;
+            # SearXNG's built-in limiter allows only four non-HTML API
+            # requests per client per hour, which is unsuitable for Pi's
+            # JSON search integration.  Keep exposure controlled by the
+            # loopback bind and Cloudflare Tunnel instead.
+            limiter = false;
             port = 8888;
             secret_key = "$SEARX_SECRET_KEY";
           };
-        };
-
-        limiterSettings.botdetection = {
-          ipv4_prefix = 32;
-          ipv6_prefix = 56;
-          trusted_proxies = [
-            "127.0.0.0/8"
-            "::1"
-          ];
         };
       };
 
