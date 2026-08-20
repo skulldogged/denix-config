@@ -126,7 +126,6 @@
       url = "github:xai-org/grok-build";
       flake = false;
     };
-
     hyprglass = {
       url = "github:hyprnux/hyprglass";
       flake = false;

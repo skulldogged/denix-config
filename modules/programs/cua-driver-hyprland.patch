@@ -1,0 +1,700 @@
+diff --git a/crates/platform-linux/src/atspi/native.rs b/crates/platform-linux/src/atspi/native.rs
+index 01dfc99..a13bfd3 100644
+--- a/crates/platform-linux/src/atspi/native.rs
++++ b/crates/platform-linux/src/atspi/native.rs
+@@ -2584,12 +2584,19 @@ fn authoritative_wayland_origin(pid: u32, xid: u64, title: Option<&str>) -> Opti
+     }
+     crate::wayland::inject_accessibility_offset(pid)
+         .or_else(|| crate::wayland::sway_ipc::window_origin_for_pid(pid))
++        .or_else(|| crate::wayland::hyprland_ipc::window_origin_for_pid(pid))
+         .or_else(|| {
+             (xid != 0)
+                 .then(|| crate::wayland::sway_ipc::window_for_id(xid))
+                 .flatten()
+                 .map(|window| (window.x, window.y))
+         })
++        .or_else(|| {
++            (xid != 0)
++                .then(|| crate::wayland::hyprland_ipc::window_for_id(xid))
++                .flatten()
++                .map(|window| (window.x, window.y))
++        })
+         .or_else(|| {
+             (xid != 0)
+                 .then(|| {
+@@ -2602,6 +2609,7 @@ fn authoritative_wayland_origin(pid: u32, xid: u64, title: Option<&str>) -> Opti
+         })
+         .or_else(|| crate::wayland::shell_helper::window_origin_for_pid(pid))
+         .or_else(|| title.and_then(crate::wayland::sway_ipc::window_origin_for_title))
++        .or_else(|| title.and_then(crate::wayland::hyprland_ipc::window_origin_for_title))
+ }
+ 
+ fn prefer_authoritative_wayland_origin(
+@@ -2641,7 +2649,8 @@ async fn web_document_origin_for_visited(visited: &[Visited<'_>], pid: u32) -> O
+     let sway_window = crate::wayland::sway_ipc::window_for_pid(pid);
+     let compositor = sway_window
+         .as_ref()
+-        .map(|window| (window.content_x, window.content_y));
++        .map(|window| (window.content_x, window.content_y))
++        .or_else(|| crate::wayland::hyprland_ipc::window_content_offset_for_pid(pid));
+     let document = visited
+         .iter()
+         .filter(|node| node.has_component)
+diff --git a/crates/platform-linux/src/browser_consent_ui.rs b/crates/platform-linux/src/browser_consent_ui.rs
+index 100862b..2879b52 100644
+--- a/crates/platform-linux/src/browser_consent_ui.rs
++++ b/crates/platform-linux/src/browser_consent_ui.rs
+@@ -169,6 +169,10 @@ fn with_target_foreground<T>(
+             crate::wayland::sway_ipc::window_for_id(window_id).filter(|window| window.pid == pid)
+         {
+             crate::wayland::sway_ipc::with_focused_container(window.id, body)
++        } else if let Some(window) = crate::wayland::hyprland_ipc::window_for_id(window_id)
++            .filter(|window| window.pid == pid)
++        {
++            crate::wayland::hyprland_ipc::with_focused_window(window.id, body)
+         } else {
+             crate::wayland::shell_helper::with_focused_window(pid, window_id, body)
+         }
+diff --git a/crates/platform-linux/src/browser_platform.rs b/crates/platform-linux/src/browser_platform.rs
+index 0816d17..b903d83 100644
+--- a/crates/platform-linux/src/browser_platform.rs
++++ b/crates/platform-linux/src/browser_platform.rs
+@@ -557,6 +557,31 @@ impl BrowserPlatform for LinuxBrowserPlatform {
+                     },
+                 });
+             }
++            if let Some(window) = crate::wayland::hyprland_ipc::window_for_id(window_id) {
++                if window.pid != pid_u32 {
++                    return Err(refusal(
++                        BrowserRefusalCode::BrowserWrongTargetRefused,
++                        format!("Hyprland window 0x{window_id:x} is not owned by pid {pid}"),
++                    ));
++                }
++                return Ok(NativeWindowInfo {
++                    pid,
++                    window_id,
++                    title: window.title,
++                    bounds: Rect::new(
++                        f64::from(window.x),
++                        f64::from(window.y),
++                        f64::from(window.width),
++                        f64::from(window.height),
++                    ),
++                    geometry_exact: true,
++                    ownership: NativeOwnershipProof {
++                        method: NativeOwnershipMethod::WindowServerOwner,
++                        owner_pid: pid,
++                        detail: Some("Hyprland IPC pid and rect".to_owned()),
++                    },
++                });
++            }
+             if let Some(window) =
+                 crate::wayland::shell_helper::trusted_window_for_id(pid_u32, window_id)
+             {
+@@ -665,42 +690,48 @@ impl BrowserPlatform for LinuxBrowserPlatform {
+             )
+         })?;
+         if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+-            let Some(windows) = crate::wayland::sway_ipc::list_windows() else {
+-                if let Some(owned) =
+-                    crate::wayland::shell_helper::trusted_window_ids_for_pid(pid_u32)
+-                {
+-                    return Ok(Some(owned.len() == 1 && owned[0] == window_id));
+-                }
+-                if crate::wayland::is_inject_mode() {
+-                    // The private cua-compositor route owns both the native
+-                    // toplevel enumeration and its PID correlation. Unlike a
+-                    // generic AT-SPI-only Wayland session, that is sufficient
+-                    // to attest singleton native-window cardinality for an
+-                    // embedded Chromium endpoint.
+-                    let owned = tokio::task::spawn_blocking(move || {
+-                        crate::wayland::list_windows_dispatch(Some(pid_u32))
+-                            .into_iter()
+-                            .filter(|window| window.pid == Some(pid_u32))
+-                            .map(|window| window.xid)
+-                            .collect::<Vec<_>>()
+-                    })
+-                    .await
+-                    .map_err(|error| {
+-                        refusal(
+-                            BrowserRefusalCode::BrowserRouteUnavailable,
+-                            format!("could not enumerate cua-compositor browser windows: {error}"),
+-                        )
+-                    })?;
+-                    return Ok(Some(owned.len() == 1 && owned[0] == window_id));
+-                }
+-                return Ok(None);
+-            };
+-            let owned = windows
+-                .into_iter()
+-                .filter(|window| window.pid == pid_u32)
+-                .map(|window| window.id)
+-                .collect::<Vec<_>>();
+-            return Ok(Some(owned.len() == 1 && owned[0] == window_id));
++            if let Some(windows) = crate::wayland::sway_ipc::list_windows() {
++                let owned = windows
++                    .into_iter()
++                    .filter(|window| window.pid == pid_u32)
++                    .map(|window| window.id)
++                    .collect::<Vec<_>>();
++                return Ok(Some(owned.len() == 1 && owned[0] == window_id));
++            }
++            if let Some(windows) = crate::wayland::hyprland_ipc::list_windows() {
++                let owned = windows
++                    .into_iter()
++                    .filter(|window| window.pid == pid_u32)
++                    .map(|window| window.id)
++                    .collect::<Vec<_>>();
++                return Ok(Some(owned.len() == 1 && owned[0] == window_id));
++            }
++            if let Some(owned) = crate::wayland::shell_helper::trusted_window_ids_for_pid(pid_u32) {
++                return Ok(Some(owned.len() == 1 && owned[0] == window_id));
++            }
++            if crate::wayland::is_inject_mode() {
++                // The private cua-compositor route owns both the native
++                // toplevel enumeration and its PID correlation. Unlike a
++                // generic AT-SPI-only Wayland session, that is sufficient
++                // to attest singleton native-window cardinality for an
++                // embedded Chromium endpoint.
++                let owned = tokio::task::spawn_blocking(move || {
++                    crate::wayland::list_windows_dispatch(Some(pid_u32))
++                        .into_iter()
++                        .filter(|window| window.pid == Some(pid_u32))
++                        .map(|window| window.xid)
++                        .collect::<Vec<_>>()
++                })
++                .await
++                .map_err(|error| {
++                    refusal(
++                        BrowserRefusalCode::BrowserRouteUnavailable,
++                        format!("could not enumerate cua-compositor browser windows: {error}"),
++                    )
++                })?;
++                return Ok(Some(owned.len() == 1 && owned[0] == window_id));
++            }
++            return Ok(None);
+         }
+         let owned = tokio::task::spawn_blocking(move || {
+             crate::x11::list_windows(Some(pid_u32))
+diff --git a/crates/platform-linux/src/browser_setup_ui.rs b/crates/platform-linux/src/browser_setup_ui.rs
+index 237fbe5..229de04 100644
+--- a/crates/platform-linux/src/browser_setup_ui.rs
++++ b/crates/platform-linux/src/browser_setup_ui.rs
+@@ -114,6 +114,10 @@ fn with_target_foreground<T>(
+             crate::wayland::sway_ipc::window_for_id(window_id).filter(|window| window.pid == pid)
+         {
+             crate::wayland::sway_ipc::with_focused_container(window.id, body)
++        } else if let Some(window) = crate::wayland::hyprland_ipc::window_for_id(window_id)
++            .filter(|window| window.pid == pid)
++        {
++            crate::wayland::hyprland_ipc::with_focused_window(window.id, body)
+         } else {
+             crate::wayland::shell_helper::with_focused_window(pid, window_id, body)
+         }
+diff --git a/crates/platform-linux/src/wayland/hyprland_ipc.rs b/crates/platform-linux/src/wayland/hyprland_ipc.rs
+new file mode 100644
+index 0000000..b6f9568
+--- /dev/null
++++ b/crates/platform-linux/src/wayland/hyprland_ipc.rs
+@@ -0,0 +1,307 @@
++//! Best-effort Hyprland compositor metadata.
++//!
++//! The Wayland foreign-toplevel protocols expose titles and app ids, but not
++//! process ids or geometry. Hyprland's JSON IPC supplies those missing fields
++//! together with a compositor-stable window address.
++
++use std::collections::HashSet;
++use std::process::{Command, Stdio};
++
++use serde::Deserialize;
++
++#[derive(Clone, Debug, Default, Deserialize)]
++struct Workspace {
++    id: i32,
++}
++
++#[derive(Clone, Debug, Default, Deserialize)]
++struct Client {
++    address: String,
++    #[serde(default)]
++    mapped: bool,
++    #[serde(default)]
++    hidden: bool,
++    #[serde(default)]
++    at: [i32; 2],
++    #[serde(default)]
++    size: [i32; 2],
++    #[serde(default)]
++    workspace: Workspace,
++    #[serde(default)]
++    class: String,
++    #[serde(default)]
++    title: String,
++    pid: Option<u32>,
++    #[serde(default)]
++    pinned: bool,
++    #[serde(default)]
++    fullscreen: i32,
++    #[serde(default, rename = "focusHistoryID")]
++    focus_history_id: i32,
++}
++
++#[derive(Clone, Debug, Default, Deserialize)]
++struct Monitor {
++    #[serde(default, rename = "activeWorkspace")]
++    active_workspace: Workspace,
++    #[serde(default, rename = "specialWorkspace")]
++    special_workspace: Workspace,
++}
++
++#[derive(Clone, Debug, Eq, PartialEq)]
++pub struct Window {
++    pub id: u64,
++    pub pid: u32,
++    pub title: String,
++    pub app_id: String,
++    pub x: i32,
++    pub y: i32,
++    pub width: u32,
++    pub height: u32,
++    pub content_x: i32,
++    pub content_y: i32,
++    pub focused: bool,
++    pub visible: bool,
++    pub fullscreen: bool,
++}
++
++fn hyprctl_json(object: &str) -> Option<Vec<u8>> {
++    if std::env::var_os("HYPRLAND_INSTANCE_SIGNATURE").is_none() {
++        return None;
++    }
++    let output = Command::new("hyprctl")
++        .args(["-j", object])
++        .stdin(Stdio::null())
++        .stderr(Stdio::null())
++        .output()
++        .ok()?;
++    output.status.success().then_some(output.stdout)
++}
++
++fn parse_address(address: &str) -> Option<u64> {
++    u64::from_str_radix(address.trim().trim_start_matches("0x"), 16).ok()
++}
++
++fn parse_clients(clients: &[u8], monitors: &[u8]) -> Option<Vec<Window>> {
++    let clients: Vec<Client> = serde_json::from_slice(clients).ok()?;
++    let monitors: Vec<Monitor> = serde_json::from_slice(monitors).ok()?;
++    let active_workspaces = monitors
++        .into_iter()
++        .flat_map(|monitor| [monitor.active_workspace.id, monitor.special_workspace.id])
++        .filter(|id| *id != 0)
++        .collect::<HashSet<_>>();
++
++    Some(
++        clients
++            .into_iter()
++            .filter_map(|client| {
++                let id = parse_address(&client.address)?;
++                let pid = client.pid?;
++                let width = client.size[0].max(0) as u32;
++                let height = client.size[1].max(0) as u32;
++                let visible = client.mapped
++                    && !client.hidden
++                    && (client.pinned || active_workspaces.contains(&client.workspace.id))
++                    && width > 0
++                    && height > 0;
++                Some(Window {
++                    id,
++                    pid,
++                    title: client.title,
++                    app_id: client.class,
++                    x: client.at[0],
++                    y: client.at[1],
++                    width,
++                    height,
++                    content_x: 0,
++                    content_y: 0,
++                    focused: client.focus_history_id == 0,
++                    visible,
++                    fullscreen: client.fullscreen != 0,
++                })
++            })
++            .collect(),
++    )
++}
++
++pub fn list_windows() -> Option<Vec<Window>> {
++    let clients = hyprctl_json("clients")?;
++    let monitors = hyprctl_json("monitors")?;
++    parse_clients(&clients, &monitors)
++}
++
++pub fn window_for_id(id: u64) -> Option<Window> {
++    list_windows()?.into_iter().find(|window| window.id == id)
++}
++
++pub fn window_for_pid(pid: u32) -> Option<Window> {
++    list_windows()?
++        .into_iter()
++        .filter(|window| window.pid == pid && window.width > 0 && window.height > 0)
++        .max_by_key(|window| {
++            (
++                window.focused,
++                window.visible,
++                u64::from(window.width) * u64::from(window.height),
++            )
++        })
++}
++
++pub fn window_for_title(title: &str) -> Option<Window> {
++    list_windows()?
++        .into_iter()
++        .filter(|window| {
++            window.width > 0
++                && window.height > 0
++                && (window.title == title
++                    || (!window.title.is_empty() && title.starts_with(&window.title))
++                    || (!title.is_empty() && window.title.starts_with(title)))
++        })
++        .max_by_key(|window| (window.focused, window.visible))
++}
++
++pub fn window_for_app_id(app_id: &str) -> Option<Window> {
++    if app_id.is_empty() {
++        return None;
++    }
++    list_windows()?
++        .into_iter()
++        .filter(|window| window.width > 0 && window.height > 0 && window.app_id == app_id)
++        .max_by_key(|window| (window.focused, window.visible))
++}
++
++fn focus_window(id: u64) -> bool {
++    let lua_dispatcher = format!(r#"hl.dsp.focus({{ window = "address:0x{id:x}" }})"#);
++    if Command::new("hyprctl")
++        .args(["dispatch", lua_dispatcher.as_str()])
++        .stdin(Stdio::null())
++        .stdout(Stdio::null())
++        .stderr(Stdio::null())
++        .status()
++        .is_ok_and(|status| status.success())
++    {
++        return true;
++    }
++
++    // Hyprland before 0.55 used the legacy dispatcher-and-argument form.
++    let selector = format!("address:0x{id:x}");
++    Command::new("hyprctl")
++        .args(["dispatch", "focuswindow", selector.as_str()])
++        .stdin(Stdio::null())
++        .stdout(Stdio::null())
++        .stderr(Stdio::null())
++        .status()
++        .is_ok_and(|status| status.success())
++}
++
++fn wait_for_window_focus(id: u64, timeout: std::time::Duration) -> bool {
++    let deadline = std::time::Instant::now() + timeout;
++    loop {
++        if window_for_id(id).is_some_and(|window| window.focused) {
++            return true;
++        }
++        if std::time::Instant::now() >= deadline {
++            return false;
++        }
++        std::thread::sleep(std::time::Duration::from_millis(10));
++    }
++}
++
++pub fn with_focused_window<T>(
++    id: u64,
++    body: impl FnOnce() -> anyhow::Result<T>,
++) -> anyhow::Result<T> {
++    let prior = list_windows()
++        .ok_or_else(|| anyhow::anyhow!("Hyprland IPC window list is unavailable"))?
++        .into_iter()
++        .find(|window| window.focused)
++        .map(|window| window.id);
++    if !focus_window(id) {
++        anyhow::bail!("Hyprland refused to focus exact window 0x{id:x}");
++    }
++    if !wait_for_window_focus(id, std::time::Duration::from_millis(500)) {
++        anyhow::bail!("Hyprland did not confirm focus on exact window 0x{id:x}");
++    }
++    let result = body();
++    let restore = prior
++        .filter(|prior| *prior != id)
++        .map(|prior| {
++            if !focus_window(prior) {
++                anyhow::bail!("Hyprland could not restore prior window 0x{prior:x}");
++            }
++            if !wait_for_window_focus(prior, std::time::Duration::from_millis(500)) {
++                anyhow::bail!("Hyprland did not confirm restored window 0x{prior:x}");
++            }
++            Ok(())
++        })
++        .transpose();
++    match (result, restore) {
++        (Ok(value), Ok(_)) => Ok(value),
++        (Err(error), Ok(_)) => Err(error),
++        (Ok(_), Err(error)) => Err(error),
++        (Err(error), Err(restore)) => Err(error.context(format!(
++            "the prior Hyprland focus also could not be restored: {restore}"
++        ))),
++    }
++}
++
++pub fn window_origin_for_pid(pid: u32) -> Option<(i32, i32)> {
++    window_for_pid(pid).map(|window| (window.x, window.y))
++}
++
++pub fn window_content_offset_for_pid(pid: u32) -> Option<(i32, i32)> {
++    window_for_pid(pid).map(|window| (window.content_x, window.content_y))
++}
++
++pub fn window_origin_for_title(title: &str) -> Option<(i32, i32)> {
++    window_for_title(title).map(|window| (window.x, window.y))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn parses_geometry_identity_and_active_workspace_visibility() {
++        let clients = br#"[{
++          "address": "0x5b6e670523d0",
++          "mapped": true,
++          "hidden": false,
++          "at": [92, 32],
++          "size": [2436, 1376],
++          "workspace": {"id": 1, "name": "1"},
++          "class": "t3code",
++          "title": "T3 Code (Alpha)",
++          "pid": 18318,
++          "pinned": false,
++          "fullscreen": 1,
++          "focusHistoryID": 0
++        }, {
++          "address": "0xabc",
++          "mapped": true,
++          "hidden": false,
++          "at": [20, 30],
++          "size": [800, 600],
++          "workspace": {"id": 2, "name": "2"},
++          "class": "off-workspace",
++          "title": "Hidden by workspace",
++          "pid": 99,
++          "focusHistoryID": 1
++        }]"#;
++        let monitors = br#"[{
++          "activeWorkspace": {"id": 1, "name": "1"},
++          "specialWorkspace": {"id": 0, "name": ""}
++        }]"#;
++
++        let windows = parse_clients(clients, monitors).expect("valid Hyprland JSON");
++        assert_eq!(windows.len(), 2);
++        assert_eq!(windows[0].id, 0x5b6e670523d0);
++        assert_eq!(windows[0].pid, 18318);
++        assert_eq!((windows[0].x, windows[0].y), (92, 32));
++        assert_eq!((windows[0].width, windows[0].height), (2436, 1376));
++        assert!(windows[0].visible);
++        assert!(windows[0].focused);
++        assert!(windows[0].fullscreen);
++        assert!(!windows[1].visible);
++    }
++}
+diff --git a/crates/platform-linux/src/wayland/mod.rs b/crates/platform-linux/src/wayland/mod.rs
+index 3432293..e06eb2e 100644
+--- a/crates/platform-linux/src/wayland/mod.rs
++++ b/crates/platform-linux/src/wayland/mod.rs
+@@ -11,6 +11,7 @@
+ 
+ pub mod ext_screencopy;
+ pub mod ext_toplevel;
++pub mod hyprland_ipc;
+ pub mod overlay;
+ pub mod persistent_vptr;
+ pub(crate) mod portal;
+@@ -304,6 +305,12 @@ fn identity_for(id: u64) -> Option<ToplevelIdentity> {
+                 app_id: window.app_id,
+             })
+         })
++        .or_else(|| {
++            hyprland_ipc::window_for_id(id).map(|window| ToplevelIdentity {
++                title: window.title,
++                app_id: window.app_id,
++            })
++        })
+         .or_else(|| {
+             crate::atspi::list_windows(None)
+                 .into_iter()
+@@ -625,6 +632,8 @@ pub fn list_windows() -> anyhow::Result<Vec<WindowInfo>> {
+ 
+     let sway_windows = sway_ipc::list_windows().unwrap_or_default();
+     let mut used_sway_ids = HashSet::new();
++    let hyprland_windows = hyprland_ipc::list_windows().unwrap_or_default();
++    let mut used_hyprland_ids = HashSet::new();
+     let mut out = Vec::new();
+     for (id, tl) in &state.toplevels {
+         if tl.closed {
+@@ -649,22 +658,62 @@ pub fn list_windows() -> anyhow::Result<Vec<WindowInfo>> {
+                         && window.app_id == tl.app_id
+                 })
+             });
+-        let stable_id = sway.map(|window| window.id).unwrap_or(*id as u64);
++        let hyprland = sway.is_none().then(|| {
++            hyprland_windows
++                .iter()
++                .find(|window| {
++                    !used_hyprland_ids.contains(&window.id)
++                        && !tl.title.is_empty()
++                        && window.title == tl.title
++                })
++                .or_else(|| {
++                    hyprland_windows.iter().find(|window| {
++                        !used_hyprland_ids.contains(&window.id)
++                            && !tl.app_id.is_empty()
++                            && window.app_id == tl.app_id
++                    })
++                })
++        });
++        let hyprland = hyprland.flatten();
++        let stable_id = sway
++            .map(|window| window.id)
++            .or_else(|| hyprland.map(|window| window.id))
++            .unwrap_or(*id as u64);
+         if let Some(window) = sway {
+             used_sway_ids.insert(window.id);
+         }
++        if let Some(window) = hyprland {
++            used_hyprland_ids.insert(window.id);
++        }
+         remember_identity(stable_id, tl);
+         out.push(WindowInfo {
+             xid: stable_id,
+-            pid: sway.map(|window| window.pid),
++            pid: sway
++                .map(|window| window.pid)
++                .or_else(|| hyprland.map(|window| window.pid)),
+             app_name: tl.app_id.clone(),
+             title,
+-            is_on_screen: sway.map(|window| window.visible).unwrap_or(true),
++            is_on_screen: sway
++                .map(|window| window.visible)
++                .or_else(|| hyprland.map(|window| window.visible))
++                .unwrap_or(true),
+             z_index: None,
+-            x: sway.map(|window| window.x).unwrap_or(0),
+-            y: sway.map(|window| window.y).unwrap_or(0),
+-            width: sway.map(|window| window.width).unwrap_or(0),
+-            height: sway.map(|window| window.height).unwrap_or(0),
++            x: sway
++                .map(|window| window.x)
++                .or_else(|| hyprland.map(|window| window.x))
++                .unwrap_or(0),
++            y: sway
++                .map(|window| window.y)
++                .or_else(|| hyprland.map(|window| window.y))
++                .unwrap_or(0),
++            width: sway
++                .map(|window| window.width)
++                .or_else(|| hyprland.map(|window| window.width))
++                .unwrap_or(0),
++            height: sway
++                .map(|window| window.height)
++                .or_else(|| hyprland.map(|window| window.height))
++                .unwrap_or(0),
+         });
+     }
+     Ok(out)
+@@ -983,6 +1032,16 @@ fn wayland_window_crop(xid: u64) -> anyhow::Result<WaylandWindowCrop> {
+             window.visible,
+         );
+     }
++    if let Some(window) = hyprland_ipc::window_for_id(xid) {
++        return attested_wayland_crop(
++            xid,
++            window.x,
++            window.y,
++            window.width,
++            window.height,
++            window.visible,
++        );
++    }
+     if let Some(window) = shell_helper::list_windows(None)
+         .and_then(|windows| windows.into_iter().find(|window| window.xid == xid))
+     {
+@@ -1363,6 +1422,15 @@ pub fn with_target_foreground<T>(
+         }
+         return sway_ipc::with_focused_container(window_id, body);
+     }
++    if let Some(window) = hyprland_ipc::window_for_id(window_id) {
++        if window.pid != pid {
++            anyhow::bail!(
++                "foreground_unavailable: Hyprland window 0x{window_id:x} belongs to pid {}, not pid {pid}",
++                window.pid
++            );
++        }
++        return hyprland_ipc::with_focused_window(window_id, body);
++    }
+     if shell_helper::trusted_window_for_id(pid, window_id).is_some() {
+         return shell_helper::with_focused_window(pid, window_id, body);
+     }
+@@ -1527,6 +1595,9 @@ pub fn window_geometry(window_id: u64) -> Option<(i32, i32, u32, u32)> {
+     if let Some(window) = sway_ipc::window_for_id(window_id) {
+         return Some((window.x, window.y, window.width, window.height));
+     }
++    if let Some(window) = hyprland_ipc::window_for_id(window_id) {
++        return Some((window.x, window.y, window.width, window.height));
++    }
+ 
+     let identity = identity_for(window_id);
+     if let Some(identity) = identity.as_ref() {
+@@ -1548,6 +1619,24 @@ pub fn window_geometry(window_id: u64) -> Option<(i32, i32, u32, u32)> {
+                 return Some((window.x, window.y, window.width, window.height));
+             }
+         }
++        if let Some(windows) = hyprland_ipc::list_windows() {
++            let title_matches = windows
++                .iter()
++                .filter(|window| !identity.title.is_empty() && window.title == identity.title)
++                .collect::<Vec<_>>();
++            if title_matches.len() == 1 {
++                let window = title_matches[0];
++                return Some((window.x, window.y, window.width, window.height));
++            }
++            let app_matches = windows
++                .iter()
++                .filter(|window| !identity.app_id.is_empty() && window.app_id == identity.app_id)
++                .collect::<Vec<_>>();
++            if app_matches.len() == 1 {
++                let window = app_matches[0];
++                return Some((window.x, window.y, window.width, window.height));
++            }
++        }
+     }
+ 
+     let windows = list_windows_dispatch(None);
+@@ -3037,6 +3126,21 @@ fn wayland_atspi_windows(filter_pid: Option<u32>) -> Vec<WindowInfo> {
+             window.width = sway.width;
+             window.height = sway.height;
+             window.is_on_screen = sway.visible && sway.width > 0 && sway.height > 0;
++            continue;
++        }
++        let hyprland = window
++            .pid
++            .and_then(hyprland_ipc::window_for_pid)
++            .or_else(|| hyprland_ipc::window_for_title(&window.title))
++            .or_else(|| hyprland_ipc::window_for_app_id(&window.app_name));
++        if let Some(hyprland) = hyprland {
++            window.xid = hyprland.id;
++            window.pid = Some(hyprland.pid);
++            window.x = hyprland.x;
++            window.y = hyprland.y;
++            window.width = hyprland.width;
++            window.height = hyprland.height;
++            window.is_on_screen = hyprland.visible && hyprland.width > 0 && hyprland.height > 0;
+         }
+     }
+     if is_inject_mode() {

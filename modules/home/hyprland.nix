@@ -97,7 +97,7 @@ delib.module {
 
         browser = "helium";
         fileManager = "nautilus";
-        terminal = "wezterm";
+        terminal = "ghostty";
 
         zipline-screenshot = pkgs.writeShellScript "zipline-screenshot" ''
           set -e

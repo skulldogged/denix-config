@@ -55,7 +55,7 @@ delib.host {
       nix-index.enable = true;
       packages.enable = true;
       shell.enable = true;
-      wezterm.enable = true;
+      ghostty.enable = true;
     };
 
     programs = {

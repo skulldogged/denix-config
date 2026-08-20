@@ -88,7 +88,7 @@
       gawk
       gnused
       herdr
-      wezterm
+      ghostty
     ];
     text = ''
       mode="''${1:-}"
@@ -203,7 +203,7 @@
           fi
           ;;
         remote)
-          if ! wezterm start -- \
+          if ! ghostty +new-window -e \
             env \
               -u HERDR_ENV \
               -u HERDR_PANE_ID \
@@ -211,7 +211,7 @@
               -u HERDR_WORKSPACE_ID \
               -u HERDR_SOCKET_PATH \
               ${pkgs.lib.getExe herdrRemoteSession} "$host"; then
-            pause_on_error "WezTerm could not open the remote Herdr window."
+            pause_on_error "Ghostty could not open the remote Herdr window."
           fi
           ;;
       esac
@@ -249,7 +249,7 @@ in
             manifest_check = true;
           };
 
-          # Keep the prefix bindings while mirroring the old WezTerm shortcuts.
+          # Keep the prefix bindings alongside the direct terminal shortcuts.
           keys = {
             focus_pane_left = ["prefix+h" "ctrl+shift+h"];
             focus_pane_down = ["prefix+j" "ctrl+shift+j"];
@@ -272,16 +272,16 @@ in
               {
                 key = "ctrl+shift+n";
                 type = "shell";
-                description = "open the focused pane in another WezTerm window";
+                description = "open the focused pane in another Ghostty window";
                 command = ''
                   terminal_id="$(${pkgs.lib.getExe herdr} pane get "$HERDR_ACTIVE_PANE_ID" | ${pkgs.lib.getExe pkgs.jq} -r '.result.pane.terminal_id')"
-                  exec ${pkgs.lib.getExe pkgs.wezterm} start -- ${pkgs.lib.getExe herdr} terminal attach "$terminal_id"
+                  exec ${pkgs.lib.getExe pkgs.ghostty} +new-window -e ${pkgs.lib.getExe herdr} terminal attach "$terminal_id"
                 '';
               }
               {
                 key = "ctrl+shift+g";
                 type = "popup";
-                description = "open a remote Herdr session in another WezTerm window";
+                description = "open a remote Herdr session in another Ghostty window";
                 command = "${pkgs.lib.getExe herdrSshPicker} remote";
                 width = "70%";
                 height = "70%";

@@ -51,7 +51,7 @@ delib.module {
         // lib.optionalAttrs myconfig.host.isDesktop {
           BROWSER = "helium";
           NIXOS_OZONE_WL = "1";
-          TERMINAL = "wezterm";
+          TERMINAL = "ghostty";
         };
 
       systemPackages = with pkgs;

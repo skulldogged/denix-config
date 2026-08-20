@@ -10,6 +10,10 @@ delib.host {
   type = "laptop";
 
   darwin = {
+    homebrew = {
+      enable = true;
+      casks = ["ghostty"];
+    };
     # macOS-specific settings
     ids.gids.nixbld = 30000;
 
@@ -71,7 +75,7 @@ delib.host {
       shell.enable = true;
       fish.enable = true;
       packages.enable = true;
-      wezterm.enable = true;
+      ghostty.enable = true;
     };
 
     # Programs

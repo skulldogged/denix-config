@@ -686,7 +686,7 @@ delib.module {
 
         general = {
           apps = {
-            terminal = ["wezterm"];
+            terminal = ["ghostty"];
             explorer = ["nautilus"];
             playback = ["mpv"];
           };

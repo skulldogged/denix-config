@@ -14,7 +14,9 @@ delib.module {
   nixos.ifEnabled = {
     services.cua-driver = {
       enable = true;
-      package = inputs.cua.packages.${pkgs.stdenv.hostPlatform.system}.cua-driver;
+      package = inputs.cua.packages.${pkgs.stdenv.hostPlatform.system}.cua-driver.overrideAttrs (old: {
+        patches = (old.patches or []) ++ [./cua-driver-hyprland.patch];
+      });
     };
 
     # CUA uses AT-SPI to discover native Wayland application controls.
@@ -33,6 +35,7 @@ delib.module {
     # implementations. ImageMagick is already supplied by the upstream module.
     environment.systemPackages = with pkgs; [
       ffmpeg
+      glib
       grim
       wf-recorder
       wtype
