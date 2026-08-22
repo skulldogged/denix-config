@@ -1,0 +1,95 @@
+From 0499549cb693d04acc9baf63f6739a457461ce34 Mon Sep 17 00:00:00 2001
+From: mutt <root@skulldogged.dev>
+Date: Sat, 22 Aug 2026 06:51:08 +0200
+Subject: [PATCH] fix(ci): pack installable Pi server artifacts
+
+---
+ .github/workflows/pi-release.yml |  3 +-
+ scripts/pack-server-artifact.ts  | 54 ++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 1 deletion(-)
+ create mode 100644 scripts/pack-server-artifact.ts
+
+diff --git a/.github/workflows/pi-release.yml b/.github/workflows/pi-release.yml
+index c94cb62c2..b1b49578c 100644
+--- a/.github/workflows/pi-release.yml
++++ b/.github/workflows/pi-release.yml
+@@ -186,6 +186,7 @@ jobs:
+         with:
+           distribution: temurin
+           java-version: "21"
++      - uses: gradle/actions/setup-gradle@v4
+       - name: Stamp release versions
+         run: node scripts/update-release-package-versions.ts "${{ needs.metadata.outputs.version }}"
+       - name: Build web and server
+@@ -197,7 +198,7 @@ jobs:
+         run: |
+           set -euo pipefail
+           mkdir -p release-publish
+-          npm pack ./apps/server --pack-destination release-publish
++          node scripts/pack-server-artifact.ts "${{ needs.metadata.outputs.version }}" release-publish
+       - name: Build preview APK
+         shell: bash
+         env:
+diff --git a/scripts/pack-server-artifact.ts b/scripts/pack-server-artifact.ts
+new file mode 100644
+index 000000000..f3de5e496
+--- /dev/null
++++ b/scripts/pack-server-artifact.ts
+@@ -0,0 +1,54 @@
++#!/usr/bin/env node
++
++import { spawnSync } from "node:child_process";
++import { readFileSync, writeFileSync } from "node:fs";
++import path from "node:path";
++
++import { parse } from "yaml";
++
++import { resolveCatalogDependencies } from "./lib/resolve-catalog.ts";
++
++const [version, outputDirectory] = process.argv.slice(2);
++if (!version || !outputDirectory) {
++  throw new Error("Usage: pack-server-artifact.ts VERSION OUTPUT_DIRECTORY");
++}
++
++const repoRoot = path.resolve(import.meta.dirname, "..");
++const packagePath = path.join(repoRoot, "apps/server/package.json");
++const workspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
++const originalPackage = readFileSync(packagePath, "utf8");
++const packageJson = JSON.parse(originalPackage) as Record<string, unknown>;
++const workspace = parse(readFileSync(workspacePath, "utf8")) as {
++  catalog?: Record<string, string>;
++  overrides?: Record<string, string>;
++};
++
++const publishPackage = {
++  name: packageJson.name,
++  version,
++  license: packageJson.license,
++  repository: packageJson.repository,
++  bin: packageJson.bin,
++  files: packageJson.files,
++  type: packageJson.type,
++  dependencies: resolveCatalogDependencies(
++    packageJson.dependencies as Record<string, string>,
++    workspace.catalog ?? {},
++    "apps/server",
++  ),
++  engines: packageJson.engines,
++};
++
++try {
++  writeFileSync(packagePath, `${JSON.stringify(publishPackage, null, 2)}\n`);
++  const packed = spawnSync(
++    "npm",
++    ["pack", "./apps/server", "--pack-destination", outputDirectory],
++    { cwd: repoRoot, encoding: "utf8", stdio: "inherit" },
++  );
++  if (packed.status !== 0) {
++    throw new Error(`npm pack failed with exit code ${packed.status ?? "unknown"}`);
++  }
++} finally {
++  writeFileSync(packagePath, originalPackage);
++}
+-- 
+2.55.0
+
