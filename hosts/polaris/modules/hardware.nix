@@ -25,6 +25,8 @@ delib.module {
         "i915"
         "kvm-intel"
       ];
+
+      kernel.sysctl."vm.swappiness" = 100;
     };
 
     fileSystems = {
@@ -50,6 +52,21 @@ delib.module {
           "x-systemd.device-timeout=10s"
         ];
       };
+    };
+
+    swapDevices = [
+      {
+        device = "/var/lib/swapfile";
+        priority = 10;
+        size = 32 * 1024;
+      }
+    ];
+
+    zramSwap = {
+      algorithm = "zstd";
+      enable = true;
+      memoryPercent = 25;
+      priority = 100;
     };
 
     hardware = {
