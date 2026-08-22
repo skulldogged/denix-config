@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the personal T3 Code Pi channel daily
+
+[Timer]
+OnCalendar=*-*-* 04:15:00
+Persistent=true
+RandomizedDelaySec=30m
+Unit=t3code-channel-update.service
+
+[Install]
+WantedBy=timers.target
