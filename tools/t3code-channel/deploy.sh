@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 if [[ $# -ne 1 || ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.-]+$ ]]; then
   echo "Usage: deploy.sh VERSION" >&2
   exit 1
