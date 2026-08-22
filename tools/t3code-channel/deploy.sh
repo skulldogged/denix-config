@@ -34,17 +34,23 @@ install_linux_candidate() {
   local server_tgz="$2"
   local target_dir="$base_dir/runtime/versions/$version"
   local service_environment
+  local service_exec_start
   local install_path
   if [[ -f "$target_dir/.install-complete" ]] && [[ "$(<"$target_dir/.install-complete")" == "$version" ]]; then
     return
   fi
 
   service_environment="$(systemctl --user show t3code.service -p Environment --value)"
-  if [[ ! "$service_environment" =~ (^|[[:space:]])PATH=([^[:space:]]+) ]]; then
-    log "Could not determine the T3 service build environment."
-    return 1
+  if [[ "$service_environment" =~ (^|[[:space:]])PATH=([^[:space:]]+) ]]; then
+    install_path="${BASH_REMATCH[2]}"
+  else
+    service_exec_start="$(systemctl --user show t3code.service -p ExecStart --value)"
+    if [[ ! "$service_exec_start" =~ path=([^[:space:]\;]+) ]]; then
+      log "Could not determine the T3 service Node runtime."
+      return 1
+    fi
+    install_path="$(dirname -- "${BASH_REMATCH[1]}"):$PATH"
   fi
-  install_path="${BASH_REMATCH[2]}"
   mkdir -p "$target_dir"
   PATH="$install_path" node -e '
     const fs = require("node:fs");
@@ -87,11 +93,16 @@ switch_script="$4"
 target_dir="$HOME/.t3/runtime/versions/$version"
 if [[ ! -f "$target_dir/.install-complete" ]] || [[ "$(<"$target_dir/.install-complete")" != "$version" ]]; then
   service_environment="$(systemctl --user show t3code.service -p Environment --value)"
-  if [[ ! "$service_environment" =~ (^|[[:space:]])PATH=([^[:space:]]+) ]]; then
-    echo "Could not determine the T3 service build environment." >&2
-    exit 1
+  if [[ "$service_environment" =~ (^|[[:space:]])PATH=([^[:space:]]+) ]]; then
+    install_path="${BASH_REMATCH[2]}"
+  else
+    service_exec_start="$(systemctl --user show t3code.service -p ExecStart --value)"
+    if [[ ! "$service_exec_start" =~ path=([^[:space:]\;]+) ]]; then
+      echo "Could not determine the T3 service Node runtime." >&2
+      exit 1
+    fi
+    install_path="$(dirname -- "${BASH_REMATCH[1]}"):$PATH"
   fi
-  install_path="${BASH_REMATCH[2]}"
   mkdir -p "$target_dir"
   PATH="$install_path" node -e 'const fs=require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({private:true}, null, 2)+"\n")' "$target_dir/package.json"
   PATH="$install_path" npm install --prefix "$target_dir" --omit=dev --no-audit --no-fund "$server_tgz"
