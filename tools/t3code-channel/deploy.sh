@@ -116,6 +116,7 @@ plist="$HOME/Library/LaunchAgents/codes.t3.server.plist"
 backup="$plist.before-$version"
 node_bin="/opt/homebrew/opt/node@24/bin/node"
 npm_bin="/opt/homebrew/opt/node@24/bin/npm"
+export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
 entry="$target_dir/node_modules/t3/dist/bin.mjs"
 
 if [[ ! -f "$target_dir/.install-complete" ]] || [[ "$(<"$target_dir/.install-complete")" != "$version" ]]; then
