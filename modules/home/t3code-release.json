@@ -1,6 +1,6 @@
 {
-  "version": "0.0.40-main792a1404.pi.810aa4d9",
-  "appImageHash": "sha256-Ii8e8NQXxsIdlYWILG5NrHhTgZCA+6SL8uiUgjhC2mU=",
-  "repository": "skulldogged/denix-config",
-  "tagPrefix": "t3code-"
+  "version": "0.0.41-main11f05137.pi.9195cfc1",
+  "appImageHash": "sha256-9X18zYohCy8w1Qt3+MPe8BFNpTOvhsQEHElwhf2ZmVQ=",
+  "repository": "skulldogged/t3code",
+  "tagPrefix": "pi-v"
 }
