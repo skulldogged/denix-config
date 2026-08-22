@@ -191,11 +191,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786986462,
-        "narHash": "sha256-vF/o/vZfjsesLd9R/ildQnWdVze5FkrDr/O4wk1Hu5o=",
+        "lastModified": 1787260212,
+        "narHash": "sha256-cd9PhHDHLOmZEGqRd+zQPGNJHCtFrFWzIreM5IVbwVQ=",
         "owner": "sadjow",
         "repo": "codex-cli-nix",
-        "rev": "66aa59a6b8ab5675232d948aa83cf25af714f215",
+        "rev": "36fefe14f5549c2751afa313bfcc8582eb025707",
         "type": "github"
       },
       "original": {
@@ -212,11 +212,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787079200,
-        "narHash": "sha256-BYo8mVEqRj6y8PzpFd3rX6TQTknB3Ynp/3ykMTm56D8=",
+        "lastModified": 1787310585,
+        "narHash": "sha256-lJBYDDb1mmBQPcCztbRdOYOmGrsXOERpYAVoSgKZFt8=",
         "owner": "ilysenko",
         "repo": "codex-desktop-linux",
-        "rev": "1875dc2eaab6f9448617d18d0eda58902edf0f1a",
+        "rev": "e46e3c646151db786f85712ade10e4673bd807e4",
         "type": "github"
       },
       "original": {
@@ -618,11 +618,11 @@
     "grok-build-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1786992505,
-        "narHash": "sha256-l5Xw7TqPXEwUZdhi3mo3mwerivwYB5BHwcwypd8tZMI=",
+        "lastModified": 1787169330,
+        "narHash": "sha256-Ug2mIx522mLbu3dcv72ngLOSKKPAH8259qBqt+sty4Q=",
         "owner": "xai-org",
         "repo": "grok-build",
-        "rev": "d71f6e0c1f5acc5469e503e192fe14824e6f8c90",
+        "rev": "19d42e35c07a9c9244f03f6df0c4c353f970d4f9",
         "type": "github"
       },
       "original": {
@@ -638,11 +638,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786999651,
-        "narHash": "sha256-MTGMFlLDTklsXhCp4r5GXB4VAVadPdalXLvUjd/K7h0=",
+        "lastModified": 1787176219,
+        "narHash": "sha256-djoRr6jBpe35q/0JwAvXpFXg1Ktf+X54NU2RLR7wnHw=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "353742587cbaf079b3caee743115d037bc51fea6",
+        "rev": "c53d643b3737e2fcd04e6cb3b3580ef50b2087a0",
         "type": "github"
       },
       "original": {
@@ -745,11 +745,11 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1787078251,
-        "narHash": "sha256-4Y51BYE6U0u41BdcnQAjzc6LXrDaEqH7zrDSFurm+pk=",
+        "lastModified": 1787325022,
+        "narHash": "sha256-/XaNUsGwTSqwhHS3IgZqMeSTQQRKcwat+w5FaJOc1LY=",
         "owner": "hyprwm",
         "repo": "Hyprland",
-        "rev": "9d4f7a83ce2764ddb51b4ea01f8ae1e6f1c18f66",
+        "rev": "a28784206716a1c3e94535c99116a27a1f895980",
         "type": "github"
       },
       "original": {
@@ -1031,11 +1031,11 @@
     "jellyfin-web-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1787090445,
-        "narHash": "sha256-580gMAnBV8WKI8qxcUQ4Hi9ir8AXe1c3kr9dviz4bFU=",
+        "lastModified": 1787324421,
+        "narHash": "sha256-X8IDOzTpsroRBkHdWartys6mi244cd8rQnRUPmNF2Ho=",
         "owner": "jellyfin",
         "repo": "jellyfin-web",
-        "rev": "a1b8434381fed047fe853b086aeaf300f13ec0c6",
+        "rev": "3889f9d53f570d2b5ab29619fbca2c9e88dadfef",
         "type": "github"
       },
       "original": {
@@ -1311,11 +1311,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1787001381,
-        "narHash": "sha256-Ue1Yo8gfHdD4TMtNewhA4tkSYeFqXThju0nCyJc3ALo=",
+        "lastModified": 1787135253,
+        "narHash": "sha256-RD2kNWCG+Bjo6h+JVjWVNntZs2GtRoeY2xHjts/FNkA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ec2d622de0773551768cf98f3fc50cbcc003b9c5",
+        "rev": "ffb3c9b700e759be2ef13237c9d8f953b32a1e46",
         "type": "github"
       },
       "original": {
@@ -1862,11 +1862,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787089904,
-        "narHash": "sha256-SVKa78Ic32+9TgjUqc4RAGSMYZTfrgesYCjIhaX0Qis=",
+        "lastModified": 1787318949,
+        "narHash": "sha256-3vNLcUv4+rEUdVYBQ8STh1nOOHHGH3ELTLeNb1BQ5OU=",
         "owner": "omarcresp",
         "repo": "t3code-flake",
-        "rev": "97989b72eff2e30ae94cf901481ad811bcdacae3",
+        "rev": "3f4102db91e0749b1012788b5ec61c0f49b8028a",
         "type": "github"
       },
       "original": {
@@ -1990,11 +1990,11 @@
         "systems": "systems_11"
       },
       "locked": {
-        "lastModified": 1786962391,
-        "narHash": "sha256-Of1YU59mj9BZwQi7lbj/+XGaCs+MTGFCZ12bgcNbEu0=",
+        "lastModified": 1787232541,
+        "narHash": "sha256-Tl++tyDcMn8qFUQB9OmyuPUGWUMCff3wLDqtdysoeJc=",
         "owner": "vicinaehq",
         "repo": "vicinae",
-        "rev": "1f6de859a4142e24e73f7cc8a70df1a6e8d77a0e",
+        "rev": "db651f6c8c6e1b07198ec4cea94206d754db37d2",
         "type": "github"
       },
       "original": {
