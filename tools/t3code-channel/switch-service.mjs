@@ -7,8 +7,43 @@ import path from "node:path";
 const [baseDir, expectedVersion, targetVersion, unit = "t3code.service"] = process.argv.slice(2);
 const exactVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
+const compareVersions = (left, right) => {
+  const parse = (version) => {
+    const separator = version.indexOf("-");
+    const core = separator === -1 ? version : version.slice(0, separator);
+    return {
+      core: core.split(".").map(BigInt),
+      prerelease: separator === -1 ? null : version.slice(separator + 1).split("."),
+    };
+  };
+  const x = parse(left);
+  const y = parse(right);
+  for (let index = 0; index < 3; index += 1) {
+    if (x.core[index] !== y.core[index]) return x.core[index] < y.core[index] ? -1 : 1;
+  }
+  if (x.prerelease === null || y.prerelease === null) {
+    return x.prerelease === y.prerelease ? 0 : x.prerelease === null ? 1 : -1;
+  }
+  const length = Math.max(x.prerelease.length, y.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const xPart = x.prerelease[index];
+    const yPart = y.prerelease[index];
+    if (xPart === undefined || yPart === undefined) return xPart === yPart ? 0 : xPart === undefined ? -1 : 1;
+    if (xPart === yPart) continue;
+    const xNumeric = /^\d+$/.test(xPart);
+    const yNumeric = /^\d+$/.test(yPart);
+    if (xNumeric && yNumeric) return BigInt(xPart) < BigInt(yPart) ? -1 : 1;
+    if (xNumeric !== yNumeric) return xNumeric ? -1 : 1;
+    return xPart < yPart ? -1 : 1;
+  }
+  return 0;
+};
+
 if (!baseDir || !exactVersion.test(expectedVersion ?? "") || !exactVersion.test(targetVersion ?? "")) {
   throw new Error("Usage: switch-service.mjs BASE_DIR EXPECTED_VERSION TARGET_VERSION [UNIT]");
+}
+if (compareVersions(targetVersion, expectedVersion) <= 0) {
+  throw new Error(`Target version ${targetVersion} must be newer than ${expectedVersion}`);
 }
 
 const statePath = path.join(baseDir, "runtime/service-state.json");

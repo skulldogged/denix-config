@@ -1,6 +1,6 @@
 # Personal T3 Code Pi release channel
 
-Builder checks upstream once a day. When `pingdotgg/t3code` main changes, it merges main into the known-good Pi branch in `skulldogged/t3code`, pushes a monotonically versioned `pi-v...` tag, and waits for GitHub Actions to build:
+Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges main into the known-good Pi branch in `skulldogged/t3code`, pushes a monotonically versioned `pi-v...` tag, and waits for GitHub Actions to build:
 
 - the Linux AppImage;
 - the unsigned Windows NSIS installer and updater metadata;
@@ -26,7 +26,12 @@ systemctl --user start t3code-channel-update.service
 journalctl --user -fu t3code-channel-update.service
 ```
 
-The durable state and downloaded releases live in `~/.local/state/t3code-channel`. Failed builds do not advance `state.json`, and a retry reuses the same tag and release version.
+The durable state and downloaded releases live in `~/.local/state/t3code-channel`. Failed builds do
+not advance `state.json`. A successful build advances the release sequence before fleet deployment,
+and the highest published tag is also used as a sequence floor. If deployment is interrupted, the
+state remains pending and the same release is retried when the source has not changed. A newer source
+always receives a larger numeric version, even when the previous deployment did not reach every
+machine.
 
 ## Clients
 

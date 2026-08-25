@@ -21,6 +21,41 @@ log() {
   printf '%s %s\n' "$(date --iso-8601=seconds)" "$*"
 }
 
+write_release_state() {
+  local deployment_status="$1"
+  local temporary_state="$state_file.new"
+  node -e '
+    const fs = require("node:fs");
+    const [output, version, sequence, mainSha, prSha, integrationSha, workflowUrl, deploymentStatus] = process.argv.slice(1);
+    fs.writeFileSync(output, `${JSON.stringify({
+      version,
+      sequence: Number(sequence),
+      mainSha,
+      prSha,
+      integrationSha,
+      workflowUrl,
+      deploymentStatus,
+      updatedAt: new Date().toISOString(),
+    }, null, 2)}\n`, { mode: 0o600 });
+  ' "$temporary_state" "$version" "$next_sequence" "$main_sha" "$pr_sha" "$integration_sha" "$workflow_url" "$deployment_status"
+  mv "$temporary_state" "$state_file"
+}
+
+mark_deployment_complete() {
+  local temporary_state="$state_file.new"
+  node -e '
+    const fs = require("node:fs");
+    const [input, output] = process.argv.slice(1);
+    const state = JSON.parse(fs.readFileSync(input, "utf8"));
+    fs.writeFileSync(output, `${JSON.stringify({
+      ...state,
+      deploymentStatus: "complete",
+      updatedAt: new Date().toISOString(),
+    }, null, 2)}\n`, { mode: 0o600 });
+  ' "$state_file" "$temporary_state"
+  mv "$temporary_state" "$state_file"
+}
+
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     log "Missing required command: $1"
@@ -57,12 +92,30 @@ git -C "$source_repo" merge --ff-only origin/main
 
 previous_pr_sha=""
 previous_integration_sha=""
+previous_version=""
+previous_deployment_status="complete"
 sequence="$initial_sequence"
 if [[ -f "$state_file" ]]; then
   previous_pr_sha="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.prSha ?? "")' "$state_file")"
   previous_integration_sha="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.integrationSha ?? "")' "$state_file")"
+  previous_version="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.version ?? "")' "$state_file")"
+  previous_deployment_status="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.deploymentStatus ?? "complete")' "$state_file")"
   sequence="$(node -e 'const s=require(process.argv[1]); process.stdout.write(String(s.sequence ?? process.argv[2]))' "$state_file" "$initial_sequence")"
 fi
+
+if [[ ! "$sequence" =~ ^[0-9]+$ ]]; then
+  log "The channel state contains an invalid release sequence: $sequence"
+  exit 1
+fi
+if [[ "$previous_deployment_status" != "complete" && "$previous_deployment_status" != "pending" ]]; then
+  log "The channel state contains an invalid deployment status: $previous_deployment_status"
+  exit 1
+fi
+while IFS= read -r release_tag; do
+  if [[ "$release_tag" =~ ^pi-v0\.0\.([0-9]+)(-|$) ]] && (( BASH_REMATCH[1] > sequence )); then
+    sequence="${BASH_REMATCH[1]}"
+  fi
+done < <(git -C "$source_repo" tag --list "pi-v0.0.*")
 
 pr_sha="$(git -C "$source_repo" rev-parse upstream/pr-5882)"
 main_sha="$(git -C "$source_repo" rev-parse upstream/main)"
@@ -80,6 +133,17 @@ fi
 
 integration_sha="$(git -C "$source_repo" rev-parse HEAD)"
 if [[ -n "$previous_integration_sha" && "$integration_sha" == "$previous_integration_sha" ]]; then
+  if [[ "$previous_deployment_status" == "pending" ]]; then
+    if [[ -z "$previous_version" ]]; then
+      log "The pending deployment does not record a release version."
+      exit 1
+    fi
+    log "Retrying the incomplete fleet deployment for ${previous_version}."
+    "$script_dir/deploy.sh" "$previous_version"
+    mark_deployment_complete
+    log "Fleet release ${previous_version} is complete."
+    exit 0
+  fi
   log "No source changes since the last successful fleet release."
   exit 0
 fi
@@ -141,21 +205,7 @@ for attempt in $(seq 1 120); do
 done
 
 log "Release workflow succeeded: $workflow_url"
+write_release_state "pending"
 "$script_dir/deploy.sh" "$version"
-
-temporary_state="$state_file.new"
-node -e '
-  const fs = require("node:fs");
-  const [output, version, sequence, mainSha, prSha, integrationSha, workflowUrl] = process.argv.slice(1);
-  fs.writeFileSync(output, `${JSON.stringify({
-    version,
-    sequence: Number(sequence),
-    mainSha,
-    prSha,
-    integrationSha,
-    workflowUrl,
-    updatedAt: new Date().toISOString(),
-  }, null, 2)}\n`, { mode: 0o600 });
-' "$temporary_state" "$version" "$next_sequence" "$main_sha" "$pr_sha" "$integration_sha" "$workflow_url"
-mv "$temporary_state" "$state_file"
+mark_deployment_complete
 log "Fleet release ${version} is complete."
