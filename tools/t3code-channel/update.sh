@@ -149,7 +149,9 @@ if [[ -n "$previous_integration_sha" && "$integration_sha" == "$previous_integra
 fi
 
 next_sequence="$((sequence + 1))"
-version="0.0.${next_sequence}-main${main_sha:0:8}.pi.${integration_sha:0:8}"
+# Prefix the integration SHA so a digit-leading hash is always a valid
+# non-numeric SemVer prerelease identifier and cannot be normalized by packagers.
+version="0.0.${next_sequence}-main${main_sha:0:8}.pi.c${integration_sha:0:8}"
 tag="pi-v${version}"
 
 log "Publishing integration ${integration_sha:0:12} as ${version}."
