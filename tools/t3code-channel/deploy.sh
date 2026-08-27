@@ -113,13 +113,21 @@ if [[ "$current" != "$version" ]]; then
 fi
 POLARIS
 
-log "Installing and switching Canis."
-canis_cache=".cache/t3code-channel/$version"
-ssh -i "$canis_key" -o IdentitiesOnly=yes -o BatchMode=yes "$canis_host" "mkdir -p '$canis_cache'"
-scp -i "$canis_key" -o IdentitiesOnly=yes -o BatchMode=yes \
-  "$server_tgz" "$canis_host:$canis_cache/"
-ssh -i "$canis_key" -o IdentitiesOnly=yes -o BatchMode=yes "$canis_host" bash -s -- \
-  "$version" "$canis_cache/$(basename "$server_tgz")" <<'CANIS'
+deploy_canis() {
+  local canis_cache=".cache/t3code-channel/$version"
+  local -a ssh_options=(
+    -i "$canis_key"
+    -o IdentitiesOnly=yes
+    -o BatchMode=yes
+    -o ConnectTimeout=15
+    -o ServerAliveInterval=10
+    -o ServerAliveCountMax=2
+  )
+
+  ssh "${ssh_options[@]}" "$canis_host" "mkdir -p '$canis_cache'" || return $?
+  scp "${ssh_options[@]}" "$server_tgz" "$canis_host:$canis_cache/" || return $?
+  ssh "${ssh_options[@]}" "$canis_host" bash -s -- \
+    "$version" "$canis_cache/$(basename "$server_tgz")" <<'CANIS'
 set -euo pipefail
 version="$1"
 server_tgz="$2"
@@ -167,6 +175,18 @@ sleep 8
 launchctl bootstrap "gui/$(id -u)" "$plist"
 exit 1
 CANIS
+}
+
+deployment_failed=0
+log "Installing and switching Canis."
+set +e
+deploy_canis
+canis_status=$?
+set -e
+if (( canis_status != 0 )); then
+  log "Canis deployment failed with status ${canis_status}; continuing with Navis and Builder."
+  deployment_failed=1
+fi
 
 log "Updating the Navis Nix pin in denix-config."
 git -C "$denix_repo" fetch origin main
@@ -199,6 +219,11 @@ builder_current="$(active_linux_version "$builder_base")"
 install_linux_candidate "$builder_base" "$server_tgz"
 if [[ "$builder_current" != "$version" ]]; then
   node "$script_dir/switch-service.mjs" "$builder_base" "$builder_current" "$version"
+fi
+
+if (( deployment_failed != 0 )); then
+  log "The available machines were updated, but at least one fleet target remains pending."
+  exit 1
 fi
 
 log "Builder, Polaris, and Canis are on ${version}; the Navis pin is published."
