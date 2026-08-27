@@ -69,9 +69,16 @@ gh release download "$tag" --repo "$fork_repo" --dir "$release_dir" --clobber
 )
 
 server_tgz="$release_dir/t3-${version}.tgz"
-app_image="$release_dir/T3-Code-${version}-x86_64.AppImage"
-if [[ ! -f "$server_tgz" || ! -f "$app_image" ]]; then
-  log "The release is missing the server package or AppImage."
+shopt -s nullglob
+app_images=("$release_dir"/T3-Code-*-x86_64.AppImage)
+shopt -u nullglob
+if [[ ${#app_images[@]} -ne 1 ]]; then
+  log "Expected exactly one AppImage in the release; found ${#app_images[@]}."
+  exit 1
+fi
+app_image="${app_images[0]}"
+if [[ ! -f "$server_tgz" ]]; then
+  log "The release is missing the server package."
   exit 1
 fi
 
