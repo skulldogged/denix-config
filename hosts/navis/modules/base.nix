@@ -11,7 +11,15 @@ delib.module {
     enable = boolOption false;
   };
 
-  nixos.ifEnabled = {
+  nixos.ifEnabled = let
+    polarisSshProxy = pkgs.writeShellScript "ssh-polaris-proxy" ''
+      if ${lib.getExe pkgs.netcat-openbsd} -z -w 2 100.92.239.38 "$1"; then
+        exec ${lib.getExe pkgs.netcat-openbsd} 100.92.239.38 "$1"
+      fi
+
+      exec ${lib.getExe pkgs.netcat-openbsd} 192.168.1.82 "$1"
+    '';
+  in {
     networking = {
       hosts."37.27.111.236" = ["builder"];
 
@@ -47,13 +55,15 @@ delib.module {
         # ssh-tpm-agent units below), so ssh only needs the public half to
         # select the identity. OpenSSH cannot parse a `.tpm` file directly.
         extraConfig = ''
+          # Prefer Polaris over Tailscale, then fall back to its LAN address.
+          # HostName stays unset so known_hosts continues to use `polaris`.
           Host polaris
-            HostName 192.168.1.82
             User marshall
             ForwardAgent yes
             IdentitiesOnly yes
             IdentityFile ~/.ssh/id_ecdsa_polaris_tpm.pub
             IdentityAgent /run/user/%i/ssh-tpm-agent.sock
+            ProxyCommand ${polarisSshProxy} %p
 
           # "builder" resolves via /etc/hosts (networking.hosts above). Do not
           # set HostName here: nix's remote-builder SSH verifies the host key
@@ -110,6 +120,7 @@ delib.module {
 
       tailscale = {
         enable = true;
+        extraSetFlags = ["--exit-node-allow-lan-access=true"];
         openFirewall = true;
       };
 
