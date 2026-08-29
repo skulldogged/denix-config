@@ -30,11 +30,10 @@ delib.module {
 
       settings = {
         auto-optimise-store = true;
-        builders-use-substitutes = true;
         flake-registry = "/etc/nix/registry.json";
         keep-going = true;
         log-lines = 30;
-        max-jobs = 0;
+        max-jobs = "auto";
         max-substitution-jobs = 4;
         max-free = "${toString (10 * 1024 * 1024 * 1024)}";
         min-free = "${toString (5 * 1024 * 1024 * 1024)}";
@@ -96,12 +95,10 @@ delib.module {
 
       daemonIOLowPriority = true;
       daemonProcessType = "Adaptive";
-      distributedBuilds = true;
       nixPath = ["nixpkgs=${inputs.nixpkgs}"];
       registry = lib.mapAttrs (_: v: {flake = v;}) inputs;
 
       settings = {
-        builders-use-substitutes = true;
         extra-experimental-features = "nix-command flakes";
         flake-registry = "/etc/nix/registry.json";
         keep-derivations = true;

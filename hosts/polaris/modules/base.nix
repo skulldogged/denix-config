@@ -1,6 +1,7 @@
 {
   config,
   delib,
+  inputs,
   lib,
   pkgs,
   ...
@@ -20,7 +21,11 @@ delib.module {
 
     time.timeZone = "America/New_York";
 
-    nix.settings.trusted-users = lib.mkForce ["root"];
+    nix = {
+      nixPath = ["nixpkgs=${inputs.nixpkgs}"];
+      registry.nixpkgs.flake = inputs.nixpkgs;
+      settings.trusted-users = lib.mkForce ["root"];
+    };
 
     users.users.${config.myconfig.constants.username}.openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL2vmQG3o3yMTXUbHYM7evCpUo/V+gK8Lofajt/hEjrB navis"

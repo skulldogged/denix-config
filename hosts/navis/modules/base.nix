@@ -65,10 +65,8 @@ delib.module {
             IdentityAgent /run/user/%i/ssh-tpm-agent.sock
             ProxyCommand ${polarisSshProxy} %p
 
-          # "builder" resolves via /etc/hosts (networking.hosts above). Do not
-          # set HostName here: nix's remote-builder SSH verifies the host key
-          # under the literal name "builder", and a HostName directive would
-          # change that lookup to the IP and break build offloading.
+          # "builder" resolves via /etc/hosts (networking.hosts above). Keep
+          # HostName unset so manual SSH continues to use the literal alias.
           Host builder
             User marshall
             IdentitiesOnly yes

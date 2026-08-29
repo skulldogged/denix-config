@@ -171,7 +171,7 @@ in
 
       qt = {
         enable = true;
-        platformTheme.name = "kde";
+        platformTheme.name = "gtk3";
       };
 
       xdg = {
