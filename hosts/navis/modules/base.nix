@@ -13,7 +13,7 @@ delib.module {
 
   nixos.ifEnabled = let
     polarisSshProxy = pkgs.writeShellScript "ssh-polaris-proxy" ''
-      if ${lib.getExe pkgs.netcat-openbsd} -z -w 2 100.92.239.38 "$1"; then
+      if ${lib.getExe pkgs.netcat-openbsd} -z -w 2 100.92.239.38 "$1" >/dev/null 2>&1; then
         exec ${lib.getExe pkgs.netcat-openbsd} 100.92.239.38 "$1"
       fi
 
