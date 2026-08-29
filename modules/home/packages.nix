@@ -89,7 +89,10 @@ delib.module {
         translate-shell
         uv
       ])
-      ++ [t3CodeNightly];
+      ++ [
+        inputs.agent-terminal.packages.${system}.default
+        t3CodeNightly
+      ];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
 

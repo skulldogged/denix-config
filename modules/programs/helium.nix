@@ -64,7 +64,8 @@ delib.module {
       postBuild = ''
         rm "$out/bin/helium"
         makeWrapper ${lib.getExe heliumUnwrapped} "$out/bin/helium" \
-          --add-flags "--proxy-pac-url=file://${bypassPac}"
+          --run '${pkgs.systemd}/bin/systemctl --user start helium-proxy-pac.service' \
+          --add-flags "--proxy-pac-url=http://127.0.0.1:32180/proxy.pac"
       '';
     };
   in {
@@ -75,5 +76,17 @@ delib.module {
         else heliumUnwrapped
       )
     ];
+
+    systemd.user.services.helium-proxy-pac = {
+      Unit.Description = "Serve Helium's per-site proxy configuration";
+
+      Service = {
+        ExecStart = "${lib.getExe pkgs.darkhttpd} ${bypassPac} --single-file --addr 127.0.0.1 --port 32180 --default-mimetype application/x-ns-proxy-autoconfig --no-server-id --log /dev/null";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+
+      Install.WantedBy = ["default.target"];
+    };
   };
 }

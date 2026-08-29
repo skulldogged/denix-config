@@ -2,46 +2,11 @@
   description = "Modular configuration of NixOS, Home Manager, and Nix-Darwin with Denix";
 
   inputs = {
-    catppuccin = {
-      url = "github:catppuccin/nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    impermanence = {
-      url = "github:nix-community/impermanence";
-      inputs.home-manager.follows = "home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
+    agent-terminal.url = "github:skulldogged/gpui-ghostty-agent-terminal";
+    cua.url = "github:trycua/cua/cua-driver-rs-v0.21.0";
     nix-colors.url = "github:Misterio77/nix-colors";
-
-    nautilus-my-computer = {
-      url = "github:yannmasoch/nautilus-my-computer?dir=packaging/nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
     nixvim.url = "github:skulldogged/nixvim-new";
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    snappy-switcher = {
-      url = "github:skulldogged/snappy-switcher/feature/window-previews";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    twemoji-src = {
-      url = "github:jdecked/twemoji";
-      flake = false;
-    };
 
     bang-bang = {
       url = "github:oh-my-fish/plugin-bang-bang";
@@ -53,6 +18,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     codex-cli-nix = {
       url = "github:sadjow/codex-cli-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,13 +30,6 @@
 
     codex-desktop-linux = {
       url = "github:ilysenko/codex-desktop-linux";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    cua.url = "github:trycua/cua/cua-driver-rs-v0.21.0";
-
-    t3code-flake = {
-      url = "github:omarcresp/t3code-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -89,8 +52,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    draconisplusplus-plugins = {
-      url = "github:skulldogged/draconisplusplus-plugins";
+    draconisplusplus-plugin-lab = {
+      url = "github:skulldogged/draconisplusplus-plugin-lab";
       inputs = {
         draconisplusplus.follows = "draconisplusplus";
         nixpkgs.follows = "nixpkgs";
@@ -98,8 +61,8 @@
       };
     };
 
-    draconisplusplus-plugin-lab = {
-      url = "github:skulldogged/draconisplusplus-plugin-lab";
+    draconisplusplus-plugins = {
+      url = "github:skulldogged/draconisplusplus-plugins";
       inputs = {
         draconisplusplus.follows = "draconisplusplus";
         nixpkgs.follows = "nixpkgs";
@@ -112,9 +75,19 @@
       flake = false;
     };
 
+    grok-build-src = {
+      url = "github:xai-org/grok-build";
+      flake = false;
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprglass = {
+      url = "github:hyprnux/hyprglass";
+      flake = false;
     };
 
     hyprland = {
@@ -122,13 +95,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    grok-build-src = {
-      url = "github:xai-org/grok-build";
-      flake = false;
-    };
-    hyprglass = {
-      url = "github:hyprnux/hyprglass";
-      flake = false;
+    impermanence = {
+      url = "github:nix-community/impermanence";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     jellyfin-src = {
@@ -151,6 +121,11 @@
       flake = false;
     };
 
+    nautilus-my-computer = {
+      url = "github:yannmasoch/nautilus-my-computer?dir=packaging/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -163,6 +138,31 @@
 
     replay-fish = {
       url = "github:jorgebucaran/replay.fish";
+      flake = false;
+    };
+
+    snappy-switcher = {
+      url = "github:skulldogged/snappy-switcher/feature/window-previews";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    t3code-flake = {
+      url = "github:omarcresp/t3code-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    twemoji-src = {
+      url = "github:jdecked/twemoji";
       flake = false;
     };
 
