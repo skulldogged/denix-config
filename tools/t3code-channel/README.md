@@ -1,6 +1,6 @@
 # Personal T3 Code Pi release channel
 
-Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges main into the known-good Pi branch in `skulldogged/t3code`, pushes a monotonically versioned `pi-v...` tag, and waits for GitHub Actions to build:
+Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges main into the known-good Pi branch in `skulldogged/t3code`, dispatches the release workflow from fork `main`, and waits for GitHub Actions to publish a monotonically versioned `pi-v...` release. Dispatching from one stable ref lets GitHub reuse Gradle and compiler caches between Android builds. The workflow builds:
 
 - the Linux AppImage;
 - the unsigned Windows NSIS installer and updater metadata;
@@ -43,7 +43,7 @@ For Android, add this URL to Obtainium once:
 https://github.com/skulldogged/t3code
 ```
 
-Select the APK ending in `-preview.apk`. Each workflow run uses a larger Android version code, so updates install over the previous preview build.
+Select the APK ending in `-preview.apk`. Each workflow run uses a larger Android version code, so updates install over the previous preview build. Personal preview APKs target `arm64-v8a`, which covers the Pixel fleet while avoiding unused x86 and 32-bit native builds.
 
 Navis remains Nix-managed. Each successful fleet release pushes a small `modules/home/t3code-release.json` update to `denix-config`; Navis only needs to pull and rebuild. A separate auto-rebuild policy can be added later if every `denix-config` main commit is safe to apply unattended.
 

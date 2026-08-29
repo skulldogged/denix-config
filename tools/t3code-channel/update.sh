@@ -152,7 +152,6 @@ next_sequence="$((sequence + 1))"
 # Prefix the integration SHA so a digit-leading hash is always a valid
 # non-numeric SemVer prerelease identifier and cannot be normalized by packagers.
 version="0.0.${next_sequence}-main${main_sha:0:8}.pi.c${integration_sha:0:8}"
-tag="pi-v${version}"
 
 log "Publishing integration ${integration_sha:0:12} as ${version}."
 if [[ "${T3CODE_CHANNEL_DRY_RUN:-0}" == "1" ]]; then
@@ -160,28 +159,21 @@ if [[ "${T3CODE_CHANNEL_DRY_RUN:-0}" == "1" ]]; then
   exit 0
 fi
 git -C "$source_repo" push origin main
-if git -C "$source_repo" rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
-  tag_sha="$(git -C "$source_repo" rev-list -n 1 "$tag")"
-  if [[ "$tag_sha" != "$integration_sha" ]]; then
-    log "Existing tag $tag points at a different commit."
-    exit 1
-  fi
-else
-  git -C "$source_repo" tag -a "$tag" -m "T3 Code Pi ${version}" "$integration_sha"
-fi
-git -C "$source_repo" push origin "refs/tags/$tag"
+gh workflow run "Pi release" --repo "$fork_repo" --ref main --field "version=$version"
 
 log "Waiting for the Pi release workflow."
 workflow_url=""
 for attempt in $(seq 1 120); do
   runs_json="$(gh run list --repo "$fork_repo" --workflow "Pi release" --limit 30 \
-    --json databaseId,headSha,status,conclusion,url)"
+    --json databaseId,event,headSha,status,conclusion,url)"
   run_line="$(node -e '
     let input = "";
     process.stdin.on("data", (chunk) => { input += chunk; });
     process.stdin.on("end", () => {
       const sha = process.argv[1];
-      const run = JSON.parse(input).find((item) => item.headSha === sha);
+      const run = JSON.parse(input).find(
+        (item) => item.headSha === sha && item.event === "workflow_dispatch",
+      );
       if (run) process.stdout.write([run.databaseId, run.status, run.conclusion ?? "", run.url].join("\t"));
     });
   ' "$integration_sha" <<<"$runs_json")"
