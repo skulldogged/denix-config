@@ -150,6 +150,37 @@ delib.module {
            }
     '';
 
+    # i915 exposes the unused laptop panel as intel_backlight. If Caelestia's
+    # asynchronous DDC discovery has not completed (or briefly fails), its
+    # brightnessctl fallback otherwise changes that panel instead. Treat the
+    # active LG display as DDC-backed from the start and address it by serial so
+    # the I2C bus number may still change across boots.
+    caelestiaExternalBrightnessPatch = pkgs.writeText "caelestia-external-brightness.patch" ''
+      diff --git a/services/Brightness.qml b/services/Brightness.qml
+      --- a/services/Brightness.qml
+      +++ b/services/Brightness.qml
+      @@ -168,2 +168,3 @@
+               readonly property var ddcInfo: root.ddcMonitorMap[modelData.name] ?? null
+      -        readonly property bool isDdc: ddcInfo !== null
+      +        readonly property string ddcSerial: (modelData.name === "DP-2" || modelData.serialNumber === "411BOYQ05442") ? "411BOYQ05442" : ""
+      +        readonly property bool isDdc: ddcSerial !== "" || ddcInfo !== null
+      @@ -214,2 +215,4 @@
+      +            else if (ddcSerial !== "")
+      +                Quickshell.execDetached(["ddcutil", "--sn", ddcSerial, "setvcp", "10", rounded]);
+               else if (isDdc)
+                   Quickshell.execDetached(["ddcutil", "-b", busNum, "setvcp", "10", rounded]);
+      @@ -223,7 +226,9 @@
+               function initBrightness(): void {
+                   if (isAppleDisplay)
+                       initProc.command = ["asdbctl", "get"];
+      +            else if (ddcSerial !== "")
+      +                initProc.command = ["ddcutil", "--sn", ddcSerial, "getvcp", "10", "--brief"];
+                   else if (isDdc)
+                       initProc.command = ["ddcutil", "-b", busNum, "getvcp", "10", "--brief"];
+                   else
+                       initProc.command = ["sh", "-c", "echo a b c $(brightnessctl g) $(brightnessctl m)"];
+    '';
+
     caelestiaLauncherExtrasPatch = pkgs.writeText "caelestia-launcher-extras.patch" ''
       diff --git a/modules/launcher/services/Clipboard.qml b/modules/launcher/services/Clipboard.qml
       --- a/modules/launcher/services/Clipboard.qml
@@ -296,6 +327,7 @@ delib.module {
           caelestiaScopedAppLaunchPatch
           caelestiaLauncherExtrasPatch
           caelestiaDockPinnedFlickerPatch
+          caelestiaExternalBrightnessPatch
         ];
 
       passthru = (old.passthru or {}) // {plugin = caelestiaPlugin;};

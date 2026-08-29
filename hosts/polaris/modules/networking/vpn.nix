@@ -20,6 +20,22 @@ delib.module {
       useRoutingFeatures = "server";
     };
 
+    # Traffic accepted by this proxy becomes Polaris-originated traffic, so
+    # it follows the normal ISP route instead of the wg-mullvad policy route
+    # used for packets forwarded from Tailscale clients.
+    services.microsocks = {
+      enable = true;
+      ip = "100.92.239.38";
+      port = 1080;
+    };
+
+    networking.firewall.interfaces.tailscale0.allowedTCPPorts = [1080];
+
+    systemd.services.microsocks = {
+      after = ["tailscaled.service"];
+      requires = ["tailscaled.service"];
+    };
+
     networking.wireguard.interfaces.wg-mullvad = {
       ips = [
         "10.65.182.233/32"

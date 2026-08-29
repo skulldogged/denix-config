@@ -62,6 +62,7 @@ delib.host {
       bun.enable = true;
       cava.enable = true;
       codex-desktop.enable = true;
+      crash-diagnosis.enable = true;
       cua-driver.enable = true;
       pi-coding-agent.enable = true;
       herdr.enable = true;

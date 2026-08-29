@@ -80,6 +80,7 @@ delib.module {
         nicotine-plus
         nodejs
         obsidian
+        pear-desktop
         playerctl
         ryubing
         statix

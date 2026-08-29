@@ -445,6 +445,20 @@ delib.module {
               10)
           );
       };
+
+      # Clear maximize state restored by clients during their initial map while
+      # retaining normal user-initiated maximize behavior afterwards.
+      extraConfig = ''
+        hl.on("window.open", function(window)
+          if window.fullscreen == 1 then
+            hl.dispatch(hl.dsp.window.fullscreen({
+              mode = "maximized",
+              action = "unset",
+              window = window,
+            }))
+          end
+        end)
+      '';
     };
 
     # Hyprland plugins require an exact compositor ABI match. A NixOS switch
