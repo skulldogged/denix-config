@@ -1,6 +1,6 @@
 {
-  "version": "0.0.65-main85b656ff.pi.cf8e78866",
-  "appImageHash": "sha256-b0zLYZ5PZt73M2q+LhM2AWPowJ7ghDh13fNr+TYGln4=",
+  "version": "0.0.66-main9ecfc07a.pi.c90d6c47b",
+  "appImageHash": "sha256-PnOzZ8beZ9XcE2ArcU0/HUU2NaCl0s5Zvg7tESaJdSs=",
   "repository": "skulldogged/t3code",
   "tagPrefix": "pi-v"
 }
