@@ -9,7 +9,7 @@ Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges 
 
 After all checks and builds pass, Builder verifies the release checksums, deploys Polaris and Canis, updates the Navis Nix pin in `denix-config`, and switches Builder last. The Linux switches use the T3 service launcher's trial-and-rollback protocol. The Canis launchd switch keeps a plist backup and restores it if the new server does not become healthy.
 
-PR #5882 is deliberately guarded. New upstream-main commits are automated, but a changed PR head or merge conflict stops the run without changing the running fleet. That boundary prevents the coordinator from inventing conflict resolutions in the provider integration.
+PR #5882 is deliberately guarded. New upstream-main commits are automated, but a changed PR head or a new merge conflict stops the run without changing the running fleet. Git rerere records reviewed conflict resolutions so equivalent conflicts can be reused. An unresolved input is recorded as one durable incident; hourly checks stay quiet until one of the input commits changes.
 
 ## Builder
 
@@ -32,6 +32,11 @@ and the highest published tag is also used as a sequence floor. If deployment is
 state remains pending and the same release is retried when the source has not changed. A newer source
 always receives a larger numeric version, even when the previous deployment did not reach every
 machine.
+
+`health.json` records the updater's current stage, source commits, workflow URL, and either a healthy,
+blocked, or failed condition. `health-check.mjs` converts that file into Personal Agent's
+transition-aware `status_check` protocol. It also reports a problem if the hourly updater has not
+refreshed the file in three hours.
 
 ## Clients
 
