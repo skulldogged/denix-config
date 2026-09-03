@@ -51,18 +51,18 @@ if (!Number.isFinite(staleSeconds) || staleSeconds < 60) {
   result("problem", "invalid-stale-threshold", "The T3 Code health probe has an invalid stale threshold.", data);
 } else if (!Number.isFinite(checkedAt)) {
   result("problem", "invalid-health-timestamp", "The T3 Code channel health timestamp is invalid.", data);
-} else if (ageSeconds > staleSeconds) {
-  result(
-    "problem",
-    `stale:${health.checkedAt}`,
-    `The T3 Code channel has not completed a health check in ${ageSeconds} seconds.`,
-    data,
-  );
 } else if (health.status === "blocked" || health.status === "failed") {
   result(
     "problem",
     health.incidentKey ?? `${health.status}:${health.stage ?? "unknown"}:${health.checkedAt}`,
     health.summary ?? `The T3 Code channel is ${health.status}.`,
+    data,
+  );
+} else if (ageSeconds > staleSeconds) {
+  result(
+    "problem",
+    `stale:${health.checkedAt}`,
+    `The T3 Code channel has not completed a health check in ${ageSeconds} seconds.`,
     data,
   );
 } else if (health.status === "healthy" || health.status === "updating") {
