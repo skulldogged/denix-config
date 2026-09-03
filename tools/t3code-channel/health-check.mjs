@@ -65,8 +65,10 @@ if (!Number.isFinite(staleSeconds) || staleSeconds < 60) {
     `The T3 Code channel has not completed a health check in ${ageSeconds} seconds.`,
     data,
   );
-} else if (health.status === "healthy" || health.status === "updating") {
+} else if (health.status === "healthy") {
   result("healthy", null, health.summary ?? `The T3 Code channel is ${health.status}.`, data);
+} else if (health.status === "updating") {
+  result("pending", null, health.summary ?? "The T3 Code channel update is still running.", data);
 } else {
   result(
     "problem",
