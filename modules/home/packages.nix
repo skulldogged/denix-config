@@ -68,6 +68,7 @@ delib.module {
 
     desktopPackages =
       (with pkgs; [
+        local.delta
         duf
         equibop
         glow

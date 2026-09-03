@@ -6,6 +6,7 @@
   overlay = _: prev: {
     local = {
       cobalt = prev.callPackage ../../pkgs/cobalt/package.nix {};
+      delta = prev.callPackage ../../pkgs/delta/package.nix {};
       jellyfin = prev.callPackage ../../pkgs/jellyfin/package.nix {
         inherit inputs;
         pkgs = prev;
