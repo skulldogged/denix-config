@@ -142,23 +142,20 @@ if ! git -C "$source_repo" remote get-url upstream >/dev/null 2>&1; then
   git -C "$source_repo" remote add upstream "$upstream_url"
 fi
 
-log "Fetching the fork, upstream main, PR #5882, and tags."
+log "Fetching the fork, upstream main, and tags."
 git -C "$source_repo" fetch origin main --tags
 git -C "$source_repo" fetch upstream \
-  +refs/heads/main:refs/remotes/upstream/main \
-  +refs/pull/5882/head:refs/remotes/upstream/pr-5882
+  +refs/heads/main:refs/remotes/upstream/main
 git -C "$source_repo" checkout main
 git -C "$source_repo" merge --ff-only origin/main
 git -C "$source_repo" config rerere.enabled true
 git -C "$source_repo" config rerere.autoupdate true
 
-previous_pr_sha=""
 previous_integration_sha=""
 previous_version=""
 previous_deployment_status="complete"
 sequence="$initial_sequence"
 if [[ -f "$state_file" ]]; then
-  previous_pr_sha="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.prSha ?? "")' "$state_file")"
   previous_integration_sha="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.integrationSha ?? "")' "$state_file")"
   previous_version="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.version ?? "")' "$state_file")"
   previous_deployment_status="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.deploymentStatus ?? "complete")' "$state_file")"
@@ -179,24 +176,12 @@ while IFS= read -r release_tag; do
   fi
 done < <(git -C "$source_repo" tag --list "pi-v0.0.*")
 
-pr_sha="$(git -C "$source_repo" rev-parse upstream/pr-5882)"
 main_sha="$(git -C "$source_repo" rev-parse upstream/main)"
 origin_sha="$(git -C "$source_repo" rev-parse origin/main)"
-if [[ -n "$previous_pr_sha" && "$pr_sha" != "$previous_pr_sha" ]]; then
-  incident_key="pi-pr-changed:${previous_pr_sha}:${pr_sha}"
-  if health_has_incident "$incident_key"; then
-    log "PR #5882 is still awaiting review at ${pr_sha:0:12}; suppressing a repeated failed run."
-    exit 0
-  fi
-  log "PR #5882 changed from ${previous_pr_sha:0:12} to ${pr_sha:0:12}."
-  log "A manual review is required before the channel can continue."
-  write_health "blocked" "$incident_key" "PR #5882 changed and requires manual review."
-  exit 1
-fi
 
 merge_incident_key="merge-conflict:${origin_sha}:${main_sha}:${pr_sha}"
 if health_has_incident "$merge_incident_key"; then
-  log "The same upstream/Pi merge is still blocked; suppressing a repeated failed run."
+  log "The same upstream/personal merge is still blocked; suppressing a repeated failed run."
   exit 0
 fi
 
@@ -209,11 +194,11 @@ if ! git -C "$source_repo" merge --no-edit upstream/main; then
     git -C "$source_repo" commit --no-edit
   else
     git -C "$source_repo" merge --abort >/dev/null 2>&1 || true
-    log "Upstream main conflicts with the Pi integration. The running release was not changed."
+    log "Upstream main conflicts with the personal changes. The running release was not changed."
     if [[ -n "$unresolved_files" ]]; then
       log "Conflicted files: $(tr '\n' ' ' <<<"$unresolved_files")"
     fi
-    write_health "blocked" "$merge_incident_key" "Upstream main conflicts with the Pi integration and needs a manual resolution."
+    write_health "blocked" "$merge_incident_key" "Upstream main conflicts with the personal changes and needs a manual resolution."
     exit 1
   fi
 fi
@@ -242,6 +227,8 @@ fi
 next_sequence="$((sequence + 1))"
 # Prefix the integration SHA so a digit-leading hash is always a valid
 # non-numeric SemVer prerelease identifier and cannot be normalized by packagers.
+# Keep the legacy .pi. marker and pi-v tags for installed updater compatibility.
+# Pi is no longer a provider or an input to this release channel.
 version="0.0.${next_sequence}-main${main_sha:0:8}.pi.c${integration_sha:0:8}"
 
 log "Publishing integration ${integration_sha:0:12} as ${version}."
@@ -253,12 +240,12 @@ if [[ "${T3CODE_CHANNEL_DRY_RUN:-0}" == "1" ]]; then
 fi
 current_stage="publishing integration branch"
 git -C "$source_repo" push origin main
-gh workflow run "Pi release" --repo "$fork_repo" --ref main --field "version=$version"
+gh workflow run "pi-release.yml" --repo "$fork_repo" --ref main --field "version=$version"
 
-log "Waiting for the Pi release workflow."
+log "Waiting for the personal release workflow."
 current_stage="waiting for release workflow"
 for attempt in $(seq 1 120); do
-  runs_json="$(gh run list --repo "$fork_repo" --workflow "Pi release" --limit 30 \
+  runs_json="$(gh run list --repo "$fork_repo" --workflow "pi-release.yml" --limit 30 \
     --json databaseId,event,headSha,status,conclusion,url)"
   run_line="$(node -e '
     let input = "";
