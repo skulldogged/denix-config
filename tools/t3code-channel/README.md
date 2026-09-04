@@ -1,6 +1,6 @@
 # Personal T3 Code release channel
 
-Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges main into the personal branch in `skulldogged/t3code`, dispatches the release workflow from fork `main`, and waits for GitHub Actions to publish a monotonically versioned `pi-v...` release. The legacy tag prefix and `.pi.` version component are retained for compatibility with installed clients; the fork no longer includes Pi integration or subscription-limit reporting. Personal changes cover Android background connections, notifications, Catppuccin Mocha, and release infrastructure. Dispatching from one stable ref lets GitHub reuse Gradle and compiler caches between Android builds. The workflow builds:
+Builder checks published official T3 Code nightly releases every three hours. It merges the latest published nightly tag into the personal branch in `skulldogged/t3code`, dispatches `personal-release.yml` from fork `main`, and waits for the builds to pass. Releases use `personal-v0.0.SEQUENCE-nightly.DATE.RUN.personal.cCOMMIT` tags. Personal changes cover Android background connections, notifications, Catppuccin Mocha, and release infrastructure. Pi and subscription-limit patches are not included. Dispatching from one stable ref lets GitHub reuse Gradle and compiler caches between Android builds. The workflow builds:
 
 - the Linux AppImage;
 - the unsigned Windows NSIS installer and updater metadata;
@@ -9,7 +9,7 @@ Builder checks upstream hourly. When `pingdotgg/t3code` main changes, it merges 
 
 After all checks and builds pass, Builder verifies the release checksums, deploys Polaris and Canis, updates the Navis Nix pin in `denix-config`, and switches Builder last. The Linux switches use the T3 service launcher's trial-and-rollback protocol. The Canis launchd switch keeps a plist backup and restores it if the new server does not become healthy.
 
-Only upstream main is tracked; PR #5882 is no longer fetched or gated. A merge conflict stops the run without changing the running fleet. Git rerere records reviewed conflict resolutions so equivalent conflicts can be reused. The health probe groups unresolved merge conflicts into one stable incident, and Personal Agent suppresses further actionable alerts while an earlier approval is pending.
+Only published official nightly tags are tracked, not upstream main or PR heads. Official builds are scheduled at `38 */3 * * *` UTC; Builder checks at 01:20, 04:20, 07:20, 10:20, 13:20, 16:20, 19:20, and 22:20 UTC, with up to ten minutes of jitter. An unchanged source does not rebuild. During the initial transition, publication waits until a nightly contains the upstream commits previously merged into the fork. A merge conflict stops the run without changing the running fleet. Git rerere records reviewed resolutions. The health probe groups unresolved merge conflicts into one stable incident, and Personal Agent suppresses further actionable alerts while an earlier approval is pending.
 
 ## Builder
 
@@ -36,7 +36,7 @@ machine.
 `health.json` records the updater's current stage, source commits, workflow URL, and either a healthy,
 blocked, or failed condition. `health-check.mjs` converts that file into Personal Agent's
 transition-aware `status_check` protocol. It also reports a problem if the hourly updater has not
-refreshed the file in three hours.
+refreshed the file in seven hours (allowing for the three-hour polling interval and build time).
 
 ## Clients
 
@@ -54,4 +54,4 @@ Navis remains Nix-managed. Each successful fleet release pushes a small `modules
 
 ## Recovery patches
 
-`patches/` contains historical Pi-era recovery artifacts, not the current patch set. Do not replay them to reconstruct the current fork. The fork's Git history records the removal of Pi and subscription limits; normal scheduled runs advance that branch by merging upstream main.
+`patches/` contains historical Pi-era recovery artifacts, not the current patch set. Do not replay them to reconstruct the current fork. The fork's Git history records the removal of Pi and subscription limits; normal scheduled runs advance that branch by merging official nightly tags.

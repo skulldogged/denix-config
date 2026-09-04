@@ -14,7 +14,7 @@ denix_repo="$(cd -- "$script_dir/../.." && pwd)"
 state_dir="${T3CODE_CHANNEL_STATE_DIR:-$HOME/.local/state/t3code-channel}"
 release_dir="$state_dir/releases/$version"
 fork_repo="${T3CODE_CHANNEL_FORK_REPO:-skulldogged/t3code}"
-tag="pi-v${version}"
+tag="personal-v${version}"
 polaris_key="${T3CODE_CHANNEL_POLARIS_KEY:-$HOME/.ssh/rovefs_polaris_ed25519}"
 polaris_host="${T3CODE_CHANNEL_POLARIS_HOST:-polaris}"
 polaris_port="${T3CODE_CHANNEL_POLARIS_PORT:-2223}"
@@ -211,7 +211,7 @@ node -e '
     version,
     appImageHash,
     repository,
-    tagPrefix: "pi-v",
+    tagPrefix: "personal-v",
   }, null, 2)}\n`);
 ' "$release_json" "$version" "$app_image_hash" "$fork_repo"
 git -C "$denix_repo" add modules/home/t3code-release.json

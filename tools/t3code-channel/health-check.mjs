@@ -9,7 +9,7 @@ const healthPath =
   process.env.T3CODE_CHANNEL_HEALTH_FILE ??
   path.join(os.homedir(), ".local/state/t3code-channel/health.json");
 const staleSeconds = Number.parseInt(
-  process.env.T3CODE_CHANNEL_HEALTH_STALE_SECONDS ?? "10800",
+  process.env.T3CODE_CHANNEL_HEALTH_STALE_SECONDS ?? "25200",
   10,
 );
 
@@ -50,7 +50,7 @@ const data = {
   ageSeconds,
   originSha: health.originSha ?? null,
   mainSha: health.mainSha ?? null,
-  prSha: health.prSha ?? null,
+  nightlyTag: health.nightlyTag ?? null,
   integrationSha: health.integrationSha ?? null,
   workflowUrl: health.workflowUrl ?? null,
 };

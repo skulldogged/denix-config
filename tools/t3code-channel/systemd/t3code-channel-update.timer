@@ -1,8 +1,8 @@
 [Unit]
-Description=Check the personal T3 Code Pi channel hourly
+Description=Check official T3 Code nightlies every three hours
 
 [Timer]
-OnCalendar=hourly
+OnCalendar=*-*-* 01,04,07,10,13,16,19,22:20:00 UTC
 Persistent=true
 RandomizedDelaySec=10m
 Unit=t3code-channel-update.service
