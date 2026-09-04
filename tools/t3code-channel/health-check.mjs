@@ -19,6 +19,14 @@ function result(status, incidentKey, summary, data = {}) {
   process.stdout.write(`${JSON.stringify(output)}\n`);
 }
 
+function stableIncidentKey(health) {
+  const key = health.incidentKey;
+  if (typeof key === "string" && key.startsWith("merge-conflict:")) {
+    return "merge-conflict";
+  }
+  return key ?? `${health.status}:${health.stage ?? "unknown"}:${health.checkedAt}`;
+}
+
 let health;
 try {
   health = JSON.parse(fs.readFileSync(healthPath, "utf8"));
@@ -54,7 +62,7 @@ if (!Number.isFinite(staleSeconds) || staleSeconds < 60) {
 } else if (health.status === "blocked" || health.status === "failed") {
   result(
     "problem",
-    health.incidentKey ?? `${health.status}:${health.stage ?? "unknown"}:${health.checkedAt}`,
+    stableIncidentKey(health),
     health.summary ?? `The T3 Code channel is ${health.status}.`,
     data,
   );
