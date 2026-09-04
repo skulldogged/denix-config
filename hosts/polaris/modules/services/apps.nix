@@ -86,7 +86,11 @@ delib.module {
       zipline = {
         after = ["mnt.mount"];
         requires = ["mnt.mount"];
-        serviceConfig.ReadWritePaths = ["/mnt/zipline"];
+        serviceConfig = {
+          ReadWritePaths = ["/mnt/zipline"];
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
       };
     };
   };

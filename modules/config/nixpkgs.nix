@@ -11,6 +11,9 @@
         inherit inputs;
         pkgs = prev;
       };
+      lidarr = prev.callPackage ../../pkgs/lidarr/package.nix {};
+      lidarr-gamdl-bridge = prev.callPackage ../../pkgs/lidarr-gamdl-bridge/package.nix {};
+      lidarr-plugin-slskd = prev.callPackage ../../pkgs/lidarr-plugin-slskd/package.nix {};
       ranni-wallpaper = prev.callPackage ../../pkgs/ranni-wallpaper/package.nix {};
       slskd = prev.callPackage ../../pkgs/slskd/package.nix {};
       visor-bootmanager = prev.callPackage ../../pkgs/visor-bootmanager/package.nix {};

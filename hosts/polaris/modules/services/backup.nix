@@ -135,6 +135,7 @@ in
             cobalt-api.service \
             redis-cobalt.service \
             jellyfin.service \
+            lidarr.service \
             slskd.service \
             samba-smbd.service \
             samba-winbindd.service
@@ -198,6 +199,7 @@ in
           sync_state /var/lib/hass "$stage/home-assistant" \
             --exclude=/.cache/
           sync_state /var/lib/mosquitto "$stage/mosquitto"
+          sync_state /var/lib/lidarr "$stage/lidarr"
           sync_state /var/lib/slskd "$stage/slskd" \
             --exclude=/data/backups/ \
             --exclude=/incomplete/
@@ -235,7 +237,6 @@ in
             gatus \
             jellyseerr \
             kyros \
-            lidarr \
             matrix-conduit \
             navidrome \
             pds \

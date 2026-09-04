@@ -1,0 +1,191 @@
+diff --git a/src/Lidarr.Plugin.Slskd/Helpers/FileProcessingUtils.cs b/src/Lidarr.Plugin.Slskd/Helpers/FileProcessingUtils.cs
+index f241c00..2fe78dc 100644
+--- a/src/Lidarr.Plugin.Slskd/Helpers/FileProcessingUtils.cs
++++ b/src/Lidarr.Plugin.Slskd/Helpers/FileProcessingUtils.cs
+@@ -11,7 +11,7 @@ public static class FileProcessingUtils
+ {
+     public static readonly HashSet<string> ValidAudioExtensions = new HashSet<string>
+     {
+-        "flac", "alac", "wav", "ape", "ogg", "aac", "mp3", "wma", "m4a",
++        "flac", "alac", "wav", "ape", "wv", "ogg", "aac", "mp3", "wma", "m4a",
+     };
+     private static readonly HashSet<TransferStates> QueuedStates = new ()
+     {
+@@ -37,6 +37,9 @@ public static class FileProcessingUtils
+     private static readonly Regex DiscFolderPattern = new (
+         @"^(CD|Disc|Disk|Side)\s*\d+$",
+         RegexOptions.IgnoreCase | RegexOptions.Compiled);
++    private static readonly Regex AlacMarkerPattern = new (
++        @"(?:^|[^\p{L}\p{Nd}])ALAC(?:$|[^\p{L}\p{Nd}])",
++        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+ 
+     // Fixed set rather than Path.GetInvalidFileNameChars(): Lidarr and slskd may run on different
+     // platforms, and the segment has to be valid on the slskd side.
+@@ -85,6 +88,7 @@ public static void EnsureFileExtensions<T>(List<T> files)
+         {
+             if (!string.IsNullOrEmpty(file.Extension))
+             {
++                file.Extension = file.Extension.TrimStart('.').ToLowerInvariant();
+                 continue;
+             }
+ 
+@@ -106,10 +110,34 @@ public static List<T> FilterValidAudioFiles<T>(this List<T> files)
+ 
+     private static string DetermineCodec(IEnumerable<SlskdFile> files)
+     {
+-        var extensions = files.Select(f => f.Extension).Distinct().ToList();
+-        return extensions.Count == 1 ? extensions.First().ToUpperInvariant() : null;
++        var slskdFiles = files.ToList();
++        var extensions = slskdFiles.Select(f => f.Extension).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
++        if (extensions.Count != 1)
++        {
++            return null;
++        }
++
++        return extensions[0].ToLowerInvariant() switch
++        {
++            "ape" => "[APE]",
++            "wv" => "WavPack",
++            "m4a" when HasExplicitAlacMarker(slskdFiles) => "ALAC",
++            _ => extensions[0].ToUpperInvariant(),
++        };
+     }
+ 
++    private static bool HasExplicitAlacMarker(IEnumerable<SlskdFile> files) =>
++        files.All(file =>
++        {
++            var segments = file.ParentPath?.Split('\\') ?? Array.Empty<string>();
++            var leaf = segments.LastOrDefault();
++            var parent = segments.Length > 1 ? segments[^2] : null;
++
++            return AlacMarkerPattern.IsMatch(leaf ?? string.Empty) ||
++                   (IsDiscFolder(leaf) && AlacMarkerPattern.IsMatch(parent ?? string.Empty)) ||
++                   AlacMarkerPattern.IsMatch(file.Name ?? string.Empty);
++        });
++
+     private static string DetermineBitRate(IEnumerable<SlskdFile> files)
+     {
+         var slskdFiles = files.ToList();
+@@ -122,15 +150,20 @@ public static List<T> FilterValidAudioFiles<T>(this List<T> files)
+     private static string DetermineSampleRateAndDepth(IEnumerable<SlskdFile> files)
+     {
+         var slskdFiles = files.ToList();
+-        var firstFile = slskdFiles.First();
+         if (!slskdFiles.All(f => f.SampleRate.HasValue && f.BitDepth.HasValue))
+         {
+             return null;
+         }
+ 
+-        var sampleRate = firstFile.SampleRate / 1000.0; // Convert Hz to kHz
+-        var bitDepth = firstFile.BitDepth;
+-        return $"{bitDepth}bit {sampleRate:0.0}kHz";
++        var bitDepths = slskdFiles.Select(f => f.BitDepth.Value).Distinct().ToList();
++        if (bitDepths.Count != 1)
++        {
++            return null;
++        }
++
++        var sampleRates = slskdFiles.Select(f => f.SampleRate.Value).Distinct().ToList();
++        var sampleRate = sampleRates.Count == 1 ? $" {sampleRates[0] / 1000.0:0.0}kHz" : string.Empty;
++        return $"{bitDepths[0]}bit{sampleRate}";
+     }
+ 
+     private static string DetermineVbr(IEnumerable<SlskdFile> files)
+diff --git a/src/Lidarr.Plugin.Slskd.LosslessTests/Lidarr.Plugin.Slskd.LosslessTests.csproj b/src/Lidarr.Plugin.Slskd.LosslessTests/Lidarr.Plugin.Slskd.LosslessTests.csproj
+new file mode 100644
+--- /dev/null
++++ b/src/Lidarr.Plugin.Slskd.LosslessTests/Lidarr.Plugin.Slskd.LosslessTests.csproj
+@@ -0,0 +1,16 @@
++<Project Sdk="Microsoft.NET.Sdk">
++  <PropertyGroup>
++    <OutputType>Exe</OutputType>
++    <TargetFramework>net8.0</TargetFramework>
++    <ImplicitUsings>enable</ImplicitUsings>
++    <EnableDefaultItems>true</EnableDefaultItems>
++    <EnableAnalyzers>false</EnableAnalyzers>
++    <AssemblyVersion>1.1.3.0</AssemblyVersion>
++  </PropertyGroup>
++
++  <ItemGroup>
++    <ProjectReference Include="..\Lidarr.Plugin.Slskd\Lidarr.Plugin.Slskd.csproj" />
++    <ProjectReference Include="..\Lidarr\src\NzbDrone.Core\Lidarr.Core.csproj" />
++    <ProjectReference Include="..\Lidarr\src\NzbDrone.Common\Lidarr.Common.csproj" />
++  </ItemGroup>
++</Project>
+diff --git a/src/Lidarr.Plugin.Slskd.LosslessTests/Program.cs b/src/Lidarr.Plugin.Slskd.LosslessTests/Program.cs
+new file mode 100644
+--- /dev/null
++++ b/src/Lidarr.Plugin.Slskd.LosslessTests/Program.cs
+@@ -0,0 +1,72 @@
++using NzbDrone.Core.Parser;
++using NzbDrone.Plugin.Slskd.Helpers;
++using NzbDrone.Plugin.Slskd.Models;
++
++static string Classify(
++    string extension,
++    int? bitDepth = null,
++    int? sampleRate = null,
++    string folder = "Album",
++    int? secondBitDepth = null)
++{
++    var files = new List<SlskdFile>
++    {
++        new()
++        {
++            FileName = $"share\\Artist\\{folder}\\01 Song.{extension}",
++            Extension = extension,
++            BitDepth = bitDepth,
++            SampleRate = sampleRate,
++            Size = 10_000_000,
++        },
++    };
++
++    if (secondBitDepth.HasValue)
++    {
++        files.Add(new SlskdFile
++        {
++            FileName = $"share\\Artist\\{folder}\\02 Song.{extension}",
++            Extension = extension,
++            BitDepth = secondBitDepth,
++            SampleRate = sampleRate,
++            Size = 10_000_000,
++        });
++    }
++
++    var audioFiles = files.FilterValidAudioFiles();
++    if (audioFiles.Count != files.Count)
++    {
++        return "FILTERED";
++    }
++
++    var title = FileProcessingUtils.BuildTitle(audioFiles);
++    return QualityParser.ParseQuality(title, null, 0).Quality.Name;
++}
++
++var cases = new[]
++{
++    (Extension: "flac", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album", SecondBitDepth: (int?)null, Expected: "FLAC"),
++    (Extension: "flac", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)null, Expected: "FLAC 24bit"),
++    (Extension: "alac", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album", SecondBitDepth: (int?)null, Expected: "ALAC"),
++    (Extension: "alac", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)null, Expected: "ALAC 24bit"),
++    (Extension: "m4a", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album [ALAC]", SecondBitDepth: (int?)null, Expected: "ALAC"),
++    (Extension: "m4a", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album\\ALAC", SecondBitDepth: (int?)null, Expected: "ALAC 24bit"),
++    (Extension: "ape", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album", SecondBitDepth: (int?)null, Expected: "APE"),
++    (Extension: "wv", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album", SecondBitDepth: (int?)null, Expected: "WavPack"),
++    (Extension: "wv", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)null, Expected: "WavPack"),
++    (Extension: "WV", BitDepth: (int?)16, SampleRate: (int?)44100, Folder: "Album", SecondBitDepth: (int?)null, Expected: "WavPack"),
++    (Extension: "m4a", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)null, Expected: "AAC-VBR"),
++    (Extension: "flac", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)16, Expected: "FLAC"),
++    (Extension: "alac", BitDepth: (int?)24, SampleRate: (int?)96000, Folder: "Album", SecondBitDepth: (int?)16, Expected: "ALAC"),
++};
++
++var failures = 0;
++foreach (var test in cases)
++{
++    var actual = Classify(test.Extension, test.BitDepth, test.SampleRate, test.Folder, test.SecondBitDepth);
++    var verdict = actual == test.Expected ? "PASS" : "FAIL";
++    Console.WriteLine($"{verdict} .{test.Extension} {test.BitDepth ?? 0}bit => {actual} (expected {test.Expected})");
++    failures += actual == test.Expected ? 0 : 1;
++}
++
++return failures == 0 ? 0 : 1;

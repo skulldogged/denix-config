@@ -1,0 +1,84 @@
+diff --git a/src/NzbDrone.Core/HealthCheck/Checks/IndexerRssCheck.cs b/src/NzbDrone.Core/HealthCheck/Checks/IndexerRssCheck.cs
+index 72404db26..a1b90e269 100644
+--- a/src/NzbDrone.Core/HealthCheck/Checks/IndexerRssCheck.cs
++++ b/src/NzbDrone.Core/HealthCheck/Checks/IndexerRssCheck.cs
+@@ -24,6 +24,14 @@ namespace NzbDrone.Core.HealthCheck.Checks
+ 
+             if (enabled.Empty())
+             {
++                var automaticSearchEnabled = _indexerFactory.AutomaticSearchEnabled(false);
++                var interactiveSearchEnabled = _indexerFactory.InteractiveSearchEnabled(false);
++
++                if (!automaticSearchEnabled.Empty() || !interactiveSearchEnabled.Empty())
++                {
++                    return new HealthCheck(GetType());
++                }
++
+                 return new HealthCheck(GetType(), HealthCheckResult.Error, _localizationService.GetLocalizedString("IndexerRssHealthCheckNoIndexers"), "#no-indexers-available-with-rss-sync-enabled-lidarr-will-not-grab-new-releases-automatically");
+             }
+ 
+diff --git a/src/NzbDrone.Core.Test/HealthCheck/Checks/IndexerRssCheckFixture.cs b/src/NzbDrone.Core.Test/HealthCheck/Checks/IndexerRssCheckFixture.cs
+index 2bd09bd0a..67851612d 100644
+--- a/src/NzbDrone.Core.Test/HealthCheck/Checks/IndexerRssCheckFixture.cs
++++ b/src/NzbDrone.Core.Test/HealthCheck/Checks/IndexerRssCheckFixture.cs
+@@ -24,6 +24,14 @@ namespace NzbDrone.Core.Test.HealthCheck.Checks
+                   .Setup(s => s.RssEnabled(It.IsAny<bool>()))
+                   .Returns(new List<IIndexer>());
+ 
++            Mocker.GetMock<IIndexerFactory>()
++                  .Setup(s => s.AutomaticSearchEnabled(It.IsAny<bool>()))
++                  .Returns(new List<IIndexer>());
++
++            Mocker.GetMock<IIndexerFactory>()
++                  .Setup(s => s.InteractiveSearchEnabled(It.IsAny<bool>()))
++                  .Returns(new List<IIndexer>());
++
+             Mocker.GetMock<ILocalizationService>()
+                   .Setup(s => s.GetLocalizedString(It.IsAny<string>()))
+                   .Returns("Some Warning Message");
+@@ -47,6 +55,20 @@ namespace NzbDrone.Core.Test.HealthCheck.Checks
+                   .Returns(new List<IIndexer> { _indexerMock.Object });
+         }
+ 
++        private void GivenAutomaticSearchEnabled()
++        {
++            Mocker.GetMock<IIndexerFactory>()
++                  .Setup(s => s.AutomaticSearchEnabled(It.IsAny<bool>()))
++                  .Returns(new List<IIndexer> { _indexerMock.Object });
++        }
++
++        private void GivenInteractiveSearchEnabled()
++        {
++            Mocker.GetMock<IIndexerFactory>()
++                  .Setup(s => s.InteractiveSearchEnabled(It.IsAny<bool>()))
++                  .Returns(new List<IIndexer> { _indexerMock.Object });
++        }
++
+         private void GivenRssFiltered()
+         {
+             Mocker.GetMock<IIndexerFactory>()
+@@ -66,6 +88,24 @@ namespace NzbDrone.Core.Test.HealthCheck.Checks
+             Subject.Check().ShouldBeError();
+         }
+ 
++        [Test]
++        public void should_return_ok_when_automatic_search_is_enabled_without_rss()
++        {
++            GivenIndexer(false, true);
++            GivenAutomaticSearchEnabled();
++
++            Subject.Check().ShouldBeOk();
++        }
++
++        [Test]
++        public void should_return_ok_when_interactive_search_is_enabled_without_rss()
++        {
++            GivenIndexer(false, true);
++            GivenInteractiveSearchEnabled();
++
++            Subject.Check().ShouldBeOk();
++        }
++
+         [Test]
+         public void should_return_ok_when_rss_is_enabled()
+         {

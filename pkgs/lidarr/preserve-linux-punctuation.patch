@@ -1,0 +1,213 @@
+diff --git a/src/NzbDrone.Core.Test/OrganizerTests/FileNameBuilderTests/ReplaceCharacterFixture.cs b/src/NzbDrone.Core.Test/OrganizerTests/FileNameBuilderTests/ReplaceCharacterFixture.cs
+index 66a0000..86a338b 100644
+--- a/src/NzbDrone.Core.Test/OrganizerTests/FileNameBuilderTests/ReplaceCharacterFixture.cs
++++ b/src/NzbDrone.Core.Test/OrganizerTests/FileNameBuilderTests/ReplaceCharacterFixture.cs
+@@ -1,4 +1,5 @@
+ using System.Collections.Generic;
++using System.IO;
+ using System.Linq;
+ using FizzWare.NBuilder;
+ using FluentAssertions;
+@@ -84,5 +85,57 @@ public void should_replace_illegal_characters(string title, string expected)
+             Subject.BuildTrackFileName(new List<Track> { _track }, _artist, _album, _trackFiles)
+                    .Should().Be(expected);
+         }
++
++        [Test]
++        [Platform("Linux")]
++        public void should_preserve_linux_filename_punctuation()
++        {
++            _album.Title = "are you lonely?";
++            _track.Title = "where are you?";
++            _namingConfig.ReplaceIllegalCharacters = false;
++            _namingConfig.StandardTrackFormat = "{Album Title}/{track:00}. {Track Title}";
++
++            Subject.BuildTrackFileName(new List<Track> { _track }, _artist, _album, _trackFiles, ".flac")
++                .Should().Be($"are you lonely?{Path.DirectorySeparatorChar}15. where are you?.flac");
++        }
++
++        [TestCase("20.")]
++        [TestCase("a little bit.")]
++        [Platform("Linux")]
++        public void should_preserve_linux_terminal_period_in_album_folder(string albumTitle)
++        {
++            _album.Title = albumTitle;
++            _namingConfig.ReplaceIllegalCharacters = false;
++            _namingConfig.StandardTrackFormat = "{Album Title}/{track:00}. {Track Title}";
++
++            Subject.BuildTrackFileName(new List<Track> { _track }, _artist, _album, _trackFiles, ".flac")
++                .Should().StartWith($"{albumTitle}{Path.DirectorySeparatorChar}");
++        }
++
++        [TestCase("mix: tape.", "why: now.", "mix: tape./15. why: now..flac")]
++        [TestCase("mix/tape", "why/now?", "mixtape/15. whynow?.flac")]
++        [Platform("Linux")]
++        public void should_only_remove_linux_path_separators(string albumTitle, string trackTitle, string expected)
++        {
++            _album.Title = albumTitle;
++            _track.Title = trackTitle;
++            _namingConfig.ReplaceIllegalCharacters = false;
++            _namingConfig.StandardTrackFormat = "{Album Title}/{track:00}. {Track Title}";
++
++            Subject.BuildTrackFileName(new List<Track> { _track }, _artist, _album, _trackFiles, ".flac")
++                .Should().Be(expected.Replace('/', Path.DirectorySeparatorChar));
++        }
++
++        [Test]
++        [Platform("Linux")]
++        public void should_preserve_linux_artist_folder_punctuation()
++        {
++            _artist.Name = "Artist: Name.";
++            _namingConfig.ReplaceIllegalCharacters = false;
++            _namingConfig.ArtistFolderFormat = "{Artist Name}";
++
++            Subject.GetArtistFolder(_artist, _namingConfig)
++                .Should().Be("Artist: Name.");
++        }
+     }
+ }
+diff --git a/src/NzbDrone.Core/Organizer/FileNameBuilder.cs b/src/NzbDrone.Core/Organizer/FileNameBuilder.cs
+index 7609c67..4ae1fe6 100644
+--- a/src/NzbDrone.Core/Organizer/FileNameBuilder.cs
++++ b/src/NzbDrone.Core/Organizer/FileNameBuilder.cs
+@@ -9,6 +9,7 @@
+ using NzbDrone.Common.Cache;
+ using NzbDrone.Common.Disk;
+ using NzbDrone.Common.EnsureThat;
++using NzbDrone.Common.EnvironmentInfo;
+ using NzbDrone.Common.Extensions;
+ using NzbDrone.Core.CustomFormats;
+ using NzbDrone.Core.MediaFiles;
+@@ -68,6 +69,11 @@ public class FileNameBuilder : IBuildFileNames
+ 
+         private static readonly char[] TrackTitleTrimCharacters = new[] { ' ', '.', '?' };
+ 
++        private static bool PreserveLinuxPunctuation(NamingConfig namingConfig)
++        {
++            return OsInfo.IsLinux && !namingConfig.ReplaceIllegalCharacters;
++        }
++
+         private static readonly Regex TitlePrefixRegex = new Regex(@"^(The|An|A) (.*?)((?: *\([^)]+\))*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+ 
+         private static readonly Regex ReservedDeviceNamesRegex = new Regex(@"^(?:aux|com[1-9]|con|lpt[1-9]|nul|prn)\.", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+@@ -141,13 +147,21 @@ private string BuildTrackFileName(List<Track> tracks, Artist artist, Album album
+ 
+                 var maxTrackTitleLength = maxPathSegmentLength - GetLengthWithoutTrackTitle(component, namingConfig);
+ 
+-                AddTrackTitleTokens(tokenHandlers, tracks, maxTrackTitleLength);
++                AddTrackTitleTokens(tokenHandlers, tracks, maxTrackTitleLength, namingConfig);
+                 component = ReplaceTokens(component, tokenHandlers, namingConfig).Trim();
+ 
+-                component = FileNameCleanupRegex.Replace(component, match => match.Captures[0].Value[0].ToString());
+-                component = TrimSeparatorsRegex.Replace(component, string.Empty);
++                if (PreserveLinuxPunctuation(namingConfig))
++                {
++                    component = component.TrimEnd(' ');
++                }
++                else
++                {
++                    component = FileNameCleanupRegex.Replace(component, match => match.Captures[0].Value[0].ToString());
++                    component = TrimSeparatorsRegex.Replace(component, string.Empty);
++                    component = ReplaceReservedDeviceNames(component);
++                }
++
+                 component = component.Replace("{ellipsis}", "...");
+-                component = ReplaceReservedDeviceNames(component);
+ 
+                 if (component.IsNotNullOrWhiteSpace())
+                 {
+@@ -239,8 +253,12 @@ public string GetArtistFolder(Artist artist, NamingConfig namingConfig = null)
+                 var splitPattern = s;
+ 
+                 var component = ReplaceTokens(splitPattern, tokenHandlers, namingConfig);
+-                component = CleanFolderName(component);
+-                component = ReplaceReservedDeviceNames(component);
++                component = CleanFolderName(component, namingConfig);
++                if (!PreserveLinuxPunctuation(namingConfig))
++                {
++                    component = ReplaceReservedDeviceNames(component);
++                }
++
+                 component = component.Replace("{ellipsis}", "...");
+ 
+                 if (component.IsNotNullOrWhiteSpace())
+@@ -301,6 +319,16 @@ public static string CleanFileName(string name)
+ 
+         public static string CleanFolderName(string name)
+         {
++            return CleanFolderName(name, NamingConfig.Default);
++        }
++
++        private static string CleanFolderName(string name, NamingConfig namingConfig)
++        {
++            if (PreserveLinuxPunctuation(namingConfig))
++            {
++                return name.Trim(' ');
++            }
++
+             name = FileNameCleanupRegex.Replace(name, match => match.Captures[0].Value[0].ToString());
+ 
+             return name.Trim(' ', '.');
+@@ -370,10 +398,10 @@ private void AddTrackTitlePlaceholderTokens(Dictionary<string, Func<TokenMatch,
+             tokenHandlers["{Track CleanTitle}"] = m => null;
+         }
+ 
+-        private void AddTrackTitleTokens(Dictionary<string, Func<TokenMatch, string>> tokenHandlers, List<Track> tracks, int maxLength)
++        private void AddTrackTitleTokens(Dictionary<string, Func<TokenMatch, string>> tokenHandlers, List<Track> tracks, int maxLength, NamingConfig namingConfig)
+         {
+-            tokenHandlers["{Track Title}"] = m => GetTrackTitle(GetTrackTitles(tracks), "+", maxLength, m.CustomFormat);
+-            tokenHandlers["{Track CleanTitle}"] = m => GetTrackTitle(GetTrackTitles(tracks).Select(CleanTitle).ToList(), "and", maxLength, m.CustomFormat);
++            tokenHandlers["{Track Title}"] = m => GetTrackTitle(GetTrackTitles(tracks, namingConfig), "+", maxLength, m.CustomFormat);
++            tokenHandlers["{Track CleanTitle}"] = m => GetTrackTitle(GetTrackTitles(tracks, namingConfig).Select(CleanTitle).ToList(), "and", maxLength, m.CustomFormat);
+         }
+ 
+         private void AddTrackFileTokens(Dictionary<string, Func<TokenMatch, string>> tokenHandlers, TrackFile trackFile)
+@@ -567,24 +595,26 @@ private TrackFormat[] GetTrackFormat(string pattern)
+                 }).ToArray());
+         }
+ 
+-        private List<string> GetTrackTitles(List<Track> tracks)
++        private List<string> GetTrackTitles(List<Track> tracks, NamingConfig namingConfig)
+         {
++            var trimCharacters = PreserveLinuxPunctuation(namingConfig) ? new[] { ' ' } : TrackTitleTrimCharacters;
++
+             if (tracks.Count == 1)
+             {
+                 return new List<string>
+                 {
+-                    tracks.First().Title.TrimEnd(TrackTitleTrimCharacters)
++                    tracks.First().Title.TrimEnd(trimCharacters)
+                 };
+             }
+ 
+-            var titles = tracks.Select(c => c.Title.TrimEnd(TrackTitleTrimCharacters))
++            var titles = tracks.Select(c => c.Title.TrimEnd(trimCharacters))
+                                  .Select(CleanupTrackTitle)
+                                  .Distinct()
+                                  .ToList();
+ 
+             if (titles.All(t => t.IsNullOrWhiteSpace()))
+             {
+-                titles = tracks.Select(c => c.Title.TrimEnd(TrackTitleTrimCharacters))
++                titles = tracks.Select(c => c.Title.TrimEnd(trimCharacters))
+                                  .Distinct()
+                                  .ToList();
+             }
+@@ -702,6 +732,17 @@ private string ReplaceReservedDeviceNames(string input)
+         private static string CleanFileName(string name, NamingConfig namingConfig)
+         {
+             var result = name;
++
++            if (PreserveLinuxPunctuation(namingConfig))
++            {
++                foreach (var invalidCharacter in Path.GetInvalidFileNameChars())
++                {
++                    result = result.Replace(invalidCharacter.ToString(), string.Empty);
++                }
++
++                return result.Trim(' ');
++            }
++
+             string[] badCharacters = { "\\", "/", "<", ">", "?", "*", "|", "\"" };
+             string[] goodCharacters = { "+", "+", "", "", "!", "-", "", "" };
+ 
