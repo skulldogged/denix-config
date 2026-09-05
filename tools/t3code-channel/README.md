@@ -13,6 +13,11 @@ Only published official nightly tags are tracked, not upstream main or PR heads.
 
 ## Builder
 
+Keep the T3 fork's documentation identical to the tracked official nightly, including app READMEs.
+Personal setup and maintenance notes belong here instead of in the T3 repository. Android background
+connections, notification channels, promoted live updates, and bundled Catppuccin Mocha remain personal
+code changes; removing their fork documentation does not remove those features.
+
 Install the user timer once:
 
 ```sh
