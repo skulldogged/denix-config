@@ -1,10 +1,16 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFile, open, readFile, rename } from "node:fs/promises";
+import { copyFile, mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
+import { isPersonalRenumbering } from "./renumbering.mjs";
 
-const [baseDir, expectedVersion, targetVersion, unit = "t3code.service"] = process.argv.slice(2);
+const [baseDir, expectedVersion, targetVersion, unit = "t3code.service", option] = process.argv.slice(2);
+if (option !== undefined && option !== "--allow-personal-renumbering") {
+  throw new Error(`Unknown option: ${option}`);
+}
+const renumbering = option === "--allow-personal-renumbering"
+  && isPersonalRenumbering(expectedVersion, targetVersion);
 const exactVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
 const compareVersions = (left, right) => {
@@ -42,7 +48,7 @@ const compareVersions = (left, right) => {
 if (!baseDir || !exactVersion.test(expectedVersion ?? "") || !exactVersion.test(targetVersion ?? "")) {
   throw new Error("Usage: switch-service.mjs BASE_DIR EXPECTED_VERSION TARGET_VERSION [UNIT]");
 }
-if (compareVersions(targetVersion, expectedVersion) <= 0) {
+if (compareVersions(targetVersion, expectedVersion) <= 0 && !renumbering) {
   throw new Error(`Target version ${targetVersion} must be newer than ${expectedVersion}`);
 }
 
@@ -90,6 +96,56 @@ if ((await readFile(sentinelPath, "utf8")).trim() !== targetVersion) {
 
 const backupPath = `${statePath}.before-${targetVersion}.json`;
 await copyFile(statePath, backupPath);
+if (renumbering) {
+  // The existing launcher rejects descending versions even in a trial record.
+  // Stop first and preserve SQLite plus its sidecars for a consistent rollback.
+  const control = (action) => {
+    const result = spawnSync("systemctl", ["--user", action, unit], { encoding: "utf8" });
+    if (result.status !== 0) throw new Error(`${action} failed: ${result.stderr || result.stdout}`);
+  };
+  const databaseBackup = `${backupPath}.database-${randomUUID()}`;
+  await mkdir(databaseBackup, { mode: 0o700 });
+  control("stop");
+  const saved = [];
+  try {
+    for (const suffix of ["", "-wal", "-shm"]) {
+      try {
+        await copyFile(`${dbPath}${suffix}`, path.join(databaseBackup, `state.sqlite${suffix}`));
+        saved.push(suffix);
+      } catch (error) {
+        if (suffix === "" || error.code !== "ENOENT") throw error;
+      }
+    }
+  } catch (error) {
+    control("start");
+    throw error;
+  }
+  log(`Renumbering backup: ${databaseBackup}`);
+  try {
+    await writeState({ protocol: 2, activeVersion: targetVersion });
+    control("start");
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      if (await httpReady()) {
+        log(`SUCCESS: renumbered to ${targetVersion}; HTTP is ready.`);
+        process.exit(0);
+      }
+      await sleep(2_000);
+    }
+    throw new Error("Renumbered server did not become ready.");
+  } catch (error) {
+    control("stop");
+    for (const suffix of ["", "-wal", "-shm"]) {
+      if (saved.includes(suffix)) {
+        await copyFile(path.join(databaseBackup, `state.sqlite${suffix}`), `${dbPath}${suffix}`);
+      } else {
+        await rm(`${dbPath}${suffix}`, { force: true });
+      }
+    }
+    await writeState(current);
+    control("start");
+    throw error;
+  }
+}
 const updateId = randomUUID();
 await writeState({
   protocol: 2,

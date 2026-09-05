@@ -87,7 +87,7 @@ polaris_cache=".cache/t3code-channel/$version"
 ssh -i "$polaris_key" -p "$polaris_port" -o IdentitiesOnly=yes -o BatchMode=yes \
   "$polaris_host" "mkdir -p '$polaris_cache'"
 scp -i "$polaris_key" -P "$polaris_port" -o IdentitiesOnly=yes -o BatchMode=yes \
-  "$server_tgz" "$script_dir/switch-service.mjs" "$polaris_host:$polaris_cache/"
+  "$server_tgz" "$script_dir/switch-service.mjs" "$script_dir/renumbering.mjs" "$polaris_host:$polaris_cache/"
 polaris_current="$(ssh -i "$polaris_key" -p "$polaris_port" -o IdentitiesOnly=yes -o BatchMode=yes \
   "$polaris_host" "node -e 'const s=require(\"./.t3/runtime/service-state.json\"); process.stdout.write(s.activeVersion)'")"
 ssh -i "$polaris_key" -p "$polaris_port" -o IdentitiesOnly=yes -o BatchMode=yes \
@@ -116,7 +116,7 @@ if [[ ! -f "$target_dir/.install-complete" ]] || [[ "$(<"$target_dir/.install-co
   printf '%s\n' "$version" > "$target_dir/.install-complete"
 fi
 if [[ "$current" != "$version" ]]; then
-  node "$switch_script" "$HOME/.t3" "$current" "$version"
+  node "$switch_script" "$HOME/.t3" "$current" "$version" t3code.service --allow-personal-renumbering
 fi
 POLARIS
 
@@ -216,7 +216,7 @@ node -e '
 ' "$release_json" "$version" "$app_image_hash" "$fork_repo"
 git -C "$denix_repo" add modules/home/t3code-release.json
 if ! git -C "$denix_repo" diff --cached --quiet; then
-  git -C "$denix_repo" commit -m "update T3 Code Pi channel to ${version}"
+  git -C "$denix_repo" commit -m "update T3 Code personal channel to ${version}"
   git -C "$denix_repo" push origin main
 fi
 
@@ -225,7 +225,7 @@ builder_base="$HOME/.t3"
 builder_current="$(active_linux_version "$builder_base")"
 install_linux_candidate "$builder_base" "$server_tgz"
 if [[ "$builder_current" != "$version" ]]; then
-  node "$script_dir/switch-service.mjs" "$builder_base" "$builder_current" "$version"
+  node "$script_dir/switch-service.mjs" "$builder_base" "$builder_current" "$version" t3code.service --allow-personal-renumbering
 fi
 
 if (( deployment_failed != 0 )); then
