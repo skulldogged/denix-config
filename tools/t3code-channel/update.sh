@@ -9,7 +9,6 @@ health_file="$state_dir/health.json"
 fork_repo="${T3CODE_CHANNEL_FORK_REPO:-skulldogged/t3code}"
 fork_url="https://github.com/${fork_repo}.git"
 upstream_url="${T3CODE_CHANNEL_UPSTREAM_URL:-https://github.com/pingdotgg/t3code.git}"
-initial_sequence="${T3CODE_CHANNEL_INITIAL_SEQUENCE:-40}"
 
 mkdir -p "$state_dir"
 exec 9>"$state_dir/update.lock"
@@ -83,10 +82,9 @@ write_release_state() {
   local temporary_state="$state_file.new"
   node -e '
     const fs = require("node:fs");
-    const [output, version, sequence, mainSha, nightlyTag, integrationSha, workflowUrl, deploymentStatus] = process.argv.slice(1);
+    const [output, version, mainSha, nightlyTag, integrationSha, workflowUrl, deploymentStatus] = process.argv.slice(1);
     fs.writeFileSync(output, `${JSON.stringify({
       version,
-      sequence: Number(sequence),
       mainSha,
       nightlyTag,
       integrationSha,
@@ -94,7 +92,7 @@ write_release_state() {
       deploymentStatus,
       updatedAt: new Date().toISOString(),
     }, null, 2)}\n`, { mode: 0o600 });
-  ' "$temporary_state" "$version" "$next_sequence" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url" "$deployment_status"
+  ' "$temporary_state" "$version" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url" "$deployment_status"
   mv "$temporary_state" "$state_file"
 }
 
@@ -158,27 +156,16 @@ git -C "$source_repo" config rerere.autoupdate true
 previous_integration_sha=""
 previous_version=""
 previous_deployment_status="complete"
-sequence="$initial_sequence"
 if [[ -f "$state_file" ]]; then
   previous_integration_sha="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.integrationSha ?? "")' "$state_file")"
   previous_version="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.version ?? "")' "$state_file")"
   previous_deployment_status="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.deploymentStatus ?? "complete")' "$state_file")"
-  sequence="$(node -e 'const s=require(process.argv[1]); process.stdout.write(String(s.sequence ?? process.argv[2]))' "$state_file" "$initial_sequence")"
 fi
 
-if [[ ! "$sequence" =~ ^[0-9]+$ ]]; then
-  log "The channel state contains an invalid release sequence: $sequence"
-  exit 1
-fi
 if [[ "$previous_deployment_status" != "complete" && "$previous_deployment_status" != "pending" ]]; then
   log "The channel state contains an invalid deployment status: $previous_deployment_status"
   exit 1
 fi
-while IFS= read -r release_tag; do
-  if [[ "$release_tag" =~ ^personal-v0\.0\.([0-9]+)(-|$) ]] && (( BASH_REMATCH[1] > sequence )); then
-    sequence="${BASH_REMATCH[1]}"
-  fi
-done < <(git -C "$source_repo" tag --list "personal-v0.0.*")
 
 main_sha="$(git -C "$source_repo" rev-parse "$nightly_tag^{commit}")"
 origin_sha="$(git -C "$source_repo" rev-parse origin/main)"
@@ -237,11 +224,7 @@ if [[ -n "$previous_integration_sha" && "$integration_sha" == "$previous_integra
   exit 0
 fi
 
-next_sequence="$((sequence + 1))"
-# Prefix the integration SHA so a digit-leading hash is always a valid
-# non-numeric SemVer prerelease identifier and cannot be normalized by packagers.
-nightly_suffix="${nightly_tag#*-nightly.}"
-version="0.0.${next_sequence}-nightly.${nightly_suffix}.personal.c${integration_sha:0:8}"
+version="$(node "$script_dir/release-version.mjs" "$nightly_tag" "$(git -C "$source_repo" tag --list 'personal-v*')")"
 
 log "Publishing integration ${integration_sha:0:12} as ${version}."
 if [[ "${T3CODE_CHANNEL_DRY_RUN:-0}" == "1" ]]; then

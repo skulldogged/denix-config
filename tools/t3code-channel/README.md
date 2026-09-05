@@ -1,6 +1,6 @@
 # Personal T3 Code release channel
 
-Builder checks published official T3 Code nightly releases every three hours. It merges the latest published nightly tag into the personal branch in `skulldogged/t3code`, dispatches `personal-release.yml` from fork `main`, and waits for the builds to pass. Releases use `personal-v0.0.SEQUENCE-nightly.DATE.RUN.personal.cCOMMIT` tags. Personal changes cover Android background connections, notifications, Catppuccin Mocha, and release infrastructure. Pi and subscription-limit patches are not included. Dispatching from one stable ref lets GitHub reuse Gradle and compiler caches between Android builds. The workflow builds:
+Builder checks published official T3 Code nightly releases every three hours. It merges the latest published nightly tag into the personal branch in `skulldogged/t3code`, dispatches `personal-release.yml` from fork `main`, and waits for the builds to pass. Releases preserve the official nightly version and append `.personal.REVISION`, starting at 1 for each nightly. For example, official `v0.0.39-nightly.20260905.1289` becomes `personal-v0.0.39-nightly.20260905.1289.personal.1`. Personal changes cover Android background connections, notifications, Catppuccin Mocha, and release infrastructure. Pi and subscription-limit patches are not included. Dispatching from one stable ref lets GitHub reuse Gradle and compiler caches between Android builds. The workflow builds:
 
 - the Linux AppImage;
 - the unsigned Windows NSIS installer and updater metadata;
@@ -27,11 +27,12 @@ journalctl --user -fu t3code-channel-update.service
 ```
 
 The durable state and downloaded releases live in `~/.local/state/t3code-channel`. Failed builds do
-not advance `state.json`. A successful build advances the release sequence before fleet deployment,
-and the highest published tag is also used as a sequence floor. If deployment is interrupted, the
-state remains pending and the same release is retried when the source has not changed. A newer source
-always receives a larger numeric version, even when the previous deployment did not reach every
-machine.
+not advance `state.json`. A successful build records its version before fleet deployment.
+Rebuilds of the same nightly use the next personal revision after the highest existing release tag.
+If deployment is interrupted, state remains pending and the same release is retried when the source
+has not changed. A new official nightly starts again at `.personal.1`. The switch from the old
+independent patch counter lowers the base version; clients that reject downgrades may need a one-time
+manual installation. Subsequent versions follow upstream ordering.
 
 `health.json` records the updater's current stage, source commits, workflow URL, and either a healthy,
 blocked, or failed condition. `health-check.mjs` converts that file into Personal Agent's
