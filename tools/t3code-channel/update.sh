@@ -22,6 +22,7 @@ log() {
 }
 
 main_sha=""
+v2_sha=""
 nightly_tag=""
 origin_sha=""
 integration_sha=""
@@ -35,7 +36,7 @@ write_health() {
   local temporary_health="$health_file.new"
   node -e '
     const fs = require("node:fs");
-    const [output, status, incidentKey, summary, stage, originSha, mainSha, nightlyTag, integrationSha, workflowUrl] = process.argv.slice(1);
+    const [output, status, incidentKey, summary, stage, originSha, mainSha, nightlyTag, integrationSha, workflowUrl, v2Sha] = process.argv.slice(1);
     fs.writeFileSync(output, `${JSON.stringify({
       status,
       incidentKey: incidentKey || null,
@@ -43,13 +44,14 @@ write_health() {
       stage,
       originSha: originSha || null,
       mainSha: mainSha || null,
+      v2Sha: v2Sha || null,
       nightlyTag: nightlyTag || null,
       integrationSha: integrationSha || null,
       workflowUrl: workflowUrl || null,
       checkedAt: new Date().toISOString(),
     }, null, 2)}\n`, { mode: 0o600 });
   ' "$temporary_health" "$status" "$incident_key" "$summary" "$current_stage" \
-    "$origin_sha" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url"
+    "$origin_sha" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url" "$v2_sha"
   mv "$temporary_health" "$health_file"
 }
 
@@ -82,17 +84,18 @@ write_release_state() {
   local temporary_state="$state_file.new"
   node -e '
     const fs = require("node:fs");
-    const [output, version, mainSha, nightlyTag, integrationSha, workflowUrl, deploymentStatus] = process.argv.slice(1);
+    const [output, version, mainSha, nightlyTag, integrationSha, workflowUrl, deploymentStatus, v2Sha] = process.argv.slice(1);
     fs.writeFileSync(output, `${JSON.stringify({
       version,
       mainSha,
+      v2Sha,
       nightlyTag,
       integrationSha,
       workflowUrl,
       deploymentStatus,
       updatedAt: new Date().toISOString(),
     }, null, 2)}\n`, { mode: 0o600 });
-  ' "$temporary_state" "$version" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url" "$deployment_status"
+  ' "$temporary_state" "$version" "$main_sha" "$nightly_tag" "$integration_sha" "$workflow_url" "$deployment_status" "$v2_sha"
   mv "$temporary_state" "$state_file"
 }
 
@@ -140,7 +143,7 @@ if ! git -C "$source_repo" remote get-url upstream >/dev/null 2>&1; then
   git -C "$source_repo" remote add upstream "$upstream_url"
 fi
 
-log "Fetching the fork and latest published official nightly."
+log "Fetching the fork, latest published official nightly, and Julius's orchestrator V2."
 nightly_tag="$(gh api repos/pingdotgg/t3code/releases --jq '[.[] | select(.draft == false and (.tag_name | contains("-nightly.")))] | sort_by(.published_at) | last | .tag_name')"
 if [[ ! "$nightly_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]{8}\.[0-9]+$ ]]; then
   log "No valid published official nightly was found."
@@ -148,6 +151,7 @@ if [[ ! "$nightly_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]{8}\.[0-9]+$ ]]
 fi
 git -C "$source_repo" fetch origin main --tags
 git -C "$source_repo" fetch upstream "refs/tags/$nightly_tag:refs/tags/$nightly_tag"
+git -C "$source_repo" fetch upstream "+refs/pull/2829/head:refs/remotes/upstream/orchestrator-v2"
 git -C "$source_repo" checkout main
 git -C "$source_repo" merge --ff-only origin/main
 git -C "$source_repo" config rerere.enabled true
@@ -169,8 +173,17 @@ fi
 
 main_sha="$(git -C "$source_repo" rev-parse "$nightly_tag^{commit}")"
 origin_sha="$(git -C "$source_repo" rev-parse origin/main)"
+v2_sha="$(git -C "$source_repo" rev-parse upstream/orchestrator-v2)"
 
-merge_incident_key="merge-conflict:${origin_sha}:${main_sha}"
+# The initial V2 migration and client rollout must be reviewed together. Never
+# bootstrap it unattended onto a V1-only installation.
+v2_floor="cfc65ecbc94e4589622f99c038da44ac86dcff64"
+if ! git -C "$source_repo" merge-base --is-ancestor "$v2_floor" HEAD; then
+  write_health "blocked" "v2-rollout-required" "The reviewed orchestrator V2 rollout must land before automatic V2 updates."
+  exit 1
+fi
+
+merge_incident_key="merge-conflict:${origin_sha}:${main_sha}:${v2_sha}"
 if health_has_incident "$merge_incident_key"; then
   log "The same upstream/personal merge is still blocked; suppressing a repeated failed run."
   exit 0
@@ -199,6 +212,23 @@ if ! git -C "$source_repo" merge --no-edit "$nightly_tag"; then
       log "Conflicted files: $(tr '\n' ' ' <<<"$unresolved_files")"
     fi
     write_health "blocked" "$merge_incident_key" "Official nightly conflicts with the personal changes and needs a manual resolution."
+    exit 1
+  fi
+fi
+
+current_stage="merging orchestrator V2"
+if ! git -C "$source_repo" merge --no-edit "$v2_sha"; then
+  unresolved_files="$(git -C "$source_repo" diff --name-only --diff-filter=U)"
+  if [[ -z "$unresolved_files" ]] && git -C "$source_repo" rev-parse --verify MERGE_HEAD >/dev/null 2>&1; then
+    log "Reusing recorded conflict resolutions for orchestrator V2."
+    git -C "$source_repo" commit --no-edit
+  else
+    git -C "$source_repo" merge --abort >/dev/null 2>&1 || true
+    log "Orchestrator V2 conflicts with the personal nightly integration. The running release was not changed."
+    if [[ -n "$unresolved_files" ]]; then
+      log "Conflicted files: $(tr '\n' ' ' <<<"$unresolved_files")"
+    fi
+    write_health "blocked" "$merge_incident_key" "Orchestrator V2 conflicts with the personal nightly integration and needs a manual resolution."
     exit 1
   fi
 fi

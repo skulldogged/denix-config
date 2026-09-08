@@ -9,11 +9,13 @@ Builder checks published official T3 Code nightly releases every three hours. It
 
 After all checks and builds pass, Builder verifies the release checksums, deploys Polaris and Canis, updates the Navis Nix pin in `denix-config`, and switches Builder last. The Linux switches use the T3 service launcher's trial-and-rollback protocol. The Canis launchd switch keeps a plist backup and restores it if the new server does not become healthy.
 
-Only published official nightly tags are tracked, not upstream main or PR heads. Official builds are scheduled at `38 */3 * * *` UTC; Builder checks at 01:20, 04:20, 07:20, 10:20, 13:20, 16:20, 19:20, and 22:20 UTC, with up to ten minutes of jitter. An unchanged source does not rebuild. During the initial transition, publication waits until a nightly contains the upstream commits previously merged into the fork. A merge conflict stops the run without changing the running fleet. Git rerere records reviewed resolutions. The health probe groups unresolved merge conflicts into one stable incident, and Personal Agent suppresses further actionable alerts while an earlier approval is pending.
+The updater merges published official nightly tags, then Julius's orchestrator V2 PR head (`refs/pull/2829/head`). It does not track upstream main. The initial V2 integration must already be in the fork before this updater can publish: database migration and matching clients are verified together before the first rollout. `v2Sha` in state and health records identifies the tracked V2 commit. Once V2 merges upstream, its PR ref can be retired after a nightly includes it.
+
+Official builds are scheduled at `38 */3 * * *` UTC; Builder checks at 01:20, 04:20, 07:20, 10:20, 13:20, 16:20, 19:20, and 22:20 UTC, with up to ten minutes of jitter. An unchanged integration does not rebuild. A conflict with either source stops the run without changing the running fleet. Git rerere records reviewed resolutions. The health probe groups unresolved merge conflicts into one stable incident, and Personal Agent suppresses further actionable alerts while an earlier approval is pending.
 
 ## Builder
 
-Keep the T3 fork's documentation identical to the tracked official nightly, including app READMEs.
+Keep upstream documentation from the tracked nightly and V2 integration; do not add personal fork documentation or app README patches.
 Personal setup and maintenance notes belong here instead of in the T3 repository. Android background
 connections, notification channels, promoted live updates, and bundled Catppuccin Mocha remain personal
 code changes; removing their fork documentation does not remove those features.
@@ -43,6 +45,8 @@ manual installation. Subsequent versions follow upstream ordering.
 blocked, or failed condition. `health-check.mjs` converts that file into Personal Agent's
 transition-aware `status_check` protocol. It also reports a problem if the hourly updater has not
 refreshed the file in seven hours (allowing for the three-hour polling interval and build time).
+
+For an isolated candidate, dispatch `personal-release.yml` on its branch with `draft=true`. The resulting draft does not become the latest release or enter the client update feed. Promote it only after migration and matching-client checks pass. V2 changes the protocol, so desktop and Android clients must update with the servers. Preserve pre-migration database snapshots; rolling back only the binary does not undo a database migration or recover work written under V2.
 
 ## Clients
 
