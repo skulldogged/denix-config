@@ -80,6 +80,7 @@ delib.host {
     };
 
     programs = {
+      agent-github.enable = true;
       bun.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;

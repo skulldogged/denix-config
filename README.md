@@ -89,3 +89,16 @@ via sops-nix's `age.sshKeyPaths`. On impermanent hosts, configure the key's
 persistent backing path (for navis,
 `/persist/etc/ssh/ssh_host_ed25519_key`) because activation runs before the
 `/etc/ssh` bind mount is established.
+
+### Agent GitHub identity
+
+`programs.agent-github` installs the guarded `agent-gh` and `agent-git`
+wrappers, the global Codex identity policy, and SOPS-backed credentials for
+`skullbotted`. Polaris and navis enable it.
+
+Repository access is fail-closed and declarative. After granting
+`skullbotted` write access to another repository, add its `OWNER/REPOSITORY`
+name to `programs.agent-github.repositories` in
+`modules/programs/agent-github.nix`, then rebuild each host that should use
+it. Rotate the shared token or SSH keys by editing
+`secrets/agent-github.yaml`; its recipients include both hosts.
