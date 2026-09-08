@@ -155,6 +155,11 @@ if [[ ! -f "$target_dir/.install-complete" ]] || [[ "$(<"$target_dir/.install-co
 fi
 
 current_entry="$(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:1' "$plist")"
+pty_helper="$target_dir/node_modules/node-pty/prebuilds/darwin-$("$node_bin" -p process.arch)/spawn-helper"
+if [[ -f "$pty_helper" ]]; then
+  # npm may skip node-pty setup scripts; its macOS helper must be executable.
+  chmod u+x "$pty_helper"
+fi
 if [[ "$current_entry" == "$entry" ]]; then
   exit 0
 fi
