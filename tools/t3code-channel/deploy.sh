@@ -163,7 +163,7 @@ install_root="$HOME/.local/share/t3code"
 target_dir="$install_root/$version"
 plist="$HOME/Library/LaunchAgents/codes.t3.server.plist"
 backup="$plist.before-$version"
-database="$HOME/.local/share/t3code/userdata/state.sqlite"
+database="$HOME/.t3/userdata/state.sqlite"
 database_backup="${backup}.database"
 node_bin="/opt/homebrew/opt/node@24/bin/node"
 npm_bin="/opt/homebrew/opt/node@24/bin/npm"
@@ -182,7 +182,7 @@ if [[ "$current_entry" == "$entry" ]]; then
   exit 0
 fi
 
-node "$check_idle_script" "$HOME/.local/share/t3code/userdata/state.sqlite"
+node "$check_idle_script" "$database"
 cp "$plist" "$backup"
 /usr/libexec/PlistBuddy -c "Set :ProgramArguments:1 $entry" "$plist"
 if ! launchctl bootout "gui/$(id -u)/codes.t3.server"; then

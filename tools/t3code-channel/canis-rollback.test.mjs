@@ -13,7 +13,7 @@ for (const failure of ["snapshot", "bootstrap"]) {
       const bin = path.join(root, "bin");
       const version = "0.0.41-nightly.20260909.1461.personal.1";
       const install = path.join(root, ".local/share/t3code");
-      const database = path.join(install, "userdata/state.sqlite");
+      const database = path.join(root, ".t3/userdata/state.sqlite");
       const plist = path.join(root, "Library/LaunchAgents/codes.t3.server.plist");
       for (const dir of [bin, path.dirname(database), path.dirname(plist), path.join(install, version)]) fs.mkdirSync(dir, { recursive: true });
       const db = new DatabaseSync(database);
