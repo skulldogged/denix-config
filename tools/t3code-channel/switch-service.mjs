@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { copyFile, mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
+import { BUSY_EXIT_CODE, checkIdle } from "./check-idle.mjs";
 import { isPersonalRenumbering } from "./renumbering.mjs";
 
 const [baseDir, expectedVersion, targetVersion, unit = "t3code.service", option] = process.argv.slice(2);
@@ -92,6 +93,12 @@ if (current.protocol !== 2 || current.activeVersion !== expectedVersion) {
 }
 if ((await readFile(sentinelPath, "utf8")).trim() !== targetVersion) {
   throw new Error(`Candidate sentinel does not match ${targetVersion}`);
+}
+
+const idle = checkIdle(dbPath);
+if (!idle.idle) {
+  log(`Deferred service switch: ${idle.count} active turn(s).`);
+  process.exit(BUSY_EXIT_CODE);
 }
 
 const backupPath = `${statePath}.before-${targetVersion}.json`;
