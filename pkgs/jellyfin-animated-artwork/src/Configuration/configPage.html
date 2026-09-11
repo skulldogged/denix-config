@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Animated Album Artwork</title></head>
+<body>
+<div id="animatedArtworkPage" data-role="page" class="page type-interior pluginConfigurationPage">
+  <div data-role="content">
+    <div class="content-primary">
+      <form id="animatedArtworkForm">
+        <h2>Animated Album Artwork</h2>
+        <p>Animated covers are discovered automatically beside each album's tracks: animated-cover.mp4, animated-cover-tall.mp4, and animated-cover.gif.</p>
+        <label class="checkboxContainer">
+          <input is="emby-checkbox" type="checkbox" id="enableAnimatedImages" />
+          <span>Animate album covers in image-based clients</span>
+        </label>
+        <p>Clients may need a cache refresh to replace previously cached static covers. Disabling this option keeps the MP4 API available.</p>
+        <button is="emby-button" type="submit" class="raised button-submit block"><span>Save</span></button>
+      </form>
+    </div>
+  </div>
+  <script type="text/javascript">
+    (function () {
+      const pluginId = 'b5329c03-6d1e-4d41-9fd4-6c5ed58d2446';
+      const page = document.querySelector('#animatedArtworkPage');
+      page.addEventListener('pageshow', async function () {
+        Dashboard.showLoadingMsg();
+        try {
+          const config = await ApiClient.getPluginConfiguration(pluginId);
+          page.querySelector('#enableAnimatedImages').checked = config.EnableAnimatedImages;
+        } finally { Dashboard.hideLoadingMsg(); }
+      });
+      page.querySelector('form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        Dashboard.showLoadingMsg();
+        try {
+          const config = await ApiClient.getPluginConfiguration(pluginId);
+          config.EnableAnimatedImages = page.querySelector('#enableAnimatedImages').checked;
+          Dashboard.processPluginConfigurationUpdateResult(await ApiClient.updatePluginConfiguration(pluginId, config));
+        } finally { Dashboard.hideLoadingMsg(); }
+      });
+    })();
+  </script>
+</div>
+</body>
+</html>

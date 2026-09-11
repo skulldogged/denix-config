@@ -1,0 +1,116 @@
+[
+  {
+    "pname": "Diacritics",
+    "version": "4.1.8",
+    "hash": "sha256-LysXZEoee1Ju3HGivfV4TvdFYzTY+f0cu/IU/FpOnzc=",
+    "url": "https://api.nuget.org/v3-flatcontainer/diacritics/4.1.8/diacritics.4.1.8.nupkg"
+  },
+  {
+    "pname": "ICU4N",
+    "version": "60.1.0-alpha.356",
+    "hash": "sha256-1QyOgO7pNMeoEgBtl6o8IG4o91wD2hFUgRI0jM0ltxY=",
+    "url": "https://api.nuget.org/v3-flatcontainer/icu4n/60.1.0-alpha.356/icu4n.60.1.0-alpha.356.nupkg"
+  },
+  {
+    "pname": "ICU4N.Transliterator",
+    "version": "60.1.0-alpha.356",
+    "hash": "sha256-RLNwQNVqNz8Omfb/mC/rzQWVq8c7uCnNdG2qi4xJmds=",
+    "url": "https://api.nuget.org/v3-flatcontainer/icu4n.transliterator/60.1.0-alpha.356/icu4n.transliterator.60.1.0-alpha.356.nupkg"
+  },
+  {
+    "pname": "J2N",
+    "version": "2.0.0",
+    "hash": "sha256-YvtIWErlm2O49hg3lIRm5Ha8/owkQkfMudzuldC3EhA=",
+    "url": "https://api.nuget.org/v3-flatcontainer/j2n/2.0.0/j2n.2.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Common",
+    "version": "12.0.0",
+    "hash": "sha256-g301r5Rr2p3QjJovgkwB0sNS9s1tWjGam1zY9Grlyhk=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.common/12.0.0/jellyfin.common.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Controller",
+    "version": "12.0.0",
+    "hash": "sha256-60Bs1qi1M1ypkWfzjHPiDi67L5t0N49KY7SdjSpw5mA=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.controller/12.0.0/jellyfin.controller.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Data",
+    "version": "12.0.0",
+    "hash": "sha256-/5qbiDozMwLb6gDdtPch59YY1OfG5guhog+5gFmUOFg=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.data/12.0.0/jellyfin.data.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Database.Implementations",
+    "version": "12.0.0",
+    "hash": "sha256-iFLZaJ91PwO2g6xCl/h/c3Y0xgK1fivC4TGvTh/v/DQ=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.database.implementations/12.0.0/jellyfin.database.implementations.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Extensions",
+    "version": "12.0.0",
+    "hash": "sha256-FNgk6CoErfhVwNiaF57MGo/9r0Hn+3Fj+KEqQ1TxoQo=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.extensions/12.0.0/jellyfin.extensions.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.MediaEncoding.Keyframes",
+    "version": "12.0.0",
+    "hash": "sha256-IbekbVAT6zsjGgwJUox3RDsLt7+SyX5KSaoLmxczQlc=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.mediaencoding.keyframes/12.0.0/jellyfin.mediaencoding.keyframes.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Model",
+    "version": "12.0.0",
+    "hash": "sha256-R9PN7d5PiSGzyKCo4QDDYrvKjYN3+FlVOWX3MAj5JVw=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.model/12.0.0/jellyfin.model.12.0.0.nupkg"
+  },
+  {
+    "pname": "Jellyfin.Naming",
+    "version": "12.0.0",
+    "hash": "sha256-aZrAZI+WuQSIczYKNTQBjZkLVvYF94unpkA7iuao2zI=",
+    "url": "https://api.nuget.org/v3-flatcontainer/jellyfin.naming/12.0.0/jellyfin.naming.12.0.0.nupkg"
+  },
+  {
+    "pname": "Microsoft.EntityFrameworkCore",
+    "version": "10.0.11",
+    "hash": "sha256-j+DNpi5fd077QGMKu09LKD3fV5qWmswsuypp+s5gH/0=",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore/10.0.11/microsoft.entityframeworkcore.10.0.11.nupkg"
+  },
+  {
+    "pname": "Microsoft.EntityFrameworkCore.Abstractions",
+    "version": "10.0.11",
+    "hash": "sha256-F4Cp4dWQx3MXPu2MKaWI8H7JIoTP8J8gTfgex3N6QTU=",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore.abstractions/10.0.11/microsoft.entityframeworkcore.abstractions.10.0.11.nupkg"
+  },
+  {
+    "pname": "Microsoft.EntityFrameworkCore.Analyzers",
+    "version": "10.0.11",
+    "hash": "sha256-WX2Z7E3wYXDfQ032C33ebQpbfD8WbuFbL/yU8XBEw7c=",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore.analyzers/10.0.11/microsoft.entityframeworkcore.analyzers.10.0.11.nupkg"
+  },
+  {
+    "pname": "Microsoft.EntityFrameworkCore.Relational",
+    "version": "10.0.11",
+    "hash": "sha256-aMfOqNSXcSk9yJnzWig0+Zk8pBl2/Z9Fw6GxmfTlsMM=",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore.relational/10.0.11/microsoft.entityframeworkcore.relational.10.0.11.nupkg"
+  },
+  {
+    "pname": "NEbml",
+    "version": "1.1.0.5",
+    "hash": "sha256-MrQLekP6z5y6rfqnCbLefkYv4Fm8di4HqZ/AiYTzBQ4=",
+    "url": "https://api.nuget.org/v3-flatcontainer/nebml/1.1.0.5/nebml.1.1.0.5.nupkg"
+  },
+  {
+    "pname": "Polly",
+    "version": "8.7.0",
+    "hash": "sha256-iMNusWW+4nuIvkNLUaoru23Roe9vpC140TOIHbLvewE=",
+    "url": "https://api.nuget.org/v3-flatcontainer/polly/8.7.0/polly.8.7.0.nupkg"
+  },
+  {
+    "pname": "Polly.Core",
+    "version": "8.7.0",
+    "hash": "sha256-1AT4Xym9hn2Awgul9WErwXk2bBPN58P9XfRExrIPItg=",
+    "url": "https://api.nuget.org/v3-flatcontainer/polly.core/8.7.0/polly.core.8.7.0.nupkg"
+  }
+]

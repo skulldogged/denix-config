@@ -36,7 +36,8 @@ in
             };
 
             tailscale0 = {
-              allowedTCPPorts = [53 8443 8686];
+              # Direct SMB access to the music share over Tailscale.
+              allowedTCPPorts = [53 445 8443 8686];
               allowedUDPPorts = [53];
             };
           };

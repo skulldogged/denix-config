@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Jellyfin.Controller" Version="12.0.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Model" Version="12.0.0" ExcludeAssets="runtime" />
+    <EmbeddedResource Include="Configuration/configPage.html" />
+  </ItemGroup>
+  <Target Name="PackagePlugin" DependsOnTargets="Build">
+    <MakeDir Directories="../artifacts/package" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="../artifacts/package" />
+    <ZipDirectory SourceDirectory="../artifacts/package" DestinationFile="../artifacts/AnimatedArtwork_0.1.0.0.zip" Overwrite="true" />
+  </Target>
+</Project>

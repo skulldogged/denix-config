@@ -1073,8 +1073,10 @@ in
               browseable = "yes";
               "read only" = "no";
               "guest ok" = "no";
-              "create mask" = "0664";
-              "directory mask" = "0775";
+              "create mask" = "0666";
+              "force create mode" = "0666";
+              "directory mask" = "0777";
+              "force directory mode" = "0777";
               "valid users" = "marshall";
             };
           };
@@ -1110,6 +1112,14 @@ in
           jellyfin = {
             after = ["mnt.mount"];
             requires = ["mnt.mount"];
+            # Manage only this plugin; leave dashboard-installed plugins intact.
+            # Artwork is discovered beside each album's tracks in /mnt/music.
+            preStart = ''
+              pluginDir="${config.services.jellyfin.dataDir}/plugins/AnimatedArtwork_0.1.0.0"
+              install -d -m 0750 "$pluginDir"
+              ln -sfn ${pkgs.local.jellyfin-animated-artwork}/Jellyfin.Plugin.AnimatedArtwork.dll \
+                "$pluginDir/Jellyfin.Plugin.AnimatedArtwork.dll"
+            '';
           };
 
           samba-smbd = {
@@ -1258,8 +1268,9 @@ in
           "a ${gamdlDownloadDir} - - - - g:media:rwx,d:g:media:rwx"
           "d ${slskdDownloadDir} 2775 slskd media - -"
           "a ${slskdDownloadDir} - - - - g:media:rwx,d:g:media:rwx"
-          "d /mnt/music 2775 slskd media - -"
-          "a /mnt/music - - - - g:media:rwx,d:g:media:rwx"
+          "d /mnt/music 2777 slskd media - -"
+          # All local users may edit/replace library files; inherit this on creation.
+          "A+ /mnt/music - - - - u::rwX,g::rwX,g:media:rwX,m::rwX,o::rwX,d:u::rwx,d:g::rwx,d:g:media:rwx,d:m::rwx,d:o::rwx"
         ];
       };
 

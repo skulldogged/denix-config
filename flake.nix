@@ -75,11 +75,6 @@
       flake = false;
     };
 
-    grok-build-src = {
-      url = "github:xai-org/grok-build";
-      flake = false;
-    };
-
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";

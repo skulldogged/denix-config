@@ -57,7 +57,6 @@ delib.module {
         claude-code
         file
         grc
-        grok-build
       ])
       ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
         mullvad-vpn
