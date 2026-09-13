@@ -352,10 +352,6 @@ delib.module {
             --replace-fail "primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)" "primaryColor: Qt.alpha(Colours.palette.m3onSurface, 0.7)" \
             --replace-fail "secondaryColor: Qt.alpha(Colours.palette.m3inversePrimary, 0.7)" "secondaryColor: Qt.alpha(Colours.palette.m3onSurfaceVariant, 0.7)"
 
-          substituteInPlace modules/sidebar/AiAssistant.qml \
-            --replace-fail "Ollama tags request failed" "ChatGPT model request failed" \
-            --replace-fail "Ollama request failed" "ChatGPT request failed"
-
           substituteInPlace modules/launcher/services/Emojis.qml \
             --replace-fail 'command: ["cat", "/usr/lib/python3.14/site-packages/caelestia/data/emojis.txt"]' \
                            'command: ["${caelestiaCli}/bin/caelestia", "emoji", "--print"]' \

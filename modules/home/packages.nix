@@ -90,7 +90,7 @@ delib.module {
         uv
       ])
       ++ [
-        inputs.agent-terminal.packages.${system}.default
+        # inputs.agent-terminal.packages.${system}.default
         t3CodeNightly
       ];
   in {
