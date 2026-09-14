@@ -113,7 +113,13 @@ in
         # down on every guest reboot. With a passed-through IGD, the immediate
         # reopen then races the VFIO reset and leaves the VM stopped.
         package = pkgs.incus.overrideAttrs (old: {
-          patches = (old.patches or []) ++ [./incus-qemu-wrapper-fast-reboot.patch];
+          # Upstream fix for rsync 3.5 destination traversal (Incus #3968).
+          patches =
+            (old.patches or [])
+            ++ [
+              ./incus-qemu-wrapper-fast-reboot.patch
+              ./incus-rsync-3.5-apparmor.patch
+            ];
         });
 
         ui.enable = true;

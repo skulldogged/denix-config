@@ -1,0 +1,53 @@
+From 4846f45b56ffb4d8989823b63cb8703a51d2ae81 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Graber?= <stgraber@stgraber.org>
+Date: Tue, 8 Sep 2026 09:19:40 -0400
+Subject: [PATCH] incusd/apparmor/rsync: Allow reading destination ancestors
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Closes #3968
+
+Signed-off-by: Stéphane Graber <stgraber@stgraber.org>
+---
+ internal/server/apparmor/rsync.go | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/internal/server/apparmor/rsync.go b/internal/server/apparmor/rsync.go
+index 6a0b059d2fe..5a1da30d695 100644
+--- a/internal/server/apparmor/rsync.go
++++ b/internal/server/apparmor/rsync.go
+@@ -44,6 +44,9 @@ profile "{{ .name }}" flags=(attach_disconnected,mediate_deleted) {
+ {{- end }}
+ 
+ {{- if .dstPath }}
++{{- range .dstParents }}
++  {{ . }} r,
++{{- end }}
+   {{ .dstPath }}/** rwkl,
+   {{ .dstPath }}/ rwkl,
+ {{- end }}
+@@ -165,12 +168,23 @@ func rsyncProfile(sysOS *sys.OS, name string, sourcePath string, dstPath string)
+ 		execPath = fullPath
+ 	}
+ 
++	// rsync 3.5+ resolves the destination component by component from /.
++	dstParents := []string{}
++	if dstPath != "" {
++		for dir := filepath.Dir(filepath.Clean(dstPath)); dir != "/"; dir = filepath.Dir(dir) {
++			dstParents = append(dstParents, dir+"/")
++		}
++
++		dstParents = append(dstParents, "/")
++	}
++
+ 	sb := &strings.Builder{}
+ 	err = rsyncProfileTpl.Execute(sb, map[string]any{
+ 		"name":        name,
+ 		"execPath":    execPath,
+ 		"sourcePath":  sourcePath,
+ 		"dstPath":     dstPath,
++		"dstParents":  dstParents,
+ 		"logPath":     logPath,
+ 		"libraryPath": strings.Split(os.Getenv("LD_LIBRARY_PATH"), ":"),
+ 	})
