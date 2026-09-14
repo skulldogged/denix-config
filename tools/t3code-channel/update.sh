@@ -161,6 +161,28 @@ fi
 
 trap record_unexpected_failure ERR
 
+# A published release is deployable independently of newer source changes.
+# Retry it before fetching or merging, which may need manual intervention.
+if [[ -f "$state_file" ]] && [[ "$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.deploymentStatus ?? "")' "$state_file")" == "pending" ]]; then
+  version="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.version ?? "")' "$state_file")"
+  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.-]+$ ]]; then
+    log "The pending deployment does not record a valid release version."
+    exit 1
+  fi
+  integration_sha="$(node -e 'process.stdout.write(require(process.argv[1]).integrationSha ?? "")' "$state_file")"
+  main_sha="$(node -e 'process.stdout.write(require(process.argv[1]).mainSha ?? "")' "$state_file")"
+  nightly_tag="$(node -e 'process.stdout.write(require(process.argv[1]).nightlyTag ?? "")' "$state_file")"
+  workflow_url="$(node -e 'process.stdout.write(require(process.argv[1]).workflowUrl ?? "")' "$state_file")"
+  overlay_shas_json="$(node -e 'process.stdout.write(JSON.stringify(require(process.argv[1]).overlays ?? []))' "$state_file")"
+  current_stage="deploying fleet"
+  log "Retrying the incomplete fleet deployment for ${version}."
+  run_deployment "$version"
+  mark_deployment_complete
+  current_stage="complete"
+  write_health "healthy" "" "The pending T3 Code release was deployed successfully."
+  exit 0
+fi
+
 if [[ ! -d "$source_repo/.git" ]]; then
   log "Cloning the personal T3 Code fork."
   git clone "$fork_url" "$source_repo"
@@ -221,7 +243,9 @@ while IFS=$'\t' read -r overlay_repo overlay_number overlay_label; do
   git -C "$source_repo" fetch "https://github.com/$overlay_repo.git" "+refs/pull/$overlay_number/head:$overlay_ref"
   overlay_sha="$(git -C "$source_repo" rev-parse "$overlay_ref")"
   previous_overlay_sha="$(node -e 'const s=require(process.argv[1]); const [repo,n]=process.argv.slice(2); process.stdout.write(s.overlays?.find(x=>x.repository===repo&&String(x.number)===n)?.sha??"")' "$state_file" "$overlay_repo" "$overlay_number" 2>/dev/null || true)"
-  if [[ -n "$previous_overlay_sha" && "$previous_overlay_sha" != "$overlay_sha" ]] && ! git -C "$source_repo" merge-base --is-ancestor "$previous_overlay_sha" "$overlay_sha"; then
+  if [[ -n "$previous_overlay_sha" && "$previous_overlay_sha" != "$overlay_sha" ]] \
+    && ! git -C "$source_repo" merge-base --is-ancestor "$previous_overlay_sha" "$overlay_sha" \
+    && ! git -C "$source_repo" merge-base --is-ancestor "$overlay_sha" "$origin_sha"; then
     log "Overlay $overlay_repo#$overlay_number was rewritten; manual integration is required."
     write_health "blocked" "overlay-rewrite:$overlay_repo:$overlay_number:$overlay_sha" "A configured pull-request overlay was rewritten and needs manual integration."
     exit 1

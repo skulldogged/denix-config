@@ -219,3 +219,50 @@ test("keeps a pending release when deployment is deferred for active turns", () 
   assert.equal(JSON.parse(fs.readFileSync(path.join(state, "health.json"), "utf8")).status, "updating");
   assert.match(JSON.parse(fs.readFileSync(path.join(state, "health.json"), "utf8")).summary, /active turns/);
 });
+
+
+test("accepts a rewritten overlay already integrated into the published fork", () => {
+  const world = makeWorld();
+  const state = path.join(world.root, "state");
+  const env = installShims(world, world.root);
+  const options = { T3CODE_CHANNEL_STATE_DIR: state, T3CODE_CHANNEL_OVERLAYS_FILE: manifest(world.root), T3CODE_CHANNEL_FORK_REPO: "test/fork" };
+  run(world, env, options);
+  const source = path.join(state, "source");
+  fs.writeFileSync(path.join(state, "state.json"), JSON.stringify({
+    integrationSha: world.overlaySha, deploymentStatus: "complete",
+    overlays: [{ repository: "test/overlay", number: 2829, sha: world.overlaySha }],
+  }));
+  const replacement = path.join(world.root, "replacement");
+  git(world.root, "clone", world.upstream, replacement);
+  git(replacement, "config", "user.email", "test@example.com");
+  git(replacement, "config", "user.name", "Test");
+  fs.writeFileSync(path.join(replacement, "rewritten.txt"), "rewritten\n");
+  git(replacement, "add", "rewritten.txt");
+  git(replacement, "commit", "-m", "rewritten");
+  const replacementSha = git(replacement, "rev-parse", "HEAD");
+  git(replacement, "push", world.overlay, "HEAD:refs/pull/2829/head", "--force");
+  git(source, "fetch", world.overlay, "refs/pull/2829/head");
+  git(source, "merge", "--no-edit", "FETCH_HEAD");
+  git(source, "push", "origin", "main");
+  const output = run(world, env, options);
+  assert.match(output, /Dry run complete/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(state, "health.json"), "utf8")).overlays[0].sha, replacementSha);
+});
+
+test("deploys a pending published release even when newer overlay fetching fails", () => {
+  const world = makeWorld();
+  const state = path.join(world.root, "state");
+  const env = installShims(world, world.root);
+  const options = { T3CODE_CHANNEL_STATE_DIR: state, T3CODE_CHANNEL_OVERLAYS_FILE: manifest(world.root), T3CODE_CHANNEL_FORK_REPO: "test/fork" };
+  run(world, env, options);
+  fs.writeFileSync(path.join(state, "state.json"), JSON.stringify({
+    integrationSha: world.overlaySha, version: "0.0.39-nightly.20260905.1289.personal.1", deploymentStatus: "pending",
+    overlays: [{ repository: "test/overlay", number: 2829, sha: world.overlaySha }],
+  }));
+  const deployment = path.join(world.root, "deploy.sh");
+  fs.writeFileSync(deployment, "#!/usr/bin/env bash\nprintf '%s' \"$1\" > \"$T3CODE_CHANNEL_STATE_DIR/deployed\"\n");
+  fs.chmodSync(deployment, 0o755);
+  run(world, { ...env, FAIL_OVERLAY_FETCH: "1" }, { ...options, T3CODE_CHANNEL_DEPLOY_SCRIPT: deployment });
+  assert.equal(fs.readFileSync(path.join(state, "deployed"), "utf8"), "0.0.39-nightly.20260905.1289.personal.1");
+  assert.equal(JSON.parse(fs.readFileSync(path.join(state, "state.json"), "utf8")).deploymentStatus, "complete");
+});
