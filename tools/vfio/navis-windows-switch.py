@@ -88,6 +88,47 @@ def live_devices():
     return ET.fromstring(g.virsh('dumpxml', g.UUID).stdout).findall('devices/hostdev')
 
 
+def sync_usb():
+    def identity(device):
+        source = device.find('source')
+        address = source.find('address')
+        return (int(source.find('vendor').get('id'), 16), int(source.find('product').get('id'), 16),
+                int(address.get('bus')), int(address.get('device'))) if address is not None else None
+    wanted = {identity(device): device for device in g.usb_devices()}
+    current = {identity(device): device for device in live_devices() if device.get('type') == 'usb'}
+    errors = []
+    changes = [('detach-device', device) for key, device in current.items() if key not in wanted
+               and device.find('alias').get('name', '').startswith('ua-warm-usb-')]
+    changes += [('attach-device', device) for key, device in wanted.items() if key not in current]
+    for action, device in changes:
+        alias = device.find('alias').get('name')
+        path = STATE / 'usb-hotplug.xml'
+        path.write_text(ET.tostring(device, encoding='unicode'))
+        try:
+            g.virsh(action, g.UUID, str(path), '--live', timeout=15)
+            g.status(f'USB {action}: {alias}')
+        except g.subprocess.SubprocessError as exc:
+            errors.append(f'USB {action} failed for {alias}: {getattr(exc, "stderr", None) or exc}')
+    return errors
+
+
+def watch_usb():
+    previous = []
+    while True:
+        errors = []
+        try:
+            if ((STATE / 'warm-attached').exists() and not (STATE / 'recovered').exists()
+                    and g.command('systemctl', 'show', g.UNIT, '-p', 'ActiveState', '--value').stdout.strip() == 'active'):
+                errors = sync_usb()
+        except (OSError, ValueError, g.subprocess.SubprocessError) as exc:
+            errors = [f'USB rescan failed: {exc}']
+        if errors != previous:
+            for error in errors:
+                g.status(error)
+        previous = errors
+        time.sleep(2)
+
+
 def background_memory(limited):
     # A host-side soft limit compresses idle pages; the guest still has 48 GiB.
     # Remove it before VFIO pins guest RAM. Never impose an OOM-killing hard cap.
@@ -187,11 +228,15 @@ def exercise():
     g.restore_intel_console()
     attach(STATE / 'gpu-hotplug.xml')
     attach(STATE / 'audio-hotplug.xml')
-    for path in sorted(STATE.glob('warm-usb-*.xml')):
-        attach(path)
+    for error in sync_usb():
+        g.status(error)
     wait_for_hotplug_devices()
     (STATE / 'guest-detected').touch()
     g.verify_nvidia_driver()
+    try:
+        hide_gpu_eject_entries()
+    except Exception as exc:
+        g.status('Could not hide GPU eject entries; GPU handoff is unaffected: ' + str(exc))
     # Physical output must not compete with the background virtual desktop.
     # Mark before changing it, so recovery restores it even if the command times out.
     (STATE / 'warm-vga-change-attempted').touch()
@@ -200,6 +245,41 @@ def exercise():
     g.wait_for_t3_server()
     g.status('Windows is ready. Use Switch to Linux to return; Windows will stay running.')
     g.wait_for_windows_shutdown()
+
+
+def hide_gpu_eject_entries():
+    # Per-device shell policy only; retain PCIe hotplug and all capability bits.
+    return guest_ps(r'''$ErrorActionPreference='Stop'
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class NavisRemovalUI {
+  [StructLayout(LayoutKind.Sequential)] public struct Key { public Guid format; public uint id; }
+  [DllImport("cfgmgr32.dll", CharSet=CharSet.Unicode)] static extern uint CM_Locate_DevNodeW(out uint node, string id, uint flags);
+  [DllImport("cfgmgr32.dll", CharSet=CharSet.Unicode)] static extern uint CM_Set_DevNode_PropertyW(uint node, ref Key key, uint type, byte[] data, uint size, uint flags);
+  public static void Hide(string id) {
+    uint node; uint result=CM_Locate_DevNodeW(out node,id,0);
+    if(result!=0) throw new Exception("Locate devnode: "+result);
+    var key=new Key { format=new Guid("afd97640-86a3-4210-b67c-289c41aabe55"), id=3 };
+    result=CM_Set_DevNode_PropertyW(node,ref key,17u,new byte[]{0},1u,0);
+    if(result!=0) throw new Exception("Set removal UI property: "+result);
+  }
+}
+'@
+$devices=@(Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^PCI\\VEN_10DE&DEV_(25A5|2291)&' })
+if($devices.Count -ne 2){throw 'Expected exactly the NVIDIA GPU and audio device'}
+$children=@(Get-PnpDevice -PresentOnly | Where-Object InstanceId -like 'HDAUDIO\FUNC_01&VEN_10DE*' | Where-Object {
+ (Get-PnpDeviceProperty -InstanceId $_.InstanceId -KeyName DEVPKEY_Device_Parent).Data -in $devices.InstanceId
+})
+$devices += $children
+$results=foreach($device in $devices){
+ $id=$device.InstanceId
+ [NavisRemovalUI]::Hide($id)
+ $required=(Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_SafeRemovalRequired).Data
+ if($required){throw 'Windows did not apply the safe-removal UI override'}
+ [pscustomobject]@{Name=$device.FriendlyName; SafeRemovalRequired=$required; Capabilities=(Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Capabilities).Data}
+}
+$results | ConvertTo-Json -Compress''', timeout=30)
 
 
 def detach_all():
@@ -220,6 +300,7 @@ def detach_all():
 
 
 def recover():
+    g.command('systemctl', 'stop', 'navis-windows-usb.service')
     g.status('Returning NVIDIA to Linux without shutting Windows down.')
     preserved = False
     same_boot = False
@@ -292,9 +373,6 @@ def start(*, base):
         (STATE / name).chmod(0o700)
     for name in ('gpu-hotplug.xml', 'audio-hotplug.xml'):
         shutil.copyfile(base / name, STATE / name)
-    for i, device in enumerate(g.usb_devices()):
-        ET.SubElement(device, 'alias', name=f'ua-warm-usb-{i}')
-        (STATE / f'warm-usb-{i}.xml').write_text(ET.tostring(device, encoding='unicode'))
     logfile = base / ('gpu-hotplug-' + time.strftime('%H%M%S') + '.log')
     script = STATE / 'navis-windows-switch.py'
     exe = str(Path(sys.executable).resolve())
@@ -303,6 +381,7 @@ def start(*, base):
               '--description=Windows live GPU session and recovery',
               '--property=Type=exec',
               '--property=After=navis-windows-background.service',
+              '--property=Wants=navis-windows-usb.service',
               '--property=RuntimeMaxSec=infinity',
               '--property=TimeoutStopSec=300s',
               '--property=ExecStopPost=' + exe + ' ' + str(script) + ' _recover',
@@ -491,7 +570,7 @@ def main():
     actions = {'windows': request_windows, 'linux': return_linux,
                'background': background, 'shutdown': shutdown,
                '_foreground': run_foreground, '_run': exercise,
-               '_recover': recover_service}
+               '_recover': recover_service, '_usb': watch_usb}
     if len(sys.argv) != 2 or sys.argv[1] not in actions or os.geteuid() != 0:
         raise RuntimeError('Use the installed Windows/Linux switch control.')
     if sys.argv[1] in ('_run', '_recover') and HERE != STATE:

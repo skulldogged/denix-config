@@ -20,8 +20,6 @@ WINDOWS_DISK = Path('/dev/disk/by-id/nvme-HFM512GD3JX013N_FYA7N020713207841')
 WINDOWS_PARTUUID = '42ccd3b2-cc58-41ef-a4e9-a7ed0fe87e88'
 T3_UNIT = 'navis-t3-server.service'
 T3_URL = 'http://192.168.122.1:3774'
-USB = [('3434', '0b10'), ('3434', 'd030'), ('046d', 'c547')]
-USB_AUDIO = [('1038', '12e0'), ('3142', 'a008')]
 HOST_GPU_PROBES = ('navis-hardware-telemetry.service',
                    'nvidia-container-toolkit-cdi-generator.service')
 spec = importlib.util.spec_from_file_location('binding', HERE / 'navis-gpu-binding.py')
@@ -116,13 +114,30 @@ def check_existing_disk(source):
 
 def usb_devices():
     devices = []
-    for vendor, product in USB + USB_AUDIO:
-        device = ET.Element('hostdev', mode='subsystem', type='usb')
-        source = ET.SubElement(device, 'source',
-                               startupPolicy='optional' if (vendor, product) in USB_AUDIO else 'mandatory')
-        ET.SubElement(source, 'vendor', id='0x' + vendor)
-        ET.SubElement(source, 'product', id='0x' + product)
-        devices.append(device)
+    mounted = {line.split()[2] for line in Path('/proc/self/mountinfo').read_text().splitlines()}
+    swaps = {os.stat(line.split()[0]).st_rdev for line in Path('/proc/swaps').read_text().splitlines()[1:]}
+    for path in sorted(Path('/sys/bus/usb/devices').glob('*')):
+        try:
+            if not (path / 'idVendor').exists() or (path / 'bDeviceClass').read_text().strip() in ('09', '11'):
+                continue  # Hubs and USB-C billboard devices stay with the host.
+            physical = path.resolve()
+            if not any((parent / 'removable').exists() and (parent / 'removable').read_text().strip() == 'removable'
+                       for parent in (physical, *physical.parents)):
+                continue  # Built-in webcam/Bluetooth are not external peripherals.
+            blocks = [p for p in Path('/sys/class/block').iterdir() if p.resolve().is_relative_to(physical)]
+            if any((p / 'dev').read_text().strip() in mounted or any((p / 'holders').iterdir()) or
+                   os.makedev(*map(int, (p / 'dev').read_text().split(':'))) in swaps for p in blocks):
+                continue  # Never detach storage that Linux is using.
+            device = ET.Element('hostdev', mode='subsystem', type='usb')
+            source = ET.SubElement(device, 'source', startupPolicy='optional')
+            for field, name in (('vendor', 'idVendor'), ('product', 'idProduct')):
+                ET.SubElement(source, field, id='0x' + (path / name).read_text().strip())
+            ET.SubElement(source, 'address', bus=(path / 'busnum').read_text().strip(),
+                          device=(path / 'devnum').read_text().strip())
+            ET.SubElement(device, 'alias', name='ua-warm-usb-port-' + path.name)
+            devices.append(device)
+        except FileNotFoundError:
+            continue  # Unplugged while enumerating; retry on the next scan.
     return devices
 
 
@@ -147,13 +162,6 @@ def preflight():
         raise RuntimeError('VM must be running normally or shut off: ' + current)
     if current == 'running':
         agent({'execute': 'guest-ping'})
-    for vendor, product in USB:
-        matches = [p for p in Path('/sys/bus/usb/devices').glob('*')
-                   if (p / 'idVendor').exists()
-                   and (p / 'idVendor').read_text().strip() == vendor
-                   and (p / 'idProduct').read_text().strip() == product]
-        if len(matches) != 1:
-            raise RuntimeError(f'Expected exactly one USB device {vendor}:{product}, found {len(matches)}')
     source = virsh('dumpxml', UUID, '--inactive').stdout
     check_existing_disk(source)
     ensure_share()

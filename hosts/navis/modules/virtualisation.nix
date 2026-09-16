@@ -96,6 +96,18 @@ in
         };
       };
 
+      systemd.services.navis-windows-usb = {
+        description = "Follow external USB devices while Windows is active";
+        bindsTo = ["navis-windows-gpu.service"];
+        after = ["navis-windows-gpu.service"];
+        path = switchPath;
+        serviceConfig = {
+          ExecStart = "${control} _usb";
+          Environment = "PYTHONDONTWRITEBYTECODE=1";
+          TimeoutStopSec = "20s";
+        };
+      };
+
       virtualisation.libvirtd = {
         enable = true;
         qemu = {
