@@ -1,5 +1,0 @@
-diff --git a/packages/coding-agent/src/modes/interactive/interactive-mode.ts b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
---- a/packages/coding-agent/src/modes/interactive/interactive-mode.ts
-+++ b/packages/coding-agent/src/modes/interactive/interactive-mode.ts
-@@ -348,0 +349 @@
-+			wheelScrollLines: 3,

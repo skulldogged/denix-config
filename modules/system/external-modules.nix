@@ -11,5 +11,15 @@ delib.module {
     inputs.sops-nix.nixosModules.sops
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
+    (
+      {pkgs, ...}: let
+        # sops-nix still requests this builder after its removal from nixpkgs.
+        sopsCompatPkgs = pkgs.extend (_: prev: {
+          buildGo125Module = prev.buildGoModule;
+        });
+      in {
+        sops.package = (import inputs.sops-nix {pkgs = sopsCompatPkgs;}).sops-install-secrets;
+      }
+    )
   ];
 }

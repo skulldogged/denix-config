@@ -313,11 +313,5 @@ in
           experimental.kitty_graphics = true;
         };
       };
-
-      # Home Manager does not manage Herdr's Pi integration or agent skill.
-      home.file = {
-        ".pi/agent/extensions/herdr-agent-state.ts".source = "${herdr.src}/src/integration/assets/pi/herdr-agent-state.ts";
-        ".pi/agent/skills/herdr/SKILL.md".source = "${herdr}/share/herdr/skills/herdr/SKILL.md";
-      };
     };
   }

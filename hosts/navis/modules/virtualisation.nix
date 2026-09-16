@@ -118,7 +118,11 @@ in
       };
 
       # Compress idle guest pages without resizing Windows' 48 GiB allocation.
-      zramSwap.enable = true;
+      zramSwap = {
+        enable = true;
+        # Logical capacity, allocated/compressed on demand; not reserved RAM.
+        memoryPercent = 100;
+      };
 
       programs.virt-manager.enable = true;
       users.users.marshall.extraGroups = ["libvirtd"];

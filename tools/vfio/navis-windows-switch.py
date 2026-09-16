@@ -150,8 +150,8 @@ def background_memory(limited):
         raise RuntimeError('Unexpected Windows domain scope.')
     # Keep systemd's property in sync so later libvirt CPU tuning cannot reset it.
     g.command('systemctl', 'set-property', '--runtime', scope.name,
-              'MemoryHigh=' + ('24G' if limited else 'infinity'), timeout=60)
-    g.status('Background Windows memory soft limit: ' + ('24 GiB with compressed swap.' if limited else 'removed.'))
+              'MemoryHigh=' + ('8G' if limited else 'infinity'), timeout=60)
+    g.status('Background Windows memory soft limit: ' + ('8 GiB with compressed swap.' if limited else 'removed.'))
 
 
 def assert_gpu_released():
