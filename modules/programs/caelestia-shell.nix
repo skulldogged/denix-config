@@ -12,7 +12,7 @@ delib.module {
     enable = boolOption false;
   };
 
-  home.ifEnabled = let
+  home.ifEnabled = {myconfig, ...}: let
     inherit (pkgs.stdenv.hostPlatform) system;
 
     caelestiaChatgpt = pkgs.writeScriptBin "caelestia-chatgpt" ''
@@ -294,7 +294,29 @@ delib.module {
                 }
     '';
 
+    quickshellBase = inputs.caelestia-shell.inputs.quickshell.packages.${system}.default;
+    quickshellUnwrapped = quickshellBase.unwrapped.overrideAttrs (old: {
+      patches = (old.patches or []) ++ [./quickshell-workspace-address.patch ./quickshell-close-child-fds.patch];
+    });
+    quickshell = quickshellBase.overrideAttrs (old: {
+      installPhase =
+        builtins.replaceStrings
+        ["${quickshellBase.unwrapped}"]
+        ["${quickshellUnwrapped}"]
+        old.installPhase;
+      passthru =
+        (old.passthru or {})
+        // {
+          unwrapped = quickshellUnwrapped;
+          withModules = modules:
+            quickshell.overrideAttrs (prev: {
+              buildInputs = prev.buildInputs ++ modules;
+            });
+        };
+    });
+
     caelestiaShellBase = inputs.caelestia-shell.packages.${system}.default.override {
+      inherit quickshell;
       caelestia-cli = caelestiaCli;
       extraRuntimeDeps = [pkgs.cliphist];
       hyprland = inputs.hyprland.packages.${system}.hyprland;
@@ -335,6 +357,12 @@ delib.module {
       postPatch =
         (old.postPatch or "")
         + ''
+          # Only expand the empty-workspace drag region when emptiness is
+          # confirmed. Missing IPC data must not cover application controls.
+          substituteInPlace modules/drawers/ContentWindow.qml \
+            --replace-fail 'monitor?.activeWorkspace?.lastIpcObject.windows > 0)' \
+                           'monitor?.activeWorkspace?.lastIpcObject.windows !== 0)'
+
           substituteInPlace modules/background/DesktopClock.qml \
             --replace-fail "readonly property color safePrimary: useLightSet ? Colours.palette.m3primaryContainer : Colours.palette.m3primary" "readonly property color safePrimary: Colours.palette.m3onSurface" \
             --replace-fail "readonly property color safeSecondary: useLightSet ? Colours.palette.m3secondaryContainer : Colours.palette.m3secondary" "readonly property color safeSecondary: Colours.palette.m3onSurfaceVariant" \
@@ -726,80 +754,91 @@ delib.module {
           };
         };
 
-        launcher.actions = [
-          {
-            name = "Calculator";
-            icon = "calculate";
-            description = "Do simple math equations (powered by Qalc)";
-            command = ["autocomplete" "calc"];
-            enabled = true;
-            dangerous = false;
-          }
-          {
-            name = "Clipboard";
-            icon = "content_paste";
-            description = "Browse clipboard history";
-            command = ["autocomplete" "clipboard"];
-            enabled = true;
-            dangerous = false;
-          }
-          {
-            name = "Emoji";
-            icon = "emoji_emotions";
-            description = "Pick an emoji to copy";
-            command = ["autocomplete" "emoji"];
-            enabled = true;
-            dangerous = false;
-          }
-          {
-            name = "Keybinds";
-            icon = "keyboard";
-            description = "View all keyboard shortcuts";
-            command = ["autocomplete" "keybinds"];
-            enabled = true;
-            dangerous = false;
-          }
-          {
-            name = "Shutdown";
-            icon = "power_settings_new";
-            description = "Shutdown the system";
-            command = ["systemctl" "poweroff"];
-            enabled = true;
-            dangerous = true;
-          }
-          {
-            name = "Reboot";
-            icon = "cached";
-            description = "Reboot the system";
-            command = ["systemctl" "reboot"];
-            enabled = true;
-            dangerous = true;
-          }
-          {
-            name = "Logout";
-            icon = "exit_to_app";
-            description = "Log out of the current session";
-            command = ["loginctl" "terminate-user" ""];
-            enabled = true;
-            dangerous = true;
-          }
-          {
-            name = "Lock";
-            icon = "lock";
-            description = "Lock the current session";
-            command = ["loginctl" "lock-session"];
-            enabled = true;
-            dangerous = false;
-          }
-          {
-            name = "Sleep";
-            icon = "bedtime";
-            description = "Suspend then hibernate";
-            command = ["systemctl" "suspend-then-hibernate"];
-            enabled = true;
-            dangerous = false;
-          }
-        ];
+        launcher.actions =
+          [
+            {
+              name = "Calculator";
+              icon = "calculate";
+              description = "Do simple math equations (powered by Qalc)";
+              command = ["autocomplete" "calc"];
+              enabled = true;
+              dangerous = false;
+            }
+            {
+              name = "Clipboard";
+              icon = "content_paste";
+              description = "Browse clipboard history";
+              command = ["autocomplete" "clipboard"];
+              enabled = true;
+              dangerous = false;
+            }
+            {
+              name = "Emoji";
+              icon = "emoji_emotions";
+              description = "Pick an emoji to copy";
+              command = ["autocomplete" "emoji"];
+              enabled = true;
+              dangerous = false;
+            }
+            {
+              name = "Keybinds";
+              icon = "keyboard";
+              description = "View all keyboard shortcuts";
+              command = ["autocomplete" "keybinds"];
+              enabled = true;
+              dangerous = false;
+            }
+            {
+              name = "Shutdown";
+              icon = "power_settings_new";
+              description = "Shutdown the system";
+              command = ["systemctl" "poweroff"];
+              enabled = true;
+              dangerous = true;
+            }
+            {
+              name = "Reboot";
+              icon = "cached";
+              description = "Reboot the system";
+              command = ["systemctl" "reboot"];
+              enabled = true;
+              dangerous = true;
+            }
+            {
+              name = "Logout";
+              icon = "exit_to_app";
+              description = "Log out of the current session";
+              command = ["loginctl" "terminate-user" ""];
+              enabled = true;
+              dangerous = true;
+            }
+            {
+              name = "Lock";
+              icon = "lock";
+              description = "Lock the current session";
+              command = ["loginctl" "lock-session"];
+              enabled = true;
+              dangerous = false;
+            }
+            {
+              name = "Sleep";
+              icon = "bedtime";
+              description = "Suspend then hibernate";
+              command = ["systemctl" "suspend-then-hibernate"];
+              enabled = true;
+              dangerous = false;
+            }
+          ]
+          ++ lib.optionals (myconfig.navis.enable or false) [
+            {
+              name = "Switch to Windows";
+              icon = "desktop_windows";
+              description = "Close Linux apps and continue Windows on the RTX 3050";
+              command = ["/etc/navis-windows-switch/windows-switch-control" "windows"];
+              enabled = true;
+              dangerous = true;
+            }
+          ];
 
         services = {
           weatherLocation = "39.953388,-74.198151";

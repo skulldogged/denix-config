@@ -1,0 +1,16 @@
+--- a/src/io/processcore.cpp
++++ b/src/io/processcore.cpp
+@@ -14,6 +14,13 @@ void setupProcessEnvironment(
+     bool clear,
+     const QHash<QString, QVariant>& envChanges
+ ) {
++#ifdef Q_OS_UNIX
++	// Driver descriptors must not keep GPUs alive in launched applications.
++	// This helper covers Process and Quickshell.execDetached alike.
++	auto params = process->unixProcessParameters();
++	params.flags |= QProcess::UnixProcessFlag::CloseFileDescriptors;
++	process->setUnixProcessParameters(params);
++#endif
+ 	const auto& sysenv = qs::Common::INITIAL_ENVIRONMENT;
+ 	auto env = clear ? QProcessEnvironment() : sysenv;
+ 

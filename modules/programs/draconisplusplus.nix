@@ -13,6 +13,29 @@ delib.module {
 
   home.ifEnabled = {myconfig, ...}: let
     system = pkgs.stdenv.hostPlatform.system;
+    # libcap-ng 0.9.5's file_caps_test duplicates musl's xattr symbols when
+    # linked statically. Skip its checks until upstream fixes the test.
+    staticPkgs = pkgs.pkgsStatic.extend (_final: prev: {
+      libcap_ng = prev.libcap_ng.overrideAttrs {
+        doCheck = false;
+      };
+    });
+    fixNowPlaying = pluginRoot:
+      pluginRoot.overrideAttrs (old: {
+        passthru =
+          old.passthru
+          // {
+            pluginBuildInputsByName =
+              old.passthru.pluginBuildInputsByName
+              // {
+                now_playing = map (dbus:
+                  dbus.override {
+                    inherit (staticPkgs) libcap_ng libsm;
+                  })
+                old.passthru.pluginBuildInputsByName.now_playing;
+              };
+          };
+      });
   in {
     imports = [inputs.draconisplusplus.homeModules.default];
 
@@ -28,7 +51,7 @@ delib.module {
       username = "Mars";
 
       pluginPackages = [
-        (inputs.draconisplusplus-plugins.lib.${system}.mkPluginRoot {
+        (fixNowPlaying (inputs.draconisplusplus-plugins.lib.${system}.mkPluginRoot {
           plugins = {
             json_format = true;
             markdown_format = true;
@@ -46,7 +69,7 @@ delib.module {
             };
             yaml_format = true;
           };
-        })
+        }))
         (inputs.draconisplusplus-plugin-lab.lib.${system}.mkPluginRoot {
           plugins = {
             vpn_info = true;

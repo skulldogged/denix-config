@@ -468,14 +468,22 @@ delib.module {
       hyprland = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
       sed = lib.getExe pkgs.gnused;
     in ''
-      target_abi="$(${hyprland}/bin/Hyprland --version 2>/dev/null | ${sed} -n 's/^Version ABI string: //p')"
       running_version="$(${hyprland}/bin/hyprctl version 2>/dev/null || true)"
       running_abi="$(printf '%s\n' "$running_version" | ${sed} -n 's/^Version ABI string: //p')"
 
-      if [ -n "$running_abi" ] && [ "$running_abi" = "$target_abi" ]; then
-        ${hyprland}/bin/hyprctl reload >/dev/null 2>&1 || true
-      elif [ -n "$running_abi" ]; then
-        echo "Skipping Hyprland reload: running ABI $running_abi differs from configured ABI $target_abi"
+      # Home Manager also activates before login, when XDG_RUNTIME_DIR may
+      # be unset and even Hyprland --version aborts. Probe it only for a live
+      # session, and never let an optional reload fail activation.
+      if [ -n "$running_abi" ]; then
+        target_abi="$(${hyprland}/bin/Hyprland --version 2>/dev/null | ${sed} -n 's/^Version ABI string: //p' || true)"
+
+        if [ -z "$target_abi" ]; then
+          echo "Skipping Hyprland reload: could not determine configured ABI"
+        elif [ "$running_abi" = "$target_abi" ]; then
+          ${hyprland}/bin/hyprctl reload >/dev/null 2>&1 || true
+        else
+          echo "Skipping Hyprland reload: running ABI $running_abi differs from configured ABI $target_abi"
+        fi
       fi
     '';
 

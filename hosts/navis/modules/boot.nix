@@ -152,7 +152,8 @@ in
         lanzaboote = {
           enable = true;
           pkiBundle = "/var/lib/sbctl";
-          configurationLimit = 3;
+          # Leave space on the 549 MiB ESP to stage the next kernel and initrd.
+          configurationLimit = 2;
           autoEnrollKeys = {
             enable = true;
             includeMicrosoftKeys = true;
