@@ -332,11 +332,18 @@ def background_xml(source):
     override = root.find(QEMU + 'override')
     if override is None:
         override = ET.SubElement(root, QEMU + 'override')
-    if override.find(QEMU + "device[@alias='pci.6']") is not None:
-        raise RuntimeError('GPU port override already exists; review it before replacing.')
-    frontend = ET.SubElement(ET.SubElement(override, QEMU + 'device', alias='pci.6'), QEMU + 'frontend')
+    device = override.find(QEMU + "device[@alias='pci.6']")
+    if device is None:
+        device = ET.SubElement(override, QEMU + 'device', alias='pci.6')
+    frontend = device.find(QEMU + 'frontend')
+    if frontend is None:
+        frontend = ET.SubElement(device, QEMU + 'frontend')
     for key, value in [('mem-reserve', 32 * 1024**2), ('pref64-reserve', 8 * 1024**3)]:
-        ET.SubElement(frontend, QEMU + 'property', name=key, type='unsigned', value=str(value))
+        prop = frontend.find(QEMU + f"property[@name='{key}']")
+        if prop is None:
+            prop = ET.SubElement(frontend, QEMU + 'property', name=key)
+        prop.set('type', 'unsigned')
+        prop.set('value', str(value))
     ET.indent(root)
     return ET.tostring(root, encoding='unicode')
 
@@ -348,6 +355,9 @@ def prepare():
     candidate = background_xml(source)
     (BASE / 'background.xml').write_text(candidate)
     g.command('virt-xml-validate', str(BASE / 'background.xml'), 'domain')
+    # libvirt-guests may start this domain before our service at host boot.
+    # Its persistent definition must have the same GPU hotplug reservations.
+    g.virsh('define', str(BASE / 'background.xml'), '--validate')
     # Generate the exact guest port/address layout validated in the live trial.
     for name, function, bus in [('gpu', '0', '6'), ('audio', '1', '7')]:
         d = ET.Element('hostdev', mode='subsystem', type='pci', managed='no')
@@ -404,7 +414,7 @@ def foreground():
     check_updates()
     if live_devices():
         raise RuntimeError('Windows already owns host devices; refusing another attachment.')
-    g.preflight()
+    check_ready()
     g.status('Removing the background CPU limit; Windows keeps its existing 48 GiB.')
     g.virsh('schedinfo', g.UUID, '--live', '--set', 'cpu_shares=1024', '--set', 'global_quota=-1')
     start(base=BASE)

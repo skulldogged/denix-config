@@ -119,6 +119,9 @@ in
         };
       };
 
+      # Compress idle guest pages without resizing Windows' 48 GiB allocation.
+      zramSwap.enable = true;
+
       programs.virt-manager.enable = true;
       users.users.marshall.extraGroups = ["libvirtd"];
       users.users.marshall.linger = lib.mkForce true;
