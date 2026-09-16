@@ -2,7 +2,6 @@
   description = "Modular configuration of NixOS, Home Manager, and Nix-Darwin with Denix";
 
   inputs = {
-    agent-terminal.url = "github:skulldogged/gpui-ghostty-agent-terminal";
     cua.url = "github:trycua/cua/cua-driver-rs-v0.21.0";
     nix-colors.url = "github:Misterio77/nix-colors";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -160,11 +159,6 @@
       url = "github:jdecked/twemoji";
       flake = false;
     };
-
-    vicinae = {
-      url = "github:vicinaehq/vicinae";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {denix, ...} @ inputs: let
@@ -211,20 +205,7 @@
   in rec {
     nixosConfigurations =
       inputs.nixpkgs.lib.getAttrs ["navis" "polaris"]
-      (mkConfigurations "nixos")
-      // {
-        polaris-bootstrap = inputs.nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = {inherit inputs;};
-          modules = [./migration/polaris/bootstrap.nix];
-        };
-
-        polaris-installer = inputs.nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = {inherit inputs;};
-          modules = [./migration/polaris/installer.nix];
-        };
-      };
+      (mkConfigurations "nixos");
 
     darwinConfigurations =
       inputs.nixpkgs.lib.getAttrs ["canis"]

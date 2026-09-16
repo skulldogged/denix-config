@@ -67,7 +67,6 @@ delib.module {
 
     desktopPackages =
       (with pkgs; [
-        # local.delta
         duf
         equibop
         glow
@@ -90,7 +89,6 @@ delib.module {
         uv
       ])
       ++ [
-        # inputs.agent-terminal.packages.${system}.default
         t3CodeNightly
       ];
   in {
