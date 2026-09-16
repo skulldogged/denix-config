@@ -2,7 +2,6 @@
   delib,
   inputs,
   lib,
-  pkgs,
   ...
 }:
 delib.module {
@@ -21,25 +20,12 @@ delib.module {
     }
   ];
 
-  nixos.ifEnabled = let
-    package = import ../../../packages/navis-hyprland-preserve {inherit pkgs inputs;};
-    session = pkgs.writeShellScript "navis-hyprland-session" ''
-      if [ -f /persist/var/lib/navis-hyprland-preserve/disabled ]; then
-        exec ${inputs.hyprland.packages.x86_64-linux.hyprland}/bin/start-hyprland
-      fi
-      exec ${package}/bin/start-hyprland
-    '';
-  in {
-    programs.hyprland.package = lib.mkForce package;
-    environment.etc."navis-hyprland-preserve".source = package;
-    environment.etc."navis-hyprland-stock".source = inputs.hyprland.packages.x86_64-linux.hyprland;
-    environment.etc."navis-hyprland-session".source = session;
-    systemd.tmpfiles.rules = ["d /persist/var/lib/navis-hyprland-preserve 0755 root root -"];
+  nixos.ifEnabled = {
     services.greetd = {
       enable = true;
       settings = rec {
         initial_session = {
-          command = "/etc/navis-hyprland-session";
+          command = "${inputs.hyprland.packages.x86_64-linux.hyprland}/bin/start-hyprland";
           user = "marshall";
         };
         default_session = initial_session;

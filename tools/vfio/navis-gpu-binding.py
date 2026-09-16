@@ -73,20 +73,18 @@ def save_state():
     temp.replace(STATE / 'state.json')
 
 
-def exercise(*, preserve_desktop=False):
+def exercise():
     # The snapshot exists before any change; ExecStopPost also runs on failure.
     preflight()
     save_state()
-    if not preserve_desktop:
-        run('systemctl', 'stop', 'display-manager')
-        run('systemctl', '--user', '--machine=marshall@.host', 'stop',
-            'hyprland-session.target', 'graphical-session.target')
-        time.sleep(2)
+    run('systemctl', 'stop', 'display-manager')
+    run('systemctl', '--user', '--machine=marshall@.host', 'stop',
+        'hyprland-session.target', 'graphical-session.target')
+    time.sleep(2)
     data = json.loads((STATE / 'state.json').read_text())
     for console in data['consoles']:
         write(console, '0')
-    # Do not force unload or kill remaining GPU clients. A busy module aborts
-    # the test and sends control to recovery instead.
+    # A busy module aborts the handoff and returns control to recovery.
     for module in reversed(data['modules']):
         run('modprobe', '-r', module, timeout=15)
     run('modprobe', 'vfio_pci')
@@ -102,7 +100,7 @@ def exercise(*, preserve_desktop=False):
     (STATE / 'bound').touch()
 
 
-def recover(*, preserve_desktop=False):
+def recover():
     snapshot = STATE / 'state.json'
     if not snapshot.exists():
         print('No hardware changes were started; no recovery needed.', flush=True)
@@ -141,12 +139,12 @@ def recover(*, preserve_desktop=False):
     for console in data['consoles']:
         attempt(console, lambda console=console: write(console, '1'))
     attempt('NVIDIA health', lambda: run('nvidia-smi', timeout=20))
-    if data['display_active'] and not preserve_desktop:
+    if data['display_active']:
         attempt('restart desktop', lambda: run('systemctl', 'start', 'display-manager'))
     if errors:
         raise RuntimeError('Recovery had errors; inspect the log. A reboot may be needed.')
     if (STATE / 'bound').exists():
-        print('ROUNDTRIP_PASS: NVIDIA -> VFIO -> NVIDIA; ' + ('compositor recovery pending.' if preserve_desktop else 'desktop service restarted.'), flush=True)
-        print('Driver restoration alone does not verify display output or session preservation.', flush=True)
+        print('ROUNDTRIP_PASS: NVIDIA -> VFIO -> NVIDIA; desktop service restarted.', flush=True)
+        print('Driver restoration alone does not verify display output.', flush=True)
     else:
         print('RESTORED_AFTER_ABORT: Linux restored, but VFIO binding did not complete.', flush=True)

@@ -284,10 +284,9 @@ def desktop_t3_pids():
     return found
 
 
-def stop_t3_desktop(*, graceful=False):
+def stop_t3_desktop():
     status('Closing the T3 desktop client before GPU handoff.')
-    signals = ((signal.SIGTERM, 15),) if graceful else ((signal.SIGTERM, 8), (signal.SIGKILL, 3))
-    for sig, seconds in signals:
+    for sig, seconds in ((signal.SIGTERM, 8), (signal.SIGKILL, 3)):
         for pid in desktop_t3_pids():
             try:
                 os.kill(pid, sig)

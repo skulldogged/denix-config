@@ -15,9 +15,6 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('gpu', HERE / 'navis-windows-gpu.py')
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
-spec = importlib.util.spec_from_file_location('preserve', HERE / 'navis-hyprland-preserve.py')
-h = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(h)
 STATE = g.STATE
 
 
@@ -91,6 +88,31 @@ def live_devices():
     return ET.fromstring(g.virsh('dumpxml', g.UUID).stdout).findall('devices/hostdev')
 
 
+def background_memory(limited):
+    # A host-side soft limit compresses idle pages; the guest still has 48 GiB.
+    # Remove it before VFIO pins guest RAM. Never impose an OOM-killing hard cap.
+    if limited:
+        if live_devices():
+            raise RuntimeError('Cannot reclaim Windows memory while it owns host devices.')
+        if '/dev/zram' not in Path('/proc/swaps').read_text():
+            g.status('Compressed swap is unavailable; leaving Windows memory unrestricted.')
+            return
+    pid = int(Path(f'/run/libvirt/qemu/{g.VM}.pid').read_text())
+    proc = Path('/proc') / str(pid)
+    if g.UUID.encode() not in (proc / 'cmdline').read_bytes():
+        raise RuntimeError('Windows process identity changed during memory adjustment.')
+    group = (proc / 'cgroup').read_text().strip().removeprefix('0::')
+    if not group.startswith('/machine.slice/machine-qemu') or '/..' in group:
+        raise RuntimeError('Unexpected Windows memory control group.')
+    scope = Path('/sys/fs/cgroup/machine.slice') / group.split('/')[2]
+    if not scope.name.endswith('.scope'):
+        raise RuntimeError('Unexpected Windows domain scope.')
+    # Keep systemd's property in sync so later libvirt CPU tuning cannot reset it.
+    g.command('systemctl', 'set-property', '--runtime', scope.name,
+              'MemoryHigh=' + ('24G' if limited else 'infinity'), timeout=60)
+    g.status('Background Windows memory soft limit: ' + ('24 GiB with compressed swap.' if limited else 'removed.'))
+
+
 def assert_gpu_released():
     if g.guest_state() != 'shut off' and live_devices():
         raise RuntimeError('Guest still owns host devices; refusing NVIDIA rebind.')
@@ -153,22 +175,15 @@ def attach(path):
 
 def exercise():
     check_ready()
+    background_memory(False)
     (STATE / 'warm-boot-before').write_text(boot_identity())
-    preserve = h.begin(g)
     g.release_herdr_gpu()
-    if preserve:
-        g.stop_t3_desktop(graceful=True)
-    else:
-        g.stop_t3_desktop()
+    g.stop_t3_desktop()
     g.start_t3_server()
     g.pause_host_gpu_probes()
     g.command('systemctl', 'start', 'getty@tty3.service')
-    if preserve:
-        h.park(g)
-        g.binding.exercise(preserve_desktop=True)
-    else:
-        g.status('Closing Linux graphics; attaching NVIDIA to already-running Windows.')
-        g.binding.exercise()
+    g.status('Closing Linux graphics; attaching NVIDIA to already-running Windows.')
+    g.binding.exercise()
     g.restore_intel_console()
     attach(STATE / 'gpu-hotplug.xml')
     attach(STATE / 'audio-hotplug.xml')
@@ -226,26 +241,26 @@ def recover():
             g.status('Cannot verify Windows boot continuity; keeping it running: ' + str(exc))
     assert_gpu_released()
     g.stop_t3_server()
-    preserve = h.state_file(g).exists()
     if (STATE / 'state.json').exists():
-        if preserve:
-            g.binding.recover(preserve_desktop=True)
-        else:
-            g.binding.recover()
-    if preserve:
-        h.restore(g)
+        g.binding.recover()
     (STATE / 'recovered').touch()
     g.resume_host_gpu_probes()
-    if preserved:
-        (STATE / 'warm-preserved').touch()
+    if g.guest_state() == 'running':
+        try:
+            background_memory(True)
+        except Exception as exc:
+            g.status('Could not reclaim background Windows memory: ' + str(exc))
         # Only cap CPU use. Keep all 48 GiB to avoid slow memory expansion
-        # on the next switch. Throttling must not invalidate GPU recovery.
+        # on the next switch, including after a failed attachment attempt.
+        # Throttling must not invalidate GPU recovery.
         try:
             check_updates()
             g.virsh('schedinfo', g.UUID, '--live', '--set', 'cpu_shares=256',
                     '--set', 'global_quota=200000')
         except Exception as exc:
             g.status('Leaving Windows resources available: ' + str(exc))
+    if preserved:
+        (STATE / 'warm-preserved').touch()
         if same_boot:
             (STATE / 'warm-returned').touch()
             label = 'WARM_GPU_ROUNDTRIP_PASS' if (STATE / 'warm-attached').exists() else 'WARM_DEVICE_RETURN_PASS'
@@ -261,21 +276,18 @@ def start(*, base):
         raise RuntimeError('A GPU session or recovery is already running.')
     if (STATE / 'state.json').exists() and not (STATE / 'recovered').exists():
         raise RuntimeError('Previous GPU recovery is incomplete.')
-    if h.state_file(g).exists() and json.loads(h.state_file(g).read_text())['phase'] not in ('returned', 'fresh-desktop-fallback'):
-        raise RuntimeError('Previous Hyprland preservation recovery is incomplete.')
     check_ready()
     base = Path(base)
     STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Retain old diagnostic files, but no stale success/recovery markers.
     for name in ('state.json', 'bound', 'guest-start-attempted', 'guest-detected',
-                 'driver-passed', 'recovered', 't3-start-attempted', 'hyprland-preserve.json'):
+                 'driver-passed', 'recovered', 't3-start-attempted'):
         (STATE / name).unlink(missing_ok=True)
     for path in STATE.glob('warm-*'):
         if path.is_file():
             path.unlink()
     (STATE / 'options.json').write_text(json.dumps({'vm': 'win11-native', 'controller': 'navis-windows-switch.py'}))
-    for name in ('navis-windows-switch.py', 'navis-windows-gpu.py', 'navis-gpu-binding.py',
-                 'navis-hyprland-preserve.py'):
+    for name in ('navis-windows-switch.py', 'navis-windows-gpu.py', 'navis-gpu-binding.py'):
         shutil.copyfile(HERE / name, STATE / name)
         (STATE / name).chmod(0o700)
     for name in ('gpu-hotplug.xml', 'audio-hotplug.xml'):
@@ -381,12 +393,14 @@ def background():
     if g.guest_state() == 'running':
         if live_devices():
             raise RuntimeError('Existing Windows session still owns host devices; leaving it untouched.')
+        background_memory(True)
         g.status('Windows already runs in the background; no restart requested.')
         return
     if g.guest_state() != 'shut off':
         raise RuntimeError('Windows is not ready to start; leaving it untouched.')
     prepare()
     g.virsh('create', str(BASE / 'background.xml'), '--validate', timeout=90)
+    background_memory(True)
     g.status('Windows booting in the background. Linux keeps NVIDIA.')
 
 
@@ -425,7 +439,7 @@ def return_linux():
         raise RuntimeError('Windows preparation is still running; wait for the switch to finish.')
     if g.active(g.UNIT):
         g.command('systemctl', 'stop', '--no-block', g.UNIT)
-    elif ((g.STATE / 'state.json').exists() or (g.STATE / 'hyprland-preserve.json').exists()) and not (g.STATE / 'recovered').exists():
+    elif (g.STATE / 'state.json').exists() and not (g.STATE / 'recovered').exists():
         # Retry a failed safe removal using its original root-owned snapshot.
         options = json.loads((g.STATE / 'options.json').read_text())
         controller = options.get('controller', 'navis-warm-gpu-test.py')
@@ -477,7 +491,7 @@ def main():
     actions = {'windows': request_windows, 'linux': return_linux,
                'background': background, 'shutdown': shutdown,
                '_foreground': run_foreground, '_run': exercise,
-               '_recover': recover_service, '_remember': h.remember}
+               '_recover': recover_service}
     if len(sys.argv) != 2 or sys.argv[1] not in actions or os.geteuid() != 0:
         raise RuntimeError('Use the installed Windows/Linux switch control.')
     if sys.argv[1] in ('_run', '_recover') and HERE != STATE:

@@ -42,7 +42,6 @@ in
     nixos.ifEnabled = let
       switchFiles = [
         "navis-windows-switch.py"
-        "navis-hyprland-preserve.py"
         "navis-windows-gpu.py"
         "navis-gpu-binding.py"
       ];
@@ -62,19 +61,6 @@ in
       switchPath = with pkgs; [python3 libvirt systemd util-linux coreutils kmod procps pciutils usbutils iproute2 "/run/current-system/sw" "/run/wrappers"];
     in {
       environment.etc."navis-windows-switch".source = switchPackage;
-      # Keep identifying a running preserved compositor across package upgrades.
-      # This runs before /etc starts pointing to the new package generation.
-      system.activationScripts.navisPreserveSession = {
-        deps = ["specialfs"];
-        text = ''
-          ${pkgs.python3}/bin/python3 ${switchPackage}/navis-windows-switch.py _remember
-          # Retire only the two service overrides used by the initial prototype.
-          rm -f /run/systemd/system/greetd.service.d/90-navis-preserve.conf
-          rm -f /run/user/1000/systemd/user.control/caelestia.service.d/90-preserve.conf
-        '';
-      };
-      system.activationScripts.etc.deps = ["navisPreserveSession"];
-
       # Remain active across desktop sessions and rebuilds. Only host shutdown
       # (or an explicit administrator stop) shuts down the direct-disk guest.
       systemd.services.navis-windows-background = {
