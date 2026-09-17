@@ -87,6 +87,11 @@
     hyprland = {
       url = "github:hyprwm/Hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.hyprutils = {
+        url = "github:hyprwm/hyprutils/v0.14.2";
+        inputs.nixpkgs.follows = "hyprland/nixpkgs";
+        inputs.systems.follows = "hyprland/systems";
+      };
     };
 
     impermanence = {

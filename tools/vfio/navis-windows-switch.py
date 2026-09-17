@@ -95,11 +95,13 @@ def sync_usb():
         return (int(source.find('vendor').get('id'), 16), int(source.find('product').get('id'), 16),
                 int(address.get('bus')), int(address.get('device'))) if address is not None else None
     wanted = {identity(device): device for device in g.usb_devices()}
-    current = {identity(device): device for device in live_devices() if device.get('type') == 'usb'}
+    current = [device for device in live_devices() if device.get('type') == 'usb']
+    attached = {identity(device) for device in current}
     errors = []
-    changes = [('detach-device', device) for key, device in current.items() if key not in wanted
-               and device.find('alias').get('name', '').startswith('ua-warm-usb-')]
-    changes += [('attach-device', device) for key, device in wanted.items() if key not in current]
+    # All USB hostdevs belong to this switch session. Libvirt may replace our
+    # aliases with hostdevN; filtering by alias leaks ports after reconnects.
+    changes = [('detach-device', device) for device in current if identity(device) not in wanted]
+    changes += [('attach-device', device) for key, device in wanted.items() if key not in attached]
     for action, device in changes:
         alias = device.find('alias').get('name')
         path = STATE / 'usb-hotplug.xml'
@@ -211,7 +213,12 @@ def check_ready():
 def attach(path):
     # Record the attempt first; even a timed-out command may attach a device.
     (STATE / 'warm-attach-attempted').touch()
-    g.virsh('attach-device', g.UUID, str(path), '--live', timeout=45)
+    # The first VFIO device faults compressed guest RAM back in before pinning
+    # it. A VM reduced to 8 GiB resident can exceed the old 45-second deadline.
+    g.status(f'Attaching {path.name}; restoring compressed VM memory can take up to 3 minutes.')
+    started = time.monotonic()
+    g.virsh('attach-device', g.UUID, str(path), '--live', timeout=180)
+    g.status(f'Attached {path.name} in {time.monotonic() - started:.1f}s.')
 
 
 def exercise():
@@ -410,6 +417,27 @@ def background_xml(source):
     root.find('memory').set('unit', 'KiB')
     root.find('currentMemory').text = str(48 * 1024 * 1024)
     root.find('currentMemory').set('unit', 'KiB')
+    # Expose Intel virtualization to Windows for nested Hyper-V / WSL2.
+    cpu = root.find('cpu')
+    vmx = cpu.find("feature[@name='vmx']")
+    if vmx is None:
+        vmx = ET.SubElement(cpu, 'feature', name='vmx')
+    vmx.set('policy', 'require')
+    features = root.find('features')
+    hyperv = features.find('hyperv')
+    if hyperv is not None:
+        features.remove(hyperv)
+    hyperv = ET.SubElement(features, 'hyperv', mode='custom')
+    for name in ('relaxed', 'vapic', 'vpindex', 'runtime', 'synic', 'frequencies',
+                 'reenlightenment', 'tlbflush', 'ipi', 'evmcs', 'emsr_bitmap', 'xmm_input'):
+        ET.SubElement(hyperv, name, state='on')
+    ET.SubElement(hyperv, 'spinlocks', state='on', retries='4095')
+    ET.SubElement(ET.SubElement(hyperv, 'stimer', state='on'), 'direct', state='on')
+    clock = root.find('clock')
+    timer = clock.find("timer[@name='hypervclock']")
+    if timer is None:
+        timer = ET.SubElement(clock, 'timer', name='hypervclock')
+    timer.set('present', 'yes')
     for index in ('6', '7'):
         root.find(f"devices/controller[@type='pci'][@index='{index}']/target").set('hotplug', 'on')
     tune = root.find('cputune')

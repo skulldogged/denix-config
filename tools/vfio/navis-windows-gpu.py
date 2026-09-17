@@ -120,6 +120,8 @@ def usb_devices():
         try:
             if not (path / 'idVendor').exists() or (path / 'bDeviceClass').read_text().strip() in ('09', '11'):
                 continue  # Hubs and USB-C billboard devices stay with the host.
+            if int((path / 'devnum').read_text()) <= 0:
+                continue  # USB reset in progress; wait for a usable address.
             physical = path.resolve()
             if not any((parent / 'removable').exists() and (parent / 'removable').read_text().strip() == 'removable'
                        for parent in (physical, *physical.parents)):

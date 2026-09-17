@@ -9,7 +9,7 @@
     inherit (pkgs.dotnetCorePackages) patchNupkgs nugetPackageHook;
   };
 
-  jellyfin-web = (pkgs.jellyfin-web.override {nodejs_22 = pkgs.nodejs_24;}).overrideAttrs (old: {
+  jellyfin-web = pkgs.jellyfin-web.overrideAttrs (old: {
     version = (builtins.fromJSON (builtins.readFile (inputs.jellyfin-web-src + "/package.json"))).version;
     src = inputs.jellyfin-web-src;
     npmDeps = let
