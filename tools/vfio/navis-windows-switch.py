@@ -249,9 +249,34 @@ def exercise():
     (STATE / 'warm-vga-change-attempted').touch()
     print(set_virtual_display(False), flush=True)
     (STATE / 'warm-attached').touch()
+    wallpaper_engine(True)
     g.wait_for_t3_server()
     g.status('Windows is ready. Use Switch to Linux to return; Windows will stay running.')
     g.wait_for_windows_shutdown()
+
+
+def wallpaper_engine(active):
+    # Run its stop/play command in Marshall's desktop, not the guest agent's
+    # SYSTEM session. A wallpaper failure must not block GPU recovery.
+    action = 'Play' if active else 'Stop'
+    try:
+        guest_ps("$name='Navis Wallpaper Engine " + action + "'\n" + r'''
+$ErrorActionPreference='Stop'
+$before=(Get-ScheduledTaskInfo -TaskName $name).LastRunTime
+Start-ScheduledTask -TaskName $name
+$deadline=(Get-Date).AddSeconds(20)
+do {
+    Start-Sleep -Milliseconds 250
+    $info=Get-ScheduledTaskInfo -TaskName $name
+    if ($info.LastRunTime -gt $before -and (Get-ScheduledTask -TaskName $name).State -eq 'Ready') {
+        if ($info.LastTaskResult -ne 0) { throw 'Wallpaper command failed' }
+        exit 0
+    }
+} while ((Get-Date) -lt $deadline)
+throw 'Wallpaper command did not complete'
+''', timeout=25)
+    except Exception as exc:
+        g.status('Could not ' + action.lower() + ' Wallpaper Engine rendering: ' + str(exc))
 
 
 def hide_gpu_eject_entries():
@@ -311,6 +336,8 @@ def recover():
     g.status('Returning NVIDIA to Linux without shutting Windows down.')
     preserved = False
     same_boot = False
+    if g.guest_state() == 'running':
+        wallpaper_engine(False)
     if (STATE / 'warm-attach-attempted').exists() and g.guest_state() != 'shut off':
         # Failure leaves Windows and VFIO intact. Never convert a failed switch
         # into a guest shutdown, including during Windows Update.
@@ -417,12 +444,14 @@ def background_xml(source):
     root.find('memory').set('unit', 'KiB')
     root.find('currentMemory').text = str(48 * 1024 * 1024)
     root.find('currentMemory').set('unit', 'KiB')
-    # Expose Intel virtualization to Windows for nested Hyper-V / WSL2.
+    # Nested Hyper-V needs VMX. CET exposed by QEMU 11 / kernel 7 prevents
+    # this Windows build from booting with Hyper-V; hide only those features.
     cpu = root.find('cpu')
-    vmx = cpu.find("feature[@name='vmx']")
-    if vmx is None:
-        vmx = ET.SubElement(cpu, 'feature', name='vmx')
-    vmx.set('policy', 'require')
+    for name, policy in (('vmx', 'require'), ('cet-ss', 'disable'), ('cet-ibt', 'disable')):
+        feature = cpu.find(f"feature[@name='{name}']")
+        if feature is None:
+            feature = ET.SubElement(cpu, 'feature', name=name)
+        feature.set('policy', policy)
     features = root.find('features')
     hyperv = features.find('hyperv')
     if hyperv is not None:
@@ -438,6 +467,16 @@ def background_xml(source):
     if timer is None:
         timer = ET.SubElement(clock, 'timer', name='hypervclock')
     timer.set('present', 'yes')
+    devices = root.find('devices')
+    if not any(d.findtext('serial') == 'NAVISWSL001' for d in devices.findall('disk')):
+        if devices.find("disk/target[@dev='sdc']") is not None:
+            raise RuntimeError('WSL disk target sdc is already occupied.')
+        devices.append(ET.fromstring('''<disk type="network" device="disk">
+          <driver name="qemu" type="raw" cache="none"/>
+          <source protocol="nbd"><host transport="unix" socket="/run/navis-wsl-disk/nbd.sock"/></source>
+          <target dev="sdc" bus="sata" rotation_rate="1"/>
+          <serial>NAVISWSL001</serial><alias name="ua-wsl-storage"/>
+        </disk>'''))
     for index in ('6', '7'):
         root.find(f"devices/controller[@type='pci'][@index='{index}']/target").set('hotplug', 'on')
     tune = root.find('cputune')

@@ -66,9 +66,9 @@ in
       systemd.services.navis-windows-background = {
         description = "Windows background VM with clean host shutdown";
         wantedBy = ["multi-user.target"];
-        after = ["libvirtd.service" "libvirt-guests.service" "network-online.target"];
+        after = ["libvirtd.service" "libvirt-guests.service" "network-online.target" "navis-wsl-disk.service"];
         wants = ["network-online.target"];
-        requires = ["libvirtd.service"];
+        requires = ["libvirtd.service" "navis-wsl-disk.service"];
         restartIfChanged = false;
         stopIfChanged = false;
         path = switchPath;
@@ -81,6 +81,26 @@ in
           TimeoutStartSec = "120s";
           TimeoutStopSec = "infinity";
           Environment = "PYTHONDONTWRITEBYTECODE=1";
+        };
+      };
+      # Export only the WSL image, without granting QEMU access to the NTFS share.
+      systemd.services.navis-wsl-disk = {
+        description = "Local virtual disk for Windows WSL storage";
+        restartIfChanged = false;
+        stopIfChanged = false;
+        wantedBy = ["multi-user.target"];
+        before = ["navis-windows-background.service" "libvirt-guests.service"];
+        unitConfig.RequiresMountsFor = ["/mnt/Shared"];
+        serviceConfig = {
+          Type = "forking";
+          User = "marshall";
+          Group = "qemu-libvirtd";
+          RuntimeDirectory = "navis-wsl-disk";
+          RuntimeDirectoryMode = "0750";
+          UMask = "0007";
+          PIDFile = "/run/navis-wsl-disk/nbd.pid";
+          ExecStart = "${pkgs.qemu_kvm}/bin/qemu-nbd --fork --persistent --socket=/run/navis-wsl-disk/nbd.sock --pid-file=/run/navis-wsl-disk/nbd.pid --format=vhdx --cache=none /mnt/Shared/WSL/navis-wsl-storage.vhdx";
+          TimeoutStopSec = "infinity";
         };
       };
       systemd.services.navis-windows-request = {
@@ -152,6 +172,7 @@ in
             "valid users" = "marshall";
             "force user" = "marshall";
             "guest ok" = "no";
+            "veto files" = "/navis-wsl-storage.vhdx/";
           };
         };
       };

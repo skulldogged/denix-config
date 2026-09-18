@@ -393,6 +393,7 @@ delib.module {
             (mkBind "${modS} + S" "Capture active window screenshot" (exec (screenshot "window -m active")))
             (mkBind "CTRL + 3" "Capture active monitor screenshot" (exec (screenshot "output -m active")))
             (mkBind "CTRL + 4" "Capture region screenshot" (exec (screenshot "region --freeze")))
+            (mkBind "ALT + SHIFT + S" "Capture window for T3 Code" (lua ''hl.dsp.global("com.t3tools.T3Code:capture-window")''))
 
             (mkBind "${mod} + mouse_down" "Previous workspace" (lua ''hl.dsp.focus({ workspace = "e-1" })''))
             (mkBind "${mod} + mouse_up" "Next workspace" (lua ''hl.dsp.focus({ workspace = "e+1" })''))
