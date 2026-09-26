@@ -1,6 +1,6 @@
 {
-  "version": "0.0.43-nightly.20260923.2150.personal.1",
-  "appImageHash": "sha256-Qy6DXpdvNz37c9nN0WUGbSHXBgHwfKlJ53i6Hd4HNng=",
+  "version": "0.0.43-nightly.20260926.2282.personal.1",
+  "appImageHash": "sha256-GGWSow3upnQwm4Bj1uT4MMrvu3FdjnSuvFlTJx/QyH0=",
   "repository": "skulldogged/t3code",
   "tagPrefix": "personal-v"
 }
