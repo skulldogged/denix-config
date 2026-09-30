@@ -9,6 +9,9 @@
   gamdlBridgePort = 8787;
   gamdlDownloadDir = "/mnt/downloads/gamdl";
   slskdDownloadDir = "/mnt/downloads/slskd";
+  slskdOrganize = pkgs.writers.writePython3Bin "slskd-organize" {
+    libraries = [pkgs.python3Packages.mutagen];
+  } (builtins.readFile ./slskd-organize.py);
 
   lidarrSlskdBootstrap = pkgs.writeShellApplication {
     name = "lidarr-slskd-bootstrap";
@@ -1011,6 +1014,13 @@ in
                 - /mnt/music
             feature:
               swagger: true
+            integration:
+              scripts:
+                organize_manual_downloads:
+                  on:
+                    - DownloadDirectoryComplete
+                  run:
+                    executable: ${slskdOrganize}/bin/slskd-organize
             transfers:
               download:
                 slots: 5
@@ -1255,6 +1265,10 @@ in
 
             serviceConfig = {
               ExecStart = pkgs.lib.mkForce "${pkgs.local.slskd}/bin/slskd --app-dir /var/lib/slskd --config ${config.sops.templates."slskd.yml".path}";
+              # The module mounts shares read-only, but slskd-organize files
+              # manual downloads into the shared library.
+              ReadOnlyPaths = pkgs.lib.mkForce [];
+              ReadWritePaths = ["/mnt/music"];
               RuntimeDirectory = "slskd";
               UMask = "0002";
             };

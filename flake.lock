@@ -1561,6 +1561,7 @@
         "sops-nix": "sops-nix",
         "t3code-flake": "t3code-flake",
         "treefmt-nix": "treefmt-nix_3",
+        "trmnl-fleet": "trmnl-fleet",
         "twemoji-src": "twemoji-src"
       }
     },
@@ -1850,6 +1851,26 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "trmnl-fleet": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790473999,
+        "narHash": "sha256-9j+sPUJlQQT1QUVyhIz3JSerEClrTRj0Oiuu2h2k6Vc=",
+        "owner": "skulldogged",
+        "repo": "trmnl-fleet",
+        "rev": "bb7a42208814040c964774edd79e2fb474041fcc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "skulldogged",
+        "repo": "trmnl-fleet",
         "type": "github"
       }
     },

@@ -51,6 +51,13 @@ delib.module {
         '';
       };
 
+    # rip2 with its graveyard on disk. rip's default, /tmp, is RAM-backed here.
+    rip = pkgs.writeShellScriptBin "rip" ''
+      : "''${RIP_GRAVEYARD:=$HOME/.local/share/graveyard}"
+      export RIP_GRAVEYARD
+      exec ${lib.getExe pkgs.rip2} "$@"
+    '';
+
     basePackages =
       (with pkgs; [
         alejandra
@@ -63,7 +70,10 @@ delib.module {
         wl-clipboard
         xclip
       ])
-      ++ [inputs.nixvim.packages.${system}.default];
+      ++ [
+        inputs.nixvim.packages.${system}.default
+        rip
+      ];
 
     desktopPackages =
       (with pkgs; [
@@ -93,6 +103,11 @@ delib.module {
       ];
   in {
     home.packages = basePackages ++ lib.optionals myconfig.host.isDesktop desktopPackages;
+
+    # Empty out graveyard entries older than two weeks.
+    systemd.user.tmpfiles.rules = lib.mkIf pkgs.stdenv.hostPlatform.isLinux [
+      "d %h/.local/share/graveyard 0700 - - 14d"
+    ];
 
     services.tldr-update = lib.mkIf myconfig.host.isDesktop {
       enable = true;

@@ -96,7 +96,9 @@ delib.module {
       daemonIOLowPriority = true;
       daemonProcessType = "Adaptive";
       nixPath = ["nixpkgs=${inputs.nixpkgs}"];
-      registry = lib.mapAttrs (_: v: {flake = v;}) inputs;
+      # trmnl-fleet is a private repo that only Polaris uses; keep canis from
+      # needing GitHub credentials to fetch it.
+      registry = lib.mapAttrs (_: v: {flake = v;}) (removeAttrs inputs ["trmnl-fleet"]);
 
       settings = {
         extra-experimental-features = "nix-command flakes";

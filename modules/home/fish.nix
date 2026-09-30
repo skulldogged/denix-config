@@ -57,7 +57,7 @@ delib.module {
       shellAliases = {
         cat = "${pkgs.bat}/bin/bat";
         df = "${pkgs.duf}/bin/duf";
-        rm = "${pkgs.rm-improved}/bin/rip";
+        rm = "rip";
       };
 
       interactiveShellInit = ''

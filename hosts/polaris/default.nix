@@ -84,6 +84,7 @@ delib.host {
       codex-cli.enable = true;
       draconisplusplus.enable = true;
       helium.enable = true;
+      trmnl-fleet.enable = true;
 
       git = {
         enable = true;

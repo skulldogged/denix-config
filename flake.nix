@@ -160,6 +160,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    trmnl-fleet = {
+      url = "github:skulldogged/trmnl-fleet";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     twemoji-src = {
       url = "github:jdecked/twemoji";
       flake = false;
