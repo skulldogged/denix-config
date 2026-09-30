@@ -1014,7 +1014,7 @@ in
                 - /mnt/music
             feature:
               swagger: true
-            integration:
+            integrations:
               scripts:
                 organize_manual_downloads:
                   on:
