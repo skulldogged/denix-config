@@ -1,4 +1,4 @@
-{ pkgs ? import (builtins.getFlake "nixpkgs").outPath {} }:
+{pkgs ? import (builtins.getFlake "nixpkgs").outPath {}}:
 pkgs.stdenvNoCC.mkDerivation {
   pname = "mars-mbx-environment";
   version = "1.15.0";
